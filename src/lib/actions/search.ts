@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { mySpaceIds, requireSpaceMember } from "@/lib/access";
 import { db } from "@/lib/db";
@@ -36,6 +36,12 @@ export type SearchHit = {
   section: string | null;
 };
 
+export type SearchResult = {
+  /** limit에 걸리기 전 전체 건수. "N건"을 보여 주려면 따로 세야 한다. */
+  total: number;
+  hits: SearchHit[];
+};
+
 /**
  * 내가 속한 스페이스 안에서만 찾는다.
  *
@@ -44,50 +50,68 @@ export type SearchHit = {
  *
  * 1차는 plainText ILIKE로 충분하다. 규모가 커지면 tsvector + pg_trgm으로 옮긴다.
  */
-export async function searchNotes(query: string, opts: SearchOptions = {}) {
+export async function searchNotes(
+  query: string,
+  opts: SearchOptions = {},
+): Promise<SearchResult> {
   const q = query.trim();
-  if (!q) return [] as SearchHit[];
+  if (!q) return { total: 0, hits: [] };
 
   const allowed = await mySpaceIds();
   const scope = opts.spaceIds?.length
     ? allowed.filter((id) => opts.spaceIds!.includes(id))
     : allowed;
 
-  if (scope.length === 0) return [] as SearchHit[];
+  // 요청한 스페이스가 내 범위 밖이면 빈 결과다. 범위를 넓히지 않는다.
+  if (scope.length === 0) return { total: 0, hits: [] };
 
   const pattern = `%${q}%`;
-  const rows = await db
-    .select({
-      id: notes.id,
-      title: notes.title,
-      spaceId: notes.spaceId,
-      spaceName: spaces.name,
-      status: notes.status,
-      updatedAt: notes.updatedAt,
-      plainText: notes.plainText,
-      content: notes.content,
-    })
-    .from(notes)
-    .innerJoin(spaces, eq(spaces.id, notes.spaceId))
-    .where(
-      and(
-        inArray(notes.spaceId, scope),
-        isNull(notes.deletedAt),
-        isNull(spaces.deletedAt),
-        or(ilike(notes.title, pattern), ilike(notes.plainText, pattern)),
-        opts.status ? eq(notes.status, opts.status) : undefined,
-        opts.from ? sql`${notes.updatedAt} >= ${opts.from}::date` : undefined,
-        // 종료일은 그날 하루를 포함해야 한다. 사용자는 날짜를 골랐지 자정을 고른 게 아니다.
-        opts.to ? sql`${notes.updatedAt} < (${opts.to}::date + interval '1 day')` : undefined,
-      ),
-    )
-    .orderBy(desc(notes.updatedAt))
-    .limit(opts.limit ?? 30);
 
-  return rows.map(({ plainText, content, ...note }): SearchHit => {
+  /*
+    조건을 한 번만 적고 목록·집계에 함께 쓴다.
+    두 벌로 적으면 한쪽만 고쳐져서 "12건"이라 써 놓고 3건만 나오는 일이 생긴다.
+  */
+  const where = and(
+    inArray(notes.spaceId, scope),
+    isNull(notes.deletedAt),
+    isNull(spaces.deletedAt),
+    or(ilike(notes.title, pattern), ilike(notes.plainText, pattern)),
+    opts.status ? eq(notes.status, opts.status) : undefined,
+    opts.from ? sql`${notes.updatedAt} >= ${opts.from}::date` : undefined,
+    // 종료일은 그날 하루를 포함해야 한다. 사용자는 날짜를 골랐지 자정을 고른 게 아니다.
+    opts.to ? sql`${notes.updatedAt} < (${opts.to}::date + interval '1 day')` : undefined,
+  );
+
+  const [[counted], rows] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(notes)
+      .innerJoin(spaces, eq(spaces.id, notes.spaceId))
+      .where(where),
+    db
+      .select({
+        id: notes.id,
+        title: notes.title,
+        spaceId: notes.spaceId,
+        spaceName: spaces.name,
+        status: notes.status,
+        updatedAt: notes.updatedAt,
+        plainText: notes.plainText,
+        content: notes.content,
+      })
+      .from(notes)
+      .innerJoin(spaces, eq(spaces.id, notes.spaceId))
+      .where(where)
+      .orderBy(desc(notes.updatedAt), asc(notes.id))
+      .limit(opts.limit ?? 30),
+  ]);
+
+  const hits = rows.map(({ plainText, content, ...note }): SearchHit => {
     const { snippet, section } = locate(q, plainText, content);
     return { ...note, snippet, section };
   });
+
+  return { total: counted?.n ?? hits.length, hits };
 }
 
 /** 일치 지점 앞뒤를 잘라 발췌하고, 어느 구획에서 나왔는지 찾는다. */

@@ -124,7 +124,8 @@ countSpaceNotes(spaceId)
 
 // search.ts
 searchNotes(query, { spaceIds?, from?, to?, status?, limit? })
-  // → { id, title, spaceId, spaceName, status, updatedAt, snippet, section }[]
+  // → { total, hits: { id, title, spaceId, spaceName, status, updatedAt, snippet, section }[] }
+  // total은 limit 적용 전 전체 건수 — "N건" 표시에 쓴다
   // section = 일치한 구획 제목. "막힌 것 · 질문"에서 나온 결과가 가장 쓸모 있다
 openQuestionCounts(spaceId)                 // → { [noteId]: 미해결 질문 수 }
 
@@ -184,8 +185,8 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 | 6 | 스페이스 이름 변경·삭제, 멤버 제외·소유권 이전 | Codex | ✅ 완료 |
 
 **큐가 비었다.** Codex는 S-02 멤버 탭·초대, S-05 검색, 스페이스 생성을 이어서 진행할 수 있다.
-| 7 | TODO(CODEX): S-02a 검증 중 scripts/check-revisions.mts:92의 YXmlFragment.setAttribute 타입 오류로 npm run typecheck 실패. 소유권 밖 파일이라 수정하지 않음. CLAUDE 확인 요청. | Codex | ☐ 확인 대기 |
-| 8 | TODO(CODEX): S-05 요청 5의 searchNotes 연결 대기. 입력은 query/spaceIds/from/to/status, 반환은 권한 적용 후 total 및 id/spaceId/title/status/updatedAt/일치 문장/블록명 필요. 선택 공간은 소속 범위 내로 제한하고, 휴지통·삭제 스페이스 제외 및 서버의 멤버십 재검증 필요. 기간은 서울 수정일 기준 양 끝 날짜 포함. 검색어와 필터 UI는 구현함. | Codex | ☐ CLAUDE 구현 대기 |
+| 7 | `scripts/check-revisions.mts`의 타입 오류 | Codex | ✅ 이미 수정됨. typecheck 통과 확인 |
+| 8 | `searchNotes`에 `total`(전체 건수) 필요 | Codex | ✅ 완료. 반환이 `{ total, hits }`로 바뀜 |
 
 새 요청은 아래에 행을 추가한다. 형식: `필요한 것 / 어느 화면에서 / 왜`.
 
