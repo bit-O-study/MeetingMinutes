@@ -1,0 +1,253 @@
+@import "tailwindcss";
+
+/*
+  디자인 토큰 — docs/ 의 화면 설계서와 같은 팔레트.
+  차가운 회색 중립 + 따뜻한 강조색 하나. 강조색은 아껴 쓴다.
+*/
+:root {
+  --ground: #f4f6f6;
+  --surface: #ffffff;
+  --surface-2: #ebeeee;
+
+  --ink: #1a1e1f;
+  --ink-2: #4e5659;
+  --ink-3: #818a8d;
+
+  --line: #dce1e1;
+  --line-2: #c4cbcb;
+
+  --accent: #ab4e2c;
+  --accent-soft: #f8e8e1;
+  --on-accent: #ffffff;
+
+  --ok: #2e6a4e;
+  --ok-soft: #e2f0e8;
+  --warn: #8b6412;
+  --warn-soft: #f7eeda;
+  --info: #28607f;
+  --info-soft: #e2edf3;
+
+  /* 공동 편집 커서·아바타 색. 접속 순서대로 배정한다. */
+  --user-1: #ab4e2c;
+  --user-2: #28607f;
+  --user-3: #2e6a4e;
+  --user-4: #7b4a86;
+  --user-5: #8b6412;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #0f1314;
+    --surface: #171b1c;
+    --surface-2: #1f2425;
+
+    --ink: #e6eaea;
+    --ink-2: #a2acae;
+    --ink-3: #757f81;
+
+    --line: #272d2e;
+    --line-2: #37403f;
+
+    --accent: #e08663;
+    --accent-soft: #2d1710;
+    --on-accent: #140805;
+
+    --ok: #6fbe96;
+    --ok-soft: #132b21;
+    --warn: #d4a75e;
+    --warn-soft: #2e2514;
+    --info: #78aecc;
+    --info-soft: #14262f;
+
+    --user-1: #e08663;
+    --user-2: #78aecc;
+    --user-3: #6fbe96;
+    --user-4: #c095cb;
+    --user-5: #d4a75e;
+  }
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-sans: var(--font-noto-sans-kr);
+  --font-serif: var(--font-noto-serif-kr);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-noto-sans-kr), "Malgun Gothic", system-ui, sans-serif;
+}
+
+/* ── 에디터 ─────────────────────────────────────────────── */
+
+.tiptap {
+  outline: none;
+}
+
+.tiptap h2 {
+  font-family: var(--font-noto-serif-kr), serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 1.75rem 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.tiptap h2:first-child {
+  margin-top: 0;
+}
+
+.tiptap p {
+  margin: 0.4rem 0;
+  line-height: 1.8;
+}
+
+.tiptap p em {
+  color: var(--ink-3);
+  font-style: normal;
+  font-size: 0.875rem;
+}
+
+/* 인수인계 템플릿의 계정 블록 경고. 접거나 닫을 수 없다. */
+.tiptap blockquote {
+  border-left: 3px solid var(--warn);
+  background: var(--warn-soft);
+  color: var(--warn);
+  padding: 0.6rem 0.85rem;
+  margin: 0.6rem 0;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.875rem;
+}
+
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0;
+}
+
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.15rem 0;
+}
+
+.tiptap ul[data-type="taskList"] li > label {
+  flex: none;
+  padding-top: 0.32rem;
+}
+
+.tiptap ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tiptap ul[data-type="taskList"] li > div > p {
+  margin: 0;
+}
+
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+
+.tiptap input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 0.95rem;
+  height: 0.95rem;
+  cursor: pointer;
+}
+
+.tiptap p.is-editor-empty:first-child::before,
+.tiptap .is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-3);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ── 공동 편집 커서 ─────────────────────────────────────── */
+
+.collaboration-carets__caret {
+  border-left: 1px solid;
+  border-right: 1px solid;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  position: relative;
+  word-break: normal;
+}
+
+/*
+  이름표는 입력을 멈추면 사라지고 커서 선만 남는다.
+  계속 떠 있으면 본문을 가린다.
+*/
+.collaboration-carets__label {
+  border-radius: 3px 3px 3px 0;
+  color: #fff;
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  left: -1px;
+  line-height: 1.4;
+  padding: 0.05rem 0.25rem;
+  position: absolute;
+  top: -1.15em;
+  user-select: none;
+  white-space: nowrap;
+  animation: caret-label-fade 2.4s ease-out forwards;
+}
+
+@keyframes caret-label-fade {
+  0%,
+  62% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.collaboration-carets__selection {
+  border-radius: 2px;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .collaboration-carets__selection {
+    mix-blend-mode: screen;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collaboration-carets__label {
+    animation: none;
+    opacity: 1;
+  }
+}
