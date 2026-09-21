@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:all": "concurrently -n next,collab -c cyan,magenta \"npm:dev\" \"npm:collab\"",
-    "collab": "tsx --env-file=.env.local server/collab.ts",
+    "collab": "tsx server/collab.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -14,8 +14,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "test": "tsx --test \"src/**/*.test.mts\"",
-    "check:revisions": "tsx --env-file=.env.local scripts/check-revisions.mts"
+    "test": "tsx scripts/run-tests.mts",
+    "check:revisions": "tsx scripts/check-revisions.mts",
+    "dev:session": "tsx scripts/dev-session.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

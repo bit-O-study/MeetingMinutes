@@ -11,6 +11,8 @@
  *   · `next dev`가 라우트를 다시 컴파일할 때 연결이 끊기지 않는다
  *   · 로그가 한 줄기로 모여서 동기화 문제를 쫓기 쉽다
  */
+import "../scripts/load-env.mjs";
+
 import http from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 

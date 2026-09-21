@@ -205,6 +205,8 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 | 2026-09-21 | `note_revisions.state`(bytea) → `content`(jsonb). 마이그레이션 `0001`·`0002` | 이력 조회·되돌리기 액션 추가 (`lib/actions/revisions.ts`) |
 | 2026-09-21 | 공유 링크 액션(`lib/actions/shares.ts`)과 공개 열람 페이지 `/p/[token]` | 스키마 변경 없음. `share_links`는 처음부터 있었다 |
 | 2026-09-21 | 공동 편집 프로토콜을 `lib/collab/room.ts`로 분리. 배포 경로 `app/api/collab/[noteId]` 추가 | 스키마·액션 변경 없음. `server/collab.ts`는 개발용 껍데기로 남고, 배포는 Next 라우트가 받는다 |
+| 2026-09-21 | `useCollab`을 `useSyncExternalStore` + 모듈 레지스트리로 교체 | 반환값(`doc` · `provider` · `status` · `syncedAt` · `peers`)은 그대로. 에디터가 첫 마운트에 provider를 받는다 |
+| 2026-09-21 | 환경변수 로딩을 `scripts/load-env.mjs`로 통일. `npm run test` · `dev:session` 스크립트 정리 | `npm run collab`·`check:revisions`에서 `--env-file` 제거. 명령 사용법만 바뀐다 |
 
 ### DB 접속 메모
 
@@ -220,6 +222,14 @@ aws-0-ap-southeast-1.pooler.supabase.com:5432    세션 모드
 풀러를 거치므로 **prepared statement를 쓰지 않는다** (`prepare: false`). SSL 필수.
 스키마를 바꾸면 `npm run db:generate` → `npm run db:migrate` 순으로 적용하고
 생성된 `drizzle/*.sql`을 커밋한다.
+
+#### 환경변수는 `.env.local`과 `.env`를 둘 다 읽는다
+
+Next의 규칙과 같다 — 같은 키가 양쪽에 있으면 `.env.local`이 이긴다.
+Next 바깥에서 도는 것들(`npm run collab`, `drizzle-kit`, `scripts/*.mts`)은
+node의 `--env-file` 대신 `scripts/load-env.mjs`를 첫 줄에 import 해서 맞춘다.
+`--env-file`은 파일을 하나만 받아서, `DATABASE_URL`이 `.env`에 있으면
+**앱은 멀쩡한데 도구만 연결 문자열을 못 찾는** 상태가 된다.
 
 ---
 
@@ -303,7 +313,7 @@ npm run dev:all        # Next + 공동 편집 서버
 브라우저 없이 API를 찔러 볼 때 쓴다.
 
 ```
-npx tsx --env-file=.env.local scripts/dev-session.mts 테스터
+npm run dev:session 테스터
 → COOKIE=authjs.session-token=...   이 값을 요청 헤더에 넣는다
 ```
 

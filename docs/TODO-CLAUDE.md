@@ -17,6 +17,17 @@
 
 ## 남은 작업
 
+### 0. 막혀 있는 것 — DB 자격 증명
+
+**지금 이 저장소에서는 DB에 못 붙는다.** `.env`의 `DATABASE_URL`이
+`password authentication failed for user "postgres"` (28P01)로 거절당한다.
+호스트·사용자 이름(`postgres.rptkldwjfrqhuaraahcn`)은 맞고 비밀번호만 거절되므로,
+Supabase 대시보드에서 비밀번호를 다시 받아 `.env`를 고쳐야 한다.
+(프로젝트가 휴면에 들어갔다면 먼저 깨운다.)
+
+이게 풀리기 전에는 아래가 전부 막힌다 — 공동 편집 실측, `npm run dev:session`,
+`npm run check:revisions`, `drizzle-kit` 명령 전부.
+
 ### 1. 운영 배포 (가장 앞선다)
 
 - [ ] **구글 OAuth 연결** — `AUTH_GOOGLE_ID` · `AUTH_GOOGLE_SECRET`을 채우고
@@ -43,11 +54,17 @@
 
 ### 3. 코드 정리
 
-- [ ] `useCollab.ts:94` — `react-hooks/set-state-in-effect` 오류. `npm run lint`가
-      이것 하나로 실패한다. provider를 state 대신 ref나 `useSyncExternalStore`로
-      옮겨야 하는데, 에디터 마운트 시점과 얽혀 있어 따로 손본다.
+- [x] `useCollab.ts` — `set-state-in-effect` 오류. 연결을 React 바깥의 모듈
+      레지스트리로 옮기고 `useSyncExternalStore`로 구독한다. 곁다리로 두 가지가
+      같이 풀렸다. 에디터가 **첫 마운트에** provider를 받으므로 커서 확장 없이
+      만들어졌다 버려지는 일이 없고, 남의 커서가 움직일 때마다 워크스페이스가
+      다시 그려지던 것도 멈춘다(awareness 변화를 아바타에 보이는 값으로 거른다).
+- [x] `npm run test`가 아예 돌지 않던 것. `tsx --test "src/**/*.test.mts"`의 글롭을
+      펼치는 주체가 없었다 — node 테스트 러너의 글롭은 22부터고(여기는 20),
+      npm 스크립트는 Windows에서 cmd.exe로 돈다. `scripts/run-tests.mts`가 찾아서 돌린다.
+- [x] Next 바깥 도구들이 `.env`를 못 읽던 것. `scripts/load-env.mjs`로 통일했다.
 - [ ] `Avatar.tsx:36` — `<img>` 경고. 아바타는 구글 프로필 URL이라 `next/image`로
-      바꾸면 도메인 허용 설정이 따라온다. 경고로 두고 있다.
+      바꾸면 도메인 허용 설정이 따라온다. 구글 OAuth를 붙일 때 같이 본다.
 
 ### 4. 2차 이후 (설계 v2에 예정된 범위)
 
@@ -56,7 +73,9 @@
 
 ## 검증 메모
 
-- `npm run typecheck` · `npm run build` · `npm run test`(30건) 통과.
+- `npm run typecheck` · `npm run lint` · `npm run build` · `npm run test`(30건) 통과.
+- `useCollab` 교체는 타입·빌드·lint와 `npm run collab` 기동까지만 봤다.
+  **두 창으로 붙여 보는 실측은 DB가 막혀 못 했다**(위 0번). 풀리면 가장 먼저 할 것.
 - 공동 편집 리팩터링은 개발 서버를 띄우고 클라이언트 두 개를 붙여 확인했다.
   문서 동기화와, **소켓이 인사 없이 끊겼을 때 남의 커서가 사라지는 것**까지 봤다.
   (끊긴 연결이 쥔 awareness clientId만 지우도록 이번에 고친 부분이다.)

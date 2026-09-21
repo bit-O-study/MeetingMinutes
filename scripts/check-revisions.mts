@@ -2,7 +2,7 @@
  * 변경 이력 기록을 실제로 확인한다 (브라우저 없이).
  *
  *   REVISION_SETTLE_MS=2000 npm run collab      # 다른 터미널
- *   npx tsx --env-file=.env.local scripts/check-revisions.mts
+ *   npm run check:revisions
  *
  * 헤드리스 Yjs 클라이언트로 공동 편집 서버에 붙어 문서를 고치고,
  * 서버가 note_revisions에 제대로 남기는지 본다.
@@ -10,6 +10,8 @@
  * 매번 새 노트를 만들어 쓰고 지운다. 기존 노트를 쓰면 이전 실행이 남긴
  * 문서 상태 때문에 요약이 달라져 결과를 믿을 수 없다.
  */
+import "./load-env.mjs";
+
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import WebSocket from "ws";

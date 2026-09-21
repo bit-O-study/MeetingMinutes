@@ -1,11 +1,13 @@
 /**
  * 개발용 세션 발급 (검증·수동 테스트용)
  *
- *   npx tsx --env-file=.env.local scripts/dev-session.ts 테스터
+ *   npm run dev:session 테스터
  *
  * devSignIn 서버 액션과 같은 일을 한다: 사용자·세션 행을 만들고
  * 개발용 공유 스페이스에 넣는다. 출력된 쿠키를 브라우저에 심으면 로그인된다.
  */
+import "./load-env.mjs";
+
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 

@@ -30,6 +30,8 @@ npm run dev          # Next 개발 서버
 npm run collab       # 공동 편집 WebSocket 서버 (:1234)
 npm run dev:all      # 둘 다
 npm run typecheck    # tsc --noEmit
+npm run lint         # eslint
+npm run test         # src/**/*.test.mts
 npm run build        # 라우트 타입 재생성 + 전체 검증
 npm run db:push      # 스키마를 DB에 반영 (마이그레이션 없이)
 ```
