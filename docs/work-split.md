@@ -201,6 +201,7 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 
 | 날짜 | 변경 | 영향 |
 | --- | --- | --- |
+| 2026-09-21 | 사용자 요청으로 Codex가 이메일·비밀번호 자체 로그인 구현. Google 로그인 UI·프로바이더 제거, `password_credentials`·`auth_attempts` 및 마이그레이션 `0003` 추가 | `passwordSignIn`·`passwordSignUp` 서버 액션, 기존 Auth.js DB 세션·권한 유지. 기존 계정에 이메일만으로 비밀번호를 설정할 수 없음. 이메일 인증·비밀번호 재설정은 미제공 |
 | 2026-09-21 | 최초 스캐폴딩. 스키마·권한·액션·셸·에디터 골격 | — |
 | 2026-09-21 | Supabase 연결. 마이그레이션 `0000` 적용, 12개 테이블 생성 | `npm run db:migrate`로 최신 상태 유지 |
 | 2026-09-21 | 본문 체크박스 ↔ `tasks` 동기화. `syncNoteTasks` · `toggleTaskInNote` 추가 | 할 일의 존재·문구는 이제 본문이 정한다 |

@@ -31,7 +31,7 @@ const bytea = customType<{ data: Uint8Array; notNull: false; default: false }>({
 });
 
 /* ────────────────────────────────────────────────────────────
-   Auth.js (구글 로그인)
+   자체 로그인 · Auth.js 데이터베이스 세션
    ──────────────────────────────────────────────────────────── */
 
 export const users = pgTable("users", {
@@ -42,6 +42,20 @@ export const users = pgTable("users", {
   image: text("image"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// 비밀번호를 사용자 조회에 섞지 않고 정규화한 이메일의 중복 가입을 DB에서 막는다.
+export const passwordCredentials = pgTable("password_credentials", {
+  email: text("email").primaryKey(),
+  userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  passwordHash: text("password_hash").notNull(),
+});
+
+// 인스턴스가 달라도 같은 횟수를 보도록 로그인 시도 제한을 DB에 저장한다.
+export const authAttempts = pgTable("auth_attempts", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => [index("auth_attempts_expires_idx").on(t.expiresAt)]);
 
 export const accounts = pgTable(
   "accounts",

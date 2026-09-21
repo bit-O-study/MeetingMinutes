@@ -4,7 +4,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { ActionSubmit } from "@/components/screens/ActionSubmit";
 import { peekInvite, joinByInviteToken } from "@/lib/actions/spaces";
-import { auth, signIn } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
 export default async function JoinPage({ params, searchParams }: {
   params: Promise<{ token: string }>;
@@ -20,8 +20,6 @@ export default async function JoinPage({ params, searchParams }: {
   const session = await auth();
   const query = await searchParams;
   const returnTo = `/join/${encodeURIComponent(token)}`;
-  const googleReady = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
-  const isDev = process.env.NODE_ENV === "development";
 
   async function join() {
     "use server";
@@ -50,17 +48,8 @@ export default async function JoinPage({ params, searchParams }: {
         <p className="text-xs text-ink-3">{session.user.name ?? "현재 계정"}님으로 참여합니다. 이미 멤버라면 스페이스로 이동합니다.</p>
         <ActionSubmit>스페이스 참여하기</ActionSubmit>
       </form> : <div className="space-y-3">
-        {googleReady && <form action={async () => {
-          "use server";
-          await signIn("google", { redirectTo: returnTo });
-        }}><ActionSubmit>구글로 로그인하고 계속</ActionSubmit></form>}
-        {isDev && <div className="space-y-3">
-          {/* 개발 로그인은 홈으로 이동하므로 초대 탭을 유지해 참여를 이어갈 수 있게 한다. */}
-          <a href="/login" target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-accent underline">개발 로그인 열기 (새 탭)</a>
-          <p className="text-xs text-ink-3">새 탭에서 로그인한 뒤 이 화면으로 돌아와 참여 버튼을 눌러 주세요.</p>
-          <form action={join}><ActionSubmit>로그인 완료 · 참여하기</ActionSubmit></form>
-        </div>}
-        {!googleReady && !isDev && <p className="text-sm text-ink-2">현재 로그인을 사용할 수 없습니다. 서비스 관리자에게 문의한 뒤 이 링크로 다시 방문해 주세요.</p>}
+        <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="inline-block rounded bg-accent px-4 py-2 text-sm text-on-accent">로그인하고 계속</Link>
+        <p className="text-xs text-ink-3">계정이 없다면 로그인 화면에서 회원가입할 수 있습니다.</p>
       </div>}
       <Link href="/" className="inline-block text-sm text-ink-3 hover:text-accent">홈으로</Link>
     </Card>

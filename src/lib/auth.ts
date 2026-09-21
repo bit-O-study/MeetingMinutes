@@ -1,9 +1,9 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
 
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
+import { sessionCookie } from "@/lib/session-cookie";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
@@ -12,7 +12,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
   }),
-  providers: [Google],
+  // 비밀번호 검증은 서버 액션에서, 세션 조회·로그아웃은 기존 DB 전략으로 처리한다.
+  providers: [],
+  cookies: { sessionToken: sessionCookie },
   session: { strategy: "database" },
   pages: { signIn: "/login" },
   callbacks: {
