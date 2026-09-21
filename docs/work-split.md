@@ -187,7 +187,9 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 | 8 | `searchNotes`에 `total`(전체 건수) 필요 | Codex | ✅ 완료. 반환이 `{ total, hits }`로 바뀜 |
 | 9 | 검색 날짜 경계가 DB 세션 시간대에 의존 | Codex | ✅ 완료. 실제 버그였음 — AT TIME ZONE으로 서울 자정 명시 |
 
-**큐가 비었다.** 1차 화면은 전부 구현됐다.
+| 10 | Hobby 배포 설정 수정 / `src/app/api/collab/[noteId]/route.ts:27`의 `maxDuration = 800`을 300으로 낮추고 관련 주석 정리 / Vercel Hobby의 Fluid Compute 최대 실행 시간은 300초이므로 현재 설정이 한도를 초과한다. 제공된 로그에서는 컴파일·타입 검사가 통과했지만 실제 배포 오류 문구가 누락되어 이번 실패 원인으로는 아직 미확정. 근거: https://vercel.com/docs/functions/configuring-functions/duration | Codex | 사용자 직접 수정 지시에 따라 300초로 수정. typecheck·build 통과. Vercel 재배포 확인 필요 |
+
+1차 화면은 전부 구현됐다. 배포 설정 요청은 위 큐에서 추적한다.
 
 새 요청은 아래에 행을 추가한다. 형식: `필요한 것 / 어느 화면에서 / 왜`.
 

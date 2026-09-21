@@ -21,10 +21,10 @@ import { joinRoom } from "@/lib/collab/room";
 import { UnauthenticatedError } from "@/lib/auth";
 
 /**
- * Pro 이상에서만 800초까지 늘어난다(Hobby는 300초 고정).
- * 더 길게 잡는 것보다 재연결이 매끄러운 편이 안전하다.
+ * Hobby에서도 배포할 수 있도록 Fluid Compute의 최대 실행 시간인 300초에 맞춘다.
+ * 제한 시간으로 연결이 끊기면 y-websocket의 재연결로 이어 간다.
  */
-export const maxDuration = 800;
+export const maxDuration = 300;
 
 export async function GET(_request: Request, { params }: RouteContext<"/api/collab/[noteId]">) {
   const { noteId } = await params;
