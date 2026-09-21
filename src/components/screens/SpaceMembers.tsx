@@ -21,11 +21,9 @@ function ExpirySelect({ id }: { id: string }) {
   </div>;
 }
 
-export async function SpaceMembers({ spaceId, role, userId }: { spaceId: string; role: "owner" | "member"; userId: string }) {
+export async function SpaceMembers({ spaceId, role, userId, members }: { spaceId: string; role: "owner" | "member"; userId: string; members: Awaited<ReturnType<typeof listSpaceMembers>> }) {
   // 일반 멤버에게는 초대 토큰을 조회하거나 전달하지 않는다.
-  const [members, invites] = await Promise.all([
-    listSpaceMembers(spaceId), role === "owner" ? listInviteLinks(spaceId) : Promise.resolve([]),
-  ]);
+  const invites = role === "owner" ? await listInviteLinks(spaceId) : [];
   return <div className="space-y-5">
     <section aria-label="멤버 목록" className="space-y-2">
       <h2 className="text-sm font-semibold text-ink">멤버 {members.length}명</h2>

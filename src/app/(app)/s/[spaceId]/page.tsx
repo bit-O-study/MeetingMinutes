@@ -7,6 +7,9 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { Badge, NoteStatusBadge } from "@/components/ui/Badge";
 import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { TaskRow } from "@/components/screens/TaskRow";
+import { AvatarStack } from "@/components/ui/Avatar";
+import { SpaceOwnerPanel } from "@/components/screens/SpaceOwnerPanel";
+import { listSpaceMembers } from "@/lib/actions/spaces";
 import { SpaceMembers } from "@/components/screens/SpaceMembers";
 import { openQuestionCounts } from "@/lib/actions/search";
 import { requireSpaceMember } from "@/lib/access";
@@ -20,6 +23,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   const query = await searchParams;
   const tab = query.tab === "tasks" || query.tab === "members" ? query.tab : "notes";
   const today = todayInSeoul();
+  const members = await listSpaceMembers(spaceId);
   const questionCounts = tab === "notes" ? await openQuestionCounts(spaceId) : {};
   const noteRows = tab === "notes" ? await db
     .select({ id: notes.id, title: notes.title, status: notes.status, updatedAt: notes.updatedAt, updatedByName: users.name })
@@ -49,6 +53,12 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
         <Badge>{kindLabels[space.kind]}</Badge>
         <span className="text-xs text-ink-3">멤버 모두가 노트와 할 일을 함께 편집할 수 있습니다.</span>
       </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <AvatarStack people={members} />
+        <span className="text-xs text-ink-3">멤버 {members.length}명</span>
+        {role === "owner" && <Link href={"/s/" + spaceId + "?tab=members"} className="ml-auto text-xs text-accent hover:underline">+ 멤버 초대</Link>}
+      </div>
+      {role === "owner" && <SpaceOwnerPanel key={space.name} spaceId={spaceId} name={space.name} />}
       <nav aria-label="스페이스 메뉴" className="flex gap-2 border-b border-line pb-3">
         {tabs.map((item) => (
           <Link key={item.value} href={"/s/" + spaceId + "?tab=" + item.value}
@@ -96,7 +106,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
           {taskRows.length === 0 && <Card><EmptyState title="아직 할 일이 없습니다" hint="노트에 적은 할 일을 이곳에서 함께 관리합니다." action={{ href: "/s/" + spaceId + "?tab=notes", label: "노트 보기" }} /></Card>}
         </>
       )}
-      {tab === "members" && <SpaceMembers spaceId={spaceId} role={role} userId={userId} />}
+      {tab === "members" && <SpaceMembers spaceId={spaceId} role={role} userId={userId} members={members} />}
     </div>
   );
 }
