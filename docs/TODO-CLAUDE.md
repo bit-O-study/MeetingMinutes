@@ -14,19 +14,12 @@
 - [x] Codex 요청 큐 9건 전량 처리
 - [x] 배포용 WebSocket — 프로토콜을 `lib/collab/room.ts`로 분리하고
       `app/api/collab/[noteId]`에서 `experimental_upgradeWebSocket`으로 받는다
+- [x] 그 라우트가 업그레이드 직후 끝나 버리던 것. `joinRoom`이 소켓이 닫힐 때까지
+      끝나지 않는 약속을 돌려주고 라우트가 그걸 기다린다. 핸들러가 먼저 끝나면
+      런타임이 호출을 정리하면서 방금 붙은 소켓까지 끊는다 —
+      **배포에서만** 나는 증상이라 로컬에서는 보이지 않았다.
 
 ## 남은 작업
-
-### 0. 막혀 있는 것 — DB 자격 증명
-
-**지금 이 저장소에서는 DB에 못 붙는다.** `.env`의 `DATABASE_URL`이
-`password authentication failed for user "postgres"` (28P01)로 거절당한다.
-호스트·사용자 이름(`postgres.rptkldwjfrqhuaraahcn`)은 맞고 비밀번호만 거절되므로,
-Supabase 대시보드에서 비밀번호를 다시 받아 `.env`를 고쳐야 한다.
-(프로젝트가 휴면에 들어갔다면 먼저 깨운다.)
-
-이게 풀리기 전에는 아래가 전부 막힌다 — 공동 편집 실측, `npm run dev:session`,
-`npm run check:revisions`, `drizzle-kit` 명령 전부.
 
 ### 1. 운영 배포 (가장 앞선다)
 
@@ -73,9 +66,12 @@ Supabase 대시보드에서 비밀번호를 다시 받아 `.env`를 고쳐야 �
 
 ## 검증 메모
 
-- `npm run typecheck` · `npm run lint` · `npm run build` · `npm run test`(30건) 통과.
-- `useCollab` 교체는 타입·빌드·lint와 `npm run collab` 기동까지만 봤다.
-  **두 창으로 붙여 보는 실측은 DB가 막혀 못 했다**(위 0번). 풀리면 가장 먼저 할 것.
+- `npm run typecheck` · `npm run lint` · `npm run build` · `npm run test` 통과.
+- `npm run check:revisions` 통과 — 헤드리스 클라이언트가 붙어 편집하고 끊기까지,
+  `joinRoom` 수정 뒤에도 접속·동기화·종료 처리가 그대로다.
+- **`useCollab` 교체와 `joinRoom` 수정은 브라우저 두 창으로 아직 못 봤다.**
+  로그인 화면이 비밀번호 로그인으로 바뀌는 중이라 그게 끝난 뒤에 한다.
+  `joinRoom` 쪽은 어차피 배포에서만 증상이 나므로 배포 후 실측이 진짜 확인이다.
 - 공동 편집 리팩터링은 개발 서버를 띄우고 클라이언트 두 개를 붙여 확인했다.
   문서 동기화와, **소켓이 인사 없이 끊겼을 때 남의 커서가 사라지는 것**까지 봤다.
   (끊긴 연결이 쥔 awareness clientId만 지우도록 이번에 고친 부분이다.)

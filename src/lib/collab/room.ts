@@ -311,14 +311,22 @@ function handleMessage(room: Room, conn: WebSocket, data: Uint8Array) {
  * 동안(첫 접속자면 왕복 한 번) 클라이언트는 이미 동기화 요청을 보낸다.
  * 불러오기를 await한 뒤에 리스너를 붙이면 그 사이 도착한 메시지가 사라져서
  * 영영 동기화가 끝나지 않는다. 그래서 준비될 때까지 버퍼에 담아 둔다.
+ *
+ * **소켓이 닫힐 때까지 끝나지 않는 약속을 돌려준다.** 서버리스에서 이게 필요하다 —
+ * 업그레이드 핸들러가 먼저 끝나면 런타임은 요청이 끝난 줄 알고 호출을 정리하고,
+ * 방금 붙은 소켓까지 같이 끊는다. 개발 서버는 이 값을 쓰지 않는다.
  */
-export function joinRoom(roomName: string, conn: WebSocket) {
+export function joinRoom(roomName: string, conn: WebSocket): Promise<void> {
   const room = getRoom(roomName);
   room.conns.set(conn, new Set());
   conn.binaryType = "arraybuffer";
 
   let ready = false;
   const pending: Uint8Array[] = [];
+  let onClosed: () => void;
+  const closed = new Promise<void>((resolve) => {
+    onClosed = resolve;
+  });
 
   conn.on("message", (data: ArrayBuffer | Buffer) => {
     const bytes = new Uint8Array(data as ArrayBuffer);
@@ -327,6 +335,7 @@ export function joinRoom(roomName: string, conn: WebSocket) {
   });
 
   conn.on("close", () => {
+    onClosed();
     const owned = room.conns.get(conn);
     room.conns.delete(conn);
     if (owned && owned.size > 0) {
@@ -370,6 +379,8 @@ export function joinRoom(roomName: string, conn: WebSocket) {
 
     log(`${short(roomName)} 접속 · 현재 ${room.conns.size}명`);
   });
+
+  return closed;
 }
 
 /** 프로세스가 내려가기 직전에 부른다. 열려 있는 방의 이력과 스냅샷을 모두 저장한다. */

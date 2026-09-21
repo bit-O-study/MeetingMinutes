@@ -37,7 +37,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/coll
     throw err;
   }
 
-  return experimental_upgradeWebSocket((ws) => {
-    joinRoom(noteId, ws);
-  });
+  // 핸들러가 끝나면 런타임이 호출을 정리한다. 그래서 소켓이 닫힐 때까지 기다린다.
+  // 여기서 기다리지 않으면 업그레이드 직후 연결이 끊겨 배포에서만 공동 편집이 죽는다.
+  return experimental_upgradeWebSocket((ws) => joinRoom(noteId, ws));
 }

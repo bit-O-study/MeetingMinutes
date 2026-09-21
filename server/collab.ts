@@ -43,7 +43,8 @@ wss.on("connection", (conn: WebSocket, req) => {
     로그인은 Next 쪽에 있고 이 프로세스는 localhost에만 떠 있기 때문이다.
     배포 경로(app/api/collab)는 requireNoteAccess를 거친다.
   */
-  joinRoom(roomName, conn);
+  // 돌려주는 약속은 배포 쪽에서만 쓴다. 여기서는 프로세스가 계속 떠 있다.
+  void joinRoom(roomName, conn);
 });
 
 server.listen(PORT, () => {
