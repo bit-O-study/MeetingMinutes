@@ -8,13 +8,14 @@ import TaskList from "@tiptap/extension-task-list";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { ySyncPluginKey } from "y-prosemirror";
-import { History } from "lucide-react";
+import { History, Share2 } from "lucide-react";
 
 import { saveNoteContent } from "@/lib/actions/notes";
 import { syncNoteTasks, toggleTaskInNote } from "@/lib/actions/tasks";
 import { useCollab, type CollabUser } from "@/lib/collab/useCollab";
 import { ConnectionBadge } from "@/components/editor/ConnectionBadge";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
+import { SharePanel } from "@/components/editor/SharePanel";
 import { TaskPanel } from "@/components/editor/TaskPanel";
 import { TaskItemWithId, collectDocTasks } from "@/components/editor/TaskItemWithId";
 import { AvatarStack } from "@/components/ui/Avatar";
@@ -45,7 +46,8 @@ export function NoteWorkspace({
 }) {
   const { doc, provider, status, syncedAt, peers } = useCollab(noteId, me);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [showHistory, setShowHistory] = useState(false);
+  // 우측 패널은 한 번에 하나만 뜬다. 셋을 동시에 열면 본문이 좁아진다.
+  const [panel, setPanel] = useState<"tasks" | "history" | "share">("tasks");
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,7 +147,7 @@ export function NoteWorkspace({
     (content: unknown) => {
       if (!editor || !content) return;
       editor.commands.setContent(content as never);
-      setShowHistory(false);
+      setPanel("tasks");
     },
     [editor],
   );
@@ -163,19 +165,18 @@ export function NoteWorkspace({
           <ConnectionBadge status={status} syncedAt={syncedAt} />
           <div className="ml-auto flex items-center gap-2">
             <AvatarStack people={peers.map((p) => ({ id: p.id, name: p.name, image: p.image }))} />
-            <button
-              type="button"
-              onClick={() => setShowHistory((v) => !v)}
-              aria-pressed={showHistory}
-              className={`flex items-center gap-1 rounded px-2 py-1 font-mono text-[10px] transition-colors ${
-                showHistory
-                  ? "bg-accent-soft text-accent"
-                  : "text-ink-3 hover:bg-surface-2 hover:text-ink-2"
-              }`}
-            >
-              <History className="size-3" />
-              이력
-            </button>
+            <PanelToggle
+              active={panel === "history"}
+              onClick={() => setPanel((p) => (p === "history" ? "tasks" : "history"))}
+              icon={<History className="size-3" />}
+              label="이력"
+            />
+            <PanelToggle
+              active={panel === "share"}
+              onClick={() => setPanel((p) => (p === "share" ? "tasks" : "share"))}
+              icon={<Share2 className="size-3" />}
+              label="공유"
+            />
           </div>
         </div>
         <div className="min-w-0 flex-1 overflow-y-auto px-4 py-4">
@@ -183,17 +184,45 @@ export function NoteWorkspace({
         </div>
       </div>
 
-      {showHistory ? (
+      {panel === "history" && (
         <HistoryPanel
           noteId={noteId}
           currentDoc={editor?.getJSON() ?? null}
           onRestore={handleRestore}
-          onClose={() => setShowHistory(false)}
+          onClose={() => setPanel("tasks")}
         />
-      ) : (
+      )}
+      {panel === "share" && <SharePanel noteId={noteId} onClose={() => setPanel("tasks")} />}
+      {panel === "tasks" && (
         <TaskPanel tasks={tasks} onToggle={handleToggle} onAdd={handleAdd} />
       )}
     </div>
+  );
+}
+
+function PanelToggle({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex items-center gap-1 rounded px-2 py-1 font-mono text-[10px] transition-colors ${
+        active ? "bg-accent-soft text-accent" : "text-ink-3 hover:bg-surface-2 hover:text-ink-2"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 

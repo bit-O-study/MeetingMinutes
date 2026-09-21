@@ -128,6 +128,11 @@ searchNotes(query, { spaceIds?, from?, to?, status?, limit? })
   // section = 일치한 구획 제목. "막힌 것 · 질문"에서 나온 결과가 가장 쓸모 있다
 openQuestionCounts(spaceId)                 // → { [noteId]: 미해결 질문 수 }
 
+// shares.ts  (S-07)
+listShareLinks(noteId)                      // → { id, url, expiresAt, revokedAt, viewCount, active }[]
+createShareLink(noteId, { expiresInDays? }) // 만료 기본값 없음. 회수는 언제든 된다
+revokeShareLink(shareId)                    // → 갱신된 목록
+
 // revisions.ts
 listRevisions(noteId)
 getRevisionContent(noteId, revisionId)
@@ -179,6 +184,8 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 | 6 | 스페이스 이름 변경·삭제, 멤버 제외·소유권 이전 | Codex | ✅ 완료 |
 
 **큐가 비었다.** Codex는 S-02 멤버 탭·초대, S-05 검색, 스페이스 생성을 이어서 진행할 수 있다.
+| 7 | TODO(CODEX): S-02a 검증 중 scripts/check-revisions.mts:92의 YXmlFragment.setAttribute 타입 오류로 npm run typecheck 실패. 소유권 밖 파일이라 수정하지 않음. CLAUDE 확인 요청. | Codex | ☐ 확인 대기 |
+| 8 | TODO(CODEX): S-05 요청 5의 searchNotes 연결 대기. 입력은 query/spaceIds/from/to/status, 반환은 권한 적용 후 total 및 id/spaceId/title/status/updatedAt/일치 문장/블록명 필요. 선택 공간은 소속 범위 내로 제한하고, 휴지통·삭제 스페이스 제외 및 서버의 멤버십 재검증 필요. 기간은 서울 수정일 기준 양 끝 날짜 포함. 검색어와 필터 UI는 구현함. | Codex | ☐ CLAUDE 구현 대기 |
 
 새 요청은 아래에 행을 추가한다. 형식: `필요한 것 / 어느 화면에서 / 왜`.
 
@@ -194,6 +201,7 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 | 2026-09-21 | Supabase 연결. 마이그레이션 `0000` 적용, 12개 테이블 생성 | `npm run db:migrate`로 최신 상태 유지 |
 | 2026-09-21 | 본문 체크박스 ↔ `tasks` 동기화. `syncNoteTasks` · `toggleTaskInNote` 추가 | 할 일의 존재·문구는 이제 본문이 정한다 |
 | 2026-09-21 | `note_revisions.state`(bytea) → `content`(jsonb). 마이그레이션 `0001`·`0002` | 이력 조회·되돌리기 액션 추가 (`lib/actions/revisions.ts`) |
+| 2026-09-21 | 공유 링크 액션(`lib/actions/shares.ts`)과 공개 열람 페이지 `/p/[token]` | 스키마 변경 없음. `share_links`는 처음부터 있었다 |
 
 ### DB 접속 메모
 
@@ -252,7 +260,9 @@ aws-0-ap-southeast-1.pooler.supabase.com:5432    세션 모드
 ✓ S-01 홈 · S-02 스페이스 · S-04 내 할 일 (Codex)
 
 ☐ S-02 멤버 탭·초대 UI · S-02a 템플릿 선택 · S-05 검색 (Codex)
-☐ S-07 공유 링크 · S-09 공유 열람 (Claude)
+✓ S-07 공유 링크 · S-09 공유 열람 (비로그인 읽기 전용)
+
+☐ S-08 초대 참여 화면 (Codex)
 ☐ 구글 OAuth (운영 배포 전에 필요. 개발은 위 임시 로그인으로 진행)
 ```
 
