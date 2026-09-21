@@ -8,6 +8,7 @@ import { notes, spaces } from "@/lib/db/schema";
 import type { NoteStatus } from "@/lib/db/schema";
 import { countOpenQuestions } from "@/lib/questions";
 import { sectionsFromDoc } from "@/lib/revision-summary";
+import { TIME_ZONE } from "@/lib/utils";
 
 /* ────────────────────────────────────────────────────────────
    검색
@@ -77,9 +78,22 @@ export async function searchNotes(
     isNull(spaces.deletedAt),
     or(ilike(notes.title, pattern), ilike(notes.plainText, pattern)),
     opts.status ? eq(notes.status, opts.status) : undefined,
-    opts.from ? sql`${notes.updatedAt} >= ${opts.from}::date` : undefined,
+
+    /*
+      날짜 경계를 서울 자정으로 못 박는다.
+
+      updated_at은 timestamptz다. 여기에 date를 그냥 비교하면 Postgres가
+      **세션 시간대**로 해석한다. Supabase 세션은 UTC이므로 "9월 21일부터"가
+      21일 09:00(KST)부터가 되어, 그날 아침에 고친 노트가 빠진다.
+      AT TIME ZONE으로 서울 자정을 명시한다.
+    */
+    opts.from
+      ? sql`${notes.updatedAt} >= (${opts.from}::date::timestamp AT TIME ZONE ${TIME_ZONE})`
+      : undefined,
     // 종료일은 그날 하루를 포함해야 한다. 사용자는 날짜를 골랐지 자정을 고른 게 아니다.
-    opts.to ? sql`${notes.updatedAt} < (${opts.to}::date + interval '1 day')` : undefined,
+    opts.to
+      ? sql`${notes.updatedAt} < ((${opts.to}::date + interval '1 day')::timestamp AT TIME ZONE ${TIME_ZONE})`
+      : undefined,
   );
 
   const [[counted], rows] = await Promise.all([

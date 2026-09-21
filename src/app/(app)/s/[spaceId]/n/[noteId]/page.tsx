@@ -7,11 +7,10 @@
  * 1차는 할 일, 2차는 댓글, 3차는 전사 타임라인이 같은 자리에 들어간다.
  * 단일 컬럼으로 바꾸지 말 것 — 기능이 늘 때마다 핵심 화면을 다시 짜게 된다.
  */
-import Link from "next/link";
 import { eq } from "drizzle-orm";
 
+import { NoteHeader } from "@/components/editor/NoteHeader";
 import { NoteWorkspace } from "@/components/editor/NoteWorkspace";
-import { NoteStatusBadge } from "@/components/ui/Badge";
 import { userColor } from "@/components/ui/Avatar";
 import { requireNoteAccess } from "@/lib/access";
 import { db } from "@/lib/db";
@@ -36,17 +35,15 @@ export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[no
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex flex-none flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2">
-        <Link href={`/s/${spaceId}`} className="font-mono text-[11px] text-ink-3 hover:text-accent">
-          ← {space.name}
-        </Link>
-        <h1 className="font-serif text-base font-semibold text-ink">{note.title}</h1>
-        <NoteStatusBadge status={note.status} />
-        <span className="ml-auto font-mono text-[10px] text-ink-3">
-          {relativeTime(note.updatedAt)} 수정
-        </span>
-        {/* TODO(CLAUDE): 공유(S-07) · 이력(S-06) · 상태 변경 메뉴 */}
-      </header>
+      <NoteHeader
+        noteId={note.id}
+        spaceId={spaceId}
+        spaceName={space.name}
+        title={note.title}
+        status={note.status}
+        updatedLabel={`${relativeTime(note.updatedAt)} 수정`}
+        taskCount={noteTasks.length}
+      />
 
       <NoteWorkspace
         noteId={note.id}
