@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { requireNoteAccess } from "@/lib/access";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { spaceMembers, tasks } from "@/lib/db/schema";
+import { diffDocTasks, type DocTaskInput } from "@/lib/tasks-diff";
 
 /**
  * 할 일은 한 곳에만 저장된다.
@@ -119,4 +120,67 @@ export async function listNoteTasks(noteId: string) {
 export async function countNoteTasks(noteId: string) {
   const rows = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.noteId, noteId));
   return rows.length;
+}
+
+/* ────────────────────────────────────────────────────────────
+   본문 ↔ tasks 동기화
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * 본문의 체크박스 목록을 받아 tasks를 맞춘다.
+ *
+ * ── 진실의 원천을 어떻게 나눴나 ────────────────────────────
+ * 체크박스의 **존재와 문구**는 본문이 정한다. 사람이 문서를 고치는 것이
+ * 자연스러운 흐름이고, 본문에서 지운 항목이 목록에 남아 있으면 혼란스럽다.
+ * **담당자·기한**은 tasks에만 있다. 본문에 적을 자리가 없다.
+ * **완료 여부**는 양쪽에 있고, 편집 중에는 본문이 이긴다. 노트를 열 때
+ * DB 값으로 한 번 맞춰 주므로(reconcile) 내 할 일 화면에서 체크한 것도 반영된다.
+ *
+ * 이 함수는 여러 번 불려도 같은 결과를 낸다. 공동 편집 중
+ * 변경을 일으킨 클라이언트만 호출하지만, 재시도가 안전해야 한다.
+ */
+export async function syncNoteTasks(noteId: string, items: DocTaskInput[]) {
+  const { note } = await requireNoteAccess(noteId);
+
+  const existing = await db.select().from(tasks).where(eq(tasks.noteId, noteId));
+  const diff = diffDocTasks(existing, items);
+
+  for (const { id, patch } of diff.updates) {
+    await db.update(tasks).set(patch).where(eq(tasks.id, id));
+  }
+
+  if (diff.inserts.length > 0) {
+    await db
+      .insert(tasks)
+      .values(diff.inserts.map((row) => ({ ...row, noteId, spaceId: note.spaceId })))
+      .onConflictDoNothing();
+  }
+
+  if (diff.deleteIds.length > 0) {
+    await db.delete(tasks).where(inArray(tasks.id, diff.deleteIds));
+  }
+
+  revalidatePath("/tasks");
+
+  return db.select().from(tasks).where(eq(tasks.noteId, noteId)).orderBy(tasks.sortOrder);
+}
+
+/**
+ * 패널에서 완료를 눌렀을 때. 본문 체크박스도 함께 바꿔야 하므로
+ * 갱신된 목록을 돌려준다. 본문 쪽은 호출한 클라이언트가 맞춘다.
+ */
+export async function toggleTaskInNote(noteId: string, taskId: string) {
+  await requireNoteAccess(noteId);
+
+  const [row] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
+  if (!row || row.noteId !== noteId) throw new Error("접근할 수 없습니다.");
+
+  await db
+    .update(tasks)
+    .set({ doneAt: row.doneAt ? null : new Date() })
+    .where(eq(tasks.id, taskId));
+
+  revalidatePath("/tasks");
+
+  return db.select().from(tasks).where(eq(tasks.noteId, noteId)).orderBy(tasks.sortOrder);
 }

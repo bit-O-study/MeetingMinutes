@@ -10,8 +10,7 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 
-import { NoteEditor } from "@/components/editor/NoteEditor";
-import { TaskPanel } from "@/components/editor/TaskPanel";
+import { NoteWorkspace } from "@/components/editor/NoteWorkspace";
 import { NoteStatusBadge } from "@/components/ui/Badge";
 import { userColor } from "@/components/ui/Avatar";
 import { requireNoteAccess } from "@/lib/access";
@@ -42,19 +41,17 @@ export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[no
         {/* TODO(CLAUDE): 공유(S-07) · 이력(S-06) · 상태 변경 메뉴 */}
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <NoteEditor
-          noteId={note.id}
-          initialContent={note.content}
-          me={{
-            id: userId,
-            name: me?.name ?? "익명",
-            image: me?.image ?? null,
-            color: userColor(userId),
-          }}
-        />
-        <TaskPanel noteId={note.id} initialTasks={noteTasks} />
-      </div>
+      <NoteWorkspace
+        noteId={note.id}
+        initialContent={note.content}
+        initialTasks={noteTasks}
+        me={{
+          id: userId,
+          name: me?.name ?? "익명",
+          image: me?.image ?? null,
+          color: userColor(userId),
+        }}
+      />
     </div>
   );
 }
