@@ -29,14 +29,15 @@ drizzle/**                                마이그레이션
 
 ## 남은 작업
 
-1. **본문 체크박스 ↔ tasks 양방향 동기화** — 가장 중요. `TaskItem`을 확장해
-   노드에 `blockId`를 부여하고, Yjs 트랜잭션에서 tasks 레코드와 맞춘다.
-2. **할 일 추가·담당자·기한 UI** — `TaskPanel`의 `TODO(CLAUDE)`.
-3. **S-06 변경 이력** — `note_revisions` 스냅샷 기록과 되돌리기.
-4. **S-07 공유 링크 관리** + **S-09 공유 열람 뷰**(비로그인, 읽기 전용).
-5. **노트 헤더 메뉴** — 공유 / 이력 / 상태 변경 / 휴지통.
-6. **배포용 WebSocket** — `server/collab.ts`의 프로토콜부를
-   `experimental_upgradeWebSocket` 라우트로 이식.
+1차 범위는 전부 구현했다. 남은 것과 그 이유는 `docs/TODO-CLAUDE.md`에 적어 둔다.
+짧게는 이렇다.
+
+1. **구글 OAuth 연결**과 개발 전용 로그인(`lib/actions/dev-auth.ts`) 제거.
+2. **Vercel 배포** — 환경변수 이관, Fluid Compute 확인.
+   배포에는 `npm run collab`이 필요 없다. `/api/collab/[noteId]`가 업그레이드를 받는다.
+3. **배포 후 공동 편집 실측** — 업그레이드 라우트는 Vercel 런타임에서만 뜬다.
+   로컬에서는 개발 서버(:1234)까지만 확인할 수 있다.
+4. **`useCollab.ts`의 lint 오류** — `set-state-in-effect`. `npm run lint`가 이것으로 실패한다.
 
 ## Codex와 겹치지 않기
 

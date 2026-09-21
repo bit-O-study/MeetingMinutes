@@ -204,6 +204,7 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 | 2026-09-21 | 본문 체크박스 ↔ `tasks` 동기화. `syncNoteTasks` · `toggleTaskInNote` 추가 | 할 일의 존재·문구는 이제 본문이 정한다 |
 | 2026-09-21 | `note_revisions.state`(bytea) → `content`(jsonb). 마이그레이션 `0001`·`0002` | 이력 조회·되돌리기 액션 추가 (`lib/actions/revisions.ts`) |
 | 2026-09-21 | 공유 링크 액션(`lib/actions/shares.ts`)과 공개 열람 페이지 `/p/[token]` | 스키마 변경 없음. `share_links`는 처음부터 있었다 |
+| 2026-09-21 | 공동 편집 프로토콜을 `lib/collab/room.ts`로 분리. 배포 경로 `app/api/collab/[noteId]` 추가 | 스키마·액션 변경 없음. `server/collab.ts`는 개발용 껍데기로 남고, 배포는 Next 라우트가 받는다 |
 
 ### DB 접속 메모
 
@@ -264,8 +265,13 @@ aws-0-ap-southeast-1.pooler.supabase.com:5432    세션 모드
 ☐ S-02 멤버 탭·초대 UI · S-02a 템플릿 선택 · S-05 검색 (Codex)
 ✓ S-07 공유 링크 · S-09 공유 열람 (비로그인 읽기 전용)
 
-☐ S-08 초대 참여 화면 (Codex)
+✓ S-08 초대 참여 화면 (Codex)
+✓ 배포용 WebSocket (`/api/collab/[noteId]` · experimental_upgradeWebSocket)
+
 ☐ 구글 OAuth (운영 배포 전에 필요. 개발은 위 임시 로그인으로 진행)
+☐ 배포 후 공동 편집 실측 (로컬에서는 업그레이드 라우트를 띄울 수 없다)
+
+남은 일은 담당별로 `TODO.md`(Codex) · `TODO-CLAUDE.md`(Claude)에 적어 둔다.
 ```
 
 ## 8. 개발 로그인

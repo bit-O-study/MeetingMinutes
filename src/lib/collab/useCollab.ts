@@ -21,11 +21,22 @@ export type CollabUser = {
 
 export type CollabPeer = CollabUser & { clientId: number };
 
+/**
+ * 붙을 곳을 정한다.
+ *
+ * 개발에서는 `npm run collab`이 띄우는 :1234로 간다. Next가 라우트를 다시
+ * 컴파일해도 연결이 끊기지 않기 때문이다.
+ * 배포에는 별도 서버가 없다 — 같은 호스트의 `/api/collab` 라우트가 업그레이드를 받는다.
+ * `NEXT_PUBLIC_COLLAB_URL`을 채우면 둘 다 무시하고 그리로 간다.
+ */
 function collabUrl(): string {
   const configured = process.env.NEXT_PUBLIC_COLLAB_URL;
   if (configured) return configured;
   if (typeof window === "undefined") return "ws://localhost:1234";
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  if (process.env.NODE_ENV === "production") {
+    return `${proto}//${window.location.host}/api/collab`;
+  }
   return `${proto}//${window.location.hostname}:1234`;
 }
 
