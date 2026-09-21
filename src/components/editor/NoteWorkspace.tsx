@@ -11,12 +11,12 @@ import { ySyncPluginKey } from "y-prosemirror";
 import { History, Share2 } from "lucide-react";
 
 import { saveNoteContent } from "@/lib/actions/notes";
-import { syncNoteTasks, toggleTaskInNote } from "@/lib/actions/tasks";
+import { deleteTask, syncNoteTasks, toggleTaskInNote, updateTask } from "@/lib/actions/tasks";
 import { useCollab, type CollabUser } from "@/lib/collab/useCollab";
 import { ConnectionBadge } from "@/components/editor/ConnectionBadge";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { SharePanel } from "@/components/editor/SharePanel";
-import { TaskPanel } from "@/components/editor/TaskPanel";
+import { TaskPanel, type Member, type TaskPatch } from "@/components/editor/TaskPanel";
 import { TaskItemWithId, collectDocTasks } from "@/components/editor/TaskItemWithId";
 import { AvatarStack } from "@/components/ui/Avatar";
 import type { Task } from "@/lib/db/schema";
@@ -38,11 +38,13 @@ export function NoteWorkspace({
   me,
   initialContent,
   initialTasks,
+  members,
 }: {
   noteId: string;
   me: CollabUser;
   initialContent: unknown;
   initialTasks: Task[];
+  members: Member[];
 }) {
   const { doc, provider, status, syncedAt, peers } = useCollab(noteId, me);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -140,6 +142,22 @@ export function NoteWorkspace({
   );
 
   /**
+   * 담당자·기한 변경. 본문에는 적을 자리가 없어 tasks에만 있는 값이라
+   * 에디터를 건드리지 않는다.
+   */
+  const handleUpdate = useCallback(
+    async (taskId: string, patch: TaskPatch) => {
+      setTasks(await updateTask(taskId, patch));
+    },
+    [],
+  );
+
+  /** 본문과 이어진 항목은 패널에서 삭제를 노출하지 않는다 — 다음 동기화 때 되살아난다. */
+  const handleDelete = useCallback(async (taskId: string) => {
+    setTasks(await deleteTask(taskId));
+  }, []);
+
+  /**
    * 되돌리기. 본문을 그 시점 내용으로 바꾸면 Yjs가 차이를 계산해
    * 접속자 모두에게 전파한다. 할 일도 본문을 따라 다시 맞춰진다.
    */
@@ -194,7 +212,14 @@ export function NoteWorkspace({
       )}
       {panel === "share" && <SharePanel noteId={noteId} onClose={() => setPanel("tasks")} />}
       {panel === "tasks" && (
-        <TaskPanel tasks={tasks} onToggle={handleToggle} onAdd={handleAdd} />
+        <TaskPanel
+          tasks={tasks}
+          members={members}
+          onToggle={handleToggle}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+          onAdd={handleAdd}
+        />
       )}
     </div>
   );

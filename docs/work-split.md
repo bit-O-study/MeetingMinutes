@@ -102,8 +102,8 @@ trashNote(noteId)
 // tasks.ts
 toggleTask(taskId)                          // 완료 ↔ 되돌리기
 createTask({ noteId, body, assigneeId?, dueDate?, blockId? })
-updateTask(taskId, { body?, assigneeId?, dueDate? })
-deleteTask(taskId)
+updateTask(taskId, { body?, assigneeId?, dueDate? })  // → 갱신된 노트 할 일 목록
+deleteTask(taskId)                          // → 갱신된 노트 할 일 목록
 listNoteTasks(noteId)
 
 // spaces.ts
@@ -183,10 +183,10 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 | 4 | 노트별 **미해결 질문 수** 집계 (S-02 배지용) | — | ✅ 완료 |
 | 5 | `searchNotes(query, { spaceIds, from, to, status })` | — | ✅ 완료 |
 | 6 | 스페이스 이름 변경·삭제, 멤버 제외·소유권 이전 | Codex | ✅ 완료 |
-
-**큐가 비었다.** Codex는 S-02 멤버 탭·초대, S-05 검색, 스페이스 생성을 이어서 진행할 수 있다.
 | 7 | `scripts/check-revisions.mts`의 타입 오류 | Codex | ✅ 이미 수정됨. typecheck 통과 확인 |
 | 8 | `searchNotes`에 `total`(전체 건수) 필요 | Codex | ✅ 완료. 반환이 `{ total, hits }`로 바뀜 |
+
+**큐가 비었다.** 1차 화면은 전부 구현됐다.
 
 새 요청은 아래에 행을 추가한다. 형식: `필요한 것 / 어느 화면에서 / 왜`.
 

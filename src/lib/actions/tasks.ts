@@ -67,6 +67,13 @@ export async function createTask(input: {
   return created;
 }
 
+/**
+ * 담당자·기한을 바꾼다. 둘 다 선택 사항이다 —
+ * 스터디의 "다음까지 4장 읽기"는 전원 대상이라 담당자가 없다.
+ * 담당자를 비우면 스페이스 공용 할 일이 된다.
+ *
+ * 갱신된 목록을 돌려준다. 패널이 바로 다시 그릴 수 있어야 한다.
+ */
 export async function updateTask(
   taskId: string,
   patch: { body?: string; assigneeId?: string | null; dueDate?: string | null },
@@ -85,12 +92,41 @@ export async function updateTask(
 
   if (!row) throw new Error("접근할 수 없습니다.");
 
+  // 담당자는 그 스페이스 멤버여야 한다. 아니면 본인 할 일 목록에서 볼 수 없다.
+  if (patch.assigneeId) {
+    const [member] = await db
+      .select({ userId: spaceMembers.userId })
+      .from(spaceMembers)
+      .where(
+        and(
+          eq(spaceMembers.spaceId, row.task.spaceId),
+          eq(spaceMembers.userId, patch.assigneeId),
+        ),
+      )
+      .limit(1);
+
+    if (!member) throw new Error("이 스페이스의 멤버가 아닙니다.");
+  }
+
   await db.update(tasks).set(patch).where(eq(tasks.id, taskId));
 
   revalidatePath("/tasks");
   revalidatePath(`/s/${row.task.spaceId}/n/${row.task.noteId}`);
+
+  return db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.noteId, row.task.noteId))
+    .orderBy(tasks.sortOrder);
 }
 
+/**
+ * 할 일을 지운다.
+ *
+ * 본문 체크박스와 이어진 항목이라면 다음 동기화 때 되살아난다 —
+ * 존재는 본문이 정하기 때문이다. 지우려면 본문에서 체크박스를 지워야 한다.
+ * 그래서 패널에서는 blockId가 없는 항목에만 삭제를 노출한다.
+ */
 export async function deleteTask(taskId: string) {
   const user = await requireUser();
 
@@ -107,7 +143,14 @@ export async function deleteTask(taskId: string) {
   if (!row) throw new Error("접근할 수 없습니다.");
 
   await db.delete(tasks).where(eq(tasks.id, taskId));
+  revalidatePath("/tasks");
   revalidatePath(`/s/${row.task.spaceId}/n/${row.task.noteId}`);
+
+  return db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.noteId, row.task.noteId))
+    .orderBy(tasks.sortOrder);
 }
 
 /** 노트의 할 일 목록. 편집 화면 우측 패널과 스페이스 할 일 탭이 함께 쓴다. */

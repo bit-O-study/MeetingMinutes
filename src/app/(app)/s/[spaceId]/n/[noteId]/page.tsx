@@ -15,16 +15,23 @@ import { NoteStatusBadge } from "@/components/ui/Badge";
 import { userColor } from "@/components/ui/Avatar";
 import { requireNoteAccess } from "@/lib/access";
 import { db } from "@/lib/db";
-import { tasks, users } from "@/lib/db/schema";
+import { spaceMembers, tasks, users } from "@/lib/db/schema";
 import { relativeTime } from "@/lib/utils";
 
 export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[noteId]">) {
   const { spaceId, noteId } = await params;
   const { note, space, userId } = await requireNoteAccess(noteId);
 
-  const [[me], noteTasks] = await Promise.all([
+  const [[me], noteTasks, members] = await Promise.all([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db.select().from(tasks).where(eq(tasks.noteId, noteId)).orderBy(tasks.sortOrder),
+    // 담당자로 고를 수 있는 사람 = 이 스페이스 멤버. 권한은 위에서 이미 확인했다.
+    db
+      .select({ id: users.id, name: users.name, image: users.image })
+      .from(spaceMembers)
+      .innerJoin(users, eq(users.id, spaceMembers.userId))
+      .where(eq(spaceMembers.spaceId, space.id))
+      .orderBy(spaceMembers.joinedAt),
   ]);
 
   return (
@@ -45,6 +52,7 @@ export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[no
         noteId={note.id}
         initialContent={note.content}
         initialTasks={noteTasks}
+        members={members}
         me={{
           id: userId,
           name: me?.name ?? "익명",
