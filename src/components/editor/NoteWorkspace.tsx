@@ -8,11 +8,13 @@ import TaskList from "@tiptap/extension-task-list";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { ySyncPluginKey } from "y-prosemirror";
+import { History } from "lucide-react";
 
 import { saveNoteContent } from "@/lib/actions/notes";
 import { syncNoteTasks, toggleTaskInNote } from "@/lib/actions/tasks";
 import { useCollab, type CollabUser } from "@/lib/collab/useCollab";
 import { ConnectionBadge } from "@/components/editor/ConnectionBadge";
+import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { TaskPanel } from "@/components/editor/TaskPanel";
 import { TaskItemWithId, collectDocTasks } from "@/components/editor/TaskItemWithId";
 import { AvatarStack } from "@/components/ui/Avatar";
@@ -43,6 +45,7 @@ export function NoteWorkspace({
 }) {
   const { doc, provider, status, syncedAt, peers } = useCollab(noteId, me);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [showHistory, setShowHistory] = useState(false);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,6 +137,19 @@ export function NoteWorkspace({
     [editor, noteId],
   );
 
+  /**
+   * 되돌리기. 본문을 그 시점 내용으로 바꾸면 Yjs가 차이를 계산해
+   * 접속자 모두에게 전파한다. 할 일도 본문을 따라 다시 맞춰진다.
+   */
+  const handleRestore = useCallback(
+    (content: unknown) => {
+      if (!editor || !content) return;
+      editor.commands.setContent(content as never);
+      setShowHistory(false);
+    },
+    [editor],
+  );
+
   /** 패널의 추가 버튼은 본문 맨 끝에 체크박스를 넣는다. 존재는 본문이 정하기 때문이다. */
   const handleAdd = useCallback(() => {
     if (!editor) return;
@@ -145,8 +161,21 @@ export function NoteWorkspace({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2 border-b border-line px-4 py-1.5">
           <ConnectionBadge status={status} syncedAt={syncedAt} />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <AvatarStack people={peers.map((p) => ({ id: p.id, name: p.name, image: p.image }))} />
+            <button
+              type="button"
+              onClick={() => setShowHistory((v) => !v)}
+              aria-pressed={showHistory}
+              className={`flex items-center gap-1 rounded px-2 py-1 font-mono text-[10px] transition-colors ${
+                showHistory
+                  ? "bg-accent-soft text-accent"
+                  : "text-ink-3 hover:bg-surface-2 hover:text-ink-2"
+              }`}
+            >
+              <History className="size-3" />
+              이력
+            </button>
           </div>
         </div>
         <div className="min-w-0 flex-1 overflow-y-auto px-4 py-4">
@@ -154,7 +183,16 @@ export function NoteWorkspace({
         </div>
       </div>
 
-      <TaskPanel tasks={tasks} onToggle={handleToggle} onAdd={handleAdd} />
+      {showHistory ? (
+        <HistoryPanel
+          noteId={noteId}
+          currentDoc={editor?.getJSON() ?? null}
+          onRestore={handleRestore}
+          onClose={() => setShowHistory(false)}
+        />
+      ) : (
+        <TaskPanel tasks={tasks} onToggle={handleToggle} onAdd={handleAdd} />
+      )}
     </div>
   );
 }

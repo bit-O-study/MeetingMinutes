@@ -14,7 +14,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "test": "tsx --test \"src/**/*.test.mts\""
+    "test": "tsx --test \"src/**/*.test.mts\"",
+    "check:revisions": "tsx --env-file=.env.local scripts/check-revisions.mts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

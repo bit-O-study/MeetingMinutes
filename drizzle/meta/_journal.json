@@ -8,6 +8,20 @@
       "when": 1789950097897,
       "tag": "0000_crazy_thaddeus_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789956873299,
+      "tag": "0001_calm_whirlwind",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789956900429,
+      "tag": "0002_demonic_pride",
+      "breakpoints": true
     }
   ]
 }

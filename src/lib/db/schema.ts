@@ -238,11 +238,17 @@ export const noteRevisions = pgTable(
       .notNull()
       .references(() => notes.id, { onDelete: "cascade" }),
     actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
-    /** 되돌리기용 시점 스냅샷 */
-    state: bytea("state"),
-    /** "막힌 것 추가" 처럼 목록에 보여 줄 한 줄 */
+    /**
+     * 그 시점의 Tiptap JSON.
+     *
+     * Yjs 바이너리 대신 JSON으로 둔다. 미리보기는 그대로 렌더하면 되고,
+     * 되돌리기는 setContent 한 번이면 Yjs가 알아서 차이를 계산해 모두에게 전파한다.
+     * 바이너리로 두면 미리보기마다 Y.Doc을 만들어 변환해야 한다.
+     */
+    content: jsonb("content"),
+    /** "막힌 것 · 질문 수정" 처럼 목록에 보여 줄 한 줄 */
     summary: text("summary"),
-    /** 되돌리기로 생성된 리비전인지 */
+    /** 되돌리기로 생긴 리비전인지. 되돌린 행위도 이력에 남아 다시 복구할 수 있다. */
     isRevert: boolean("is_revert").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

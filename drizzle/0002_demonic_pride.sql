@@ -1,0 +1,1 @@
+ALTER TABLE "note_revisions" ADD COLUMN "content" jsonb;
