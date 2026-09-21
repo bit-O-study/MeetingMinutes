@@ -32,12 +32,12 @@ drizzle/**                                마이그레이션
 1차 범위는 전부 구현했다. 남은 것과 그 이유는 `docs/TODO-CLAUDE.md`에 적어 둔다.
 짧게는 이렇다.
 
-1. **구글 OAuth 연결**과 개발 전용 로그인(`lib/actions/dev-auth.ts`) 제거.
-2. **Vercel 배포** — 환경변수 이관, Fluid Compute 확인.
+1. **Vercel 배포** — 환경변수 이관, Fluid Compute 확인.
    배포에는 `npm run collab`이 필요 없다. `/api/collab/[noteId]`가 업그레이드를 받는다.
-3. **배포 후 공동 편집 실측** — 업그레이드 라우트는 Vercel 런타임에서만 뜬다.
+2. **배포 후 공동 편집 실측** — 업그레이드 라우트는 Vercel 런타임에서만 뜬다.
    로컬에서는 개발 서버(:1234)까지만 확인할 수 있다.
-4. **`useCollab.ts`의 lint 오류** — `set-state-in-effect`. `npm run lint`가 이것으로 실패한다.
+3. **비밀번호 로그인 점검** — Codex가 구현해 두었다. 시도 제한과 쿠키 이름 결정을
+   `docs/TODO-CLAUDE.md`에 적어 둔 대로 다시 볼 것.
 
 ## Codex와 겹치지 않기
 

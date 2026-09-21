@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sessions } from "@/lib/db/schema";
 import { loginInput, loginReturnTo, registrationInput } from "@/lib/login-input";
-import { allowAuthAttempt, authenticatePasswordUser, registerPasswordUser } from "@/lib/password-auth";
+import { allowAuthAttempt, authenticatePasswordUser, clearAuthAttempts, registerPasswordUser } from "@/lib/password-auth";
 import { sessionCookie } from "@/lib/session-cookie";
 
 function fail(mode: "login" | "register", error: string, returnTo: string): never {
@@ -47,7 +47,10 @@ async function submit(formData: FormData, mode: "login" | "register") {
       userId = await authenticatePasswordUser(parsed.data.email, parsed.data.password);
       if (!userId) error = "credentials";
     }
-    if (userId) await startSession(userId);
+    if (userId) {
+      await clearAuthAttempts(parsed.data.email);
+      await startSession(userId);
+    }
   } catch {
     // DB 오류에는 쿼리 매개변수가 담길 수 있어 비밀번호·세션을 로그에 남기지 않는다.
     console.error("[password-auth] 인증 처리 중 저장소 오류가 발생했습니다.");

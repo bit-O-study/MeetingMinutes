@@ -13,6 +13,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db, sql } from "../src/lib/db";
 import { noteDocs, notes, sessions, spaceMembers, spaces, users } from "../src/lib/db/schema";
+import { sessionCookie } from "../src/lib/session-cookie";
 import { buildTemplateDoc, docToPlainText } from "../src/lib/templates";
 
 const DEV_SPACE_ID = "00000000-0000-4000-8000-000000000001";
@@ -85,7 +86,8 @@ const list = await db
 
 console.log(`USER=${user.id}`);
 console.log(`NAME=${user.name}`);
-console.log(`COOKIE=authjs.session-token=${sessionToken}`);
+// 쿠키 이름은 한 군데서만 정한다. 여기서 어긋나면 세션이 조용히 무시된다.
+console.log(`COOKIE=${sessionCookie.name}=${sessionToken}`);
 console.log(`SPACE=${DEV_SPACE_ID}`);
 for (const n of list) console.log(`NOTE=${n.id} ${n.title}`);
 

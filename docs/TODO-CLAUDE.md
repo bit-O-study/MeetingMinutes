@@ -21,6 +21,55 @@
 
 ## 남은 작업
 
+### 0. DB 연결 상한 — 배포 전에 결론을 내야 한다
+
+풀러(Supavisor)가 **세션 모드**라서 클라이언트 하나가 서버 연결 하나를 통째로 쥔다.
+이 프로젝트의 상한은 15고, 넘으면 접속이 거절된다.
+
+```
+XX000 (EMAXCONNSESSION) max clients reached in session mode
+  - max clients are limited to pool_size: 15
+```
+
+로컬에서 `next start` 하나와 개발 서버 하나를 같이 띄운 것만으로 재현됐다.
+인스턴스당 `max: 10`이었던 것을 3으로 낮추고 `idle_timeout`을 넣어 급한 불은 껐다
+(`DATABASE_POOL_MAX`로 조절한다). 세션 모드에서는 **노는 연결도 슬롯을 차지**해서
+돌려주지 않으면 그대로 쌓인다.
+
+- [ ] 그래도 배포에서는 인스턴스가 여럿이고 **공동 편집 라우트는 연결이 오래 산다.**
+      3 × 5 인스턴스면 바닥이다. 제대로 된 해법은 풀러를 **트랜잭션 모드(:6543)**로
+      옮기는 것이다 — 서버 연결을 여러 클라이언트가 나눠 쓴다. `prepare: false`는
+      이미 그쪽 전제라 코드는 그대로고, `DATABASE_URL`의 포트만 바꾸면 된다.
+      바꾼 뒤 `npm run check:revisions`와 `scripts/verify-password-auth.mts`를 다시 돌린다.
+
+### 0-1. 비밀번호 로그인 — 읽고 확인한 것
+
+Codex가 구현했고(`src/lib/password-auth.ts` · `src/lib/actions/password-auth.ts`),
+내 담당 영역이라 읽었다. 해시·세션 고정 방지·기존 계정 탈취 방지·동시 가입 직렬화는
+제대로 돼 있다. 손본 것과 남은 것은 이렇다.
+
+- [x] **시도 제한이 성공까지 세고 있었다.** 로그인에 성공해도 누적이 남아,
+      공동 편집을 확인하느라 두 계정을 번갈아 들어가는 것만으로 15분 잠겼다.
+      성공하면 그 이메일의 누적을 지운다(`clearAuthAttempts`). 주소 버킷은 그대로 둔다.
+- [ ] **남의 이메일로 10번 틀리면 15분 잠근다.** 계정 잠금 DoS는 이메일 단위 제한에
+      딸려 오는 것이라 없앨 수 없다. 스터디 규모에서는 감수한다. 문제가 보이면
+      실패한 주소를 같이 보고 판단하는 쪽으로 옮긴다.
+- [ ] **Vercel이 아니면 주소 버킷이 하나다.** `address`가 `"local"` 고정이라
+      15분에 60번을 전원이 나눠 쓴다. Vercel 배포면 상관없지만 옮기면 걸린다.
+- [ ] **쿠키 이름을 `NODE_ENV`로 정한다**(`src/lib/session-cookie.ts`).
+      운영 빌드는 `__Secure-` 접두사와 `secure: true`를 쓴다. localhost는 보안
+      컨텍스트라 http여도 되지만, **휴대폰에서 `http://192.168.x.x`로 여는 확인은
+      쿠키가 저장되지 않아 로그인이 안 된다.** 그때는 프로토콜 기준으로 바꿔야 한다.
+
+로컬에서 운영 빌드를 검증하는 방법(배포에는 필요 없다 — Vercel은 `VERCEL`을 보고
+호스트를 자동으로 신뢰한다):
+
+```
+npm run build
+AUTH_TRUST_HOST=true npx next start -p 3100     # 없으면 UntrustedHost로 막힌다
+npx tsx scripts/verify-password-auth.mts
+```
+
 ### 1. 운영 배포 (가장 앞선다)
 
 - [ ] **구글 OAuth 연결** — `AUTH_GOOGLE_ID` · `AUTH_GOOGLE_SECRET`을 채우고

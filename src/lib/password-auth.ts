@@ -4,18 +4,33 @@ import { db } from "@/lib/db";
 import { authAttempts, passwordCredentials, users } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
+function attemptKey(scope: "email" | "address", value: string) {
+  return createHash("sha256").update(`${scope}:${value}`).digest("hex");
+}
+
 export async function allowAuthAttempt(email: string, address: string) {
   await db.delete(authAttempts).where(lt(authAttempts.expiresAt, new Date()));
   for (const [scope, value, limit] of [["email", email, 10], ["address", address, 60]] as const) {
-    const key = createHash("sha256").update(`${scope}:${value}`).digest("hex");
     const [attempt] = await db.insert(authAttempts).values({
-      key, count: 1, expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      key: attemptKey(scope, value), count: 1, expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     }).onConflictDoUpdate({
       target: authAttempts.key, set: { count: sql`${authAttempts.count} + 1` },
     }).returning({ count: authAttempts.count });
     if (attempt.count > limit) return false;
   }
   return true;
+}
+
+/**
+ * 들어오는 데 성공하면 그 이메일의 누적을 지운다.
+ *
+ * 지우지 않으면 제한이 "실패 횟수"가 아니라 "시도 횟수"가 된다. 공동 편집을
+ * 확인하느라 두 계정을 번갈아 로그인하는 것만으로도 15분간 막히고,
+ * 화면에는 "시도가 너무 많습니다"만 뜬다. 주소 버킷은 손대지 않는다 —
+ * 한 주소에서 여러 계정을 훑는 것은 성공했더라도 눌러 두는 편이 맞다.
+ */
+export async function clearAuthAttempts(email: string) {
+  await db.delete(authAttempts).where(eq(authAttempts.key, attemptKey("email", email)));
 }
 
 export async function registerPasswordUser(input: { email: string; name: string; password: string }) {
