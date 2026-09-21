@@ -105,7 +105,37 @@ createTask({ noteId, body, assigneeId?, dueDate?, blockId? })
 updateTask(taskId, { body?, assigneeId?, dueDate? })
 deleteTask(taskId)
 listNoteTasks(noteId)
+
+// spaces.ts
+createSpace({ name, kind })                 // 생성 후 스페이스로 redirect
+renameSpace(spaceId, name)                  // 소유자만
+deleteSpace(spaceId)                        // 소유자만. 표시만 하고 실제로는 안 지운다
+listSpaceMembers(spaceId)                   // → { id, name, image, role, joinedAt }[]
+removeMember(spaceId, userId)               // 소유자만
+transferOwnership(spaceId, toUserId)        // 소유자만
+leaveSpace(spaceId)                         // 소유자는 넘긴 뒤에만
+listInviteLinks(spaceId)                    // → + url, active
+createInviteLink(spaceId, { expiresInDays? })
+revokeInviteLink(inviteId)
+reissueInviteLink(inviteId, expiresInDays?) // 회수 + 새로 발급
+peekInvite(token)                           // 로그인 전 미리보기. 없거나 만료면 null
+joinByInviteToken(token)                    // 참여 후 스페이스로 redirect
+countSpaceNotes(spaceId)
+
+// search.ts
+searchNotes(query, { spaceIds?, from?, to?, status?, limit? })
+  // → { id, title, spaceId, spaceName, status, updatedAt, snippet, section }[]
+  // section = 일치한 구획 제목. "막힌 것 · 질문"에서 나온 결과가 가장 쓸모 있다
+openQuestionCounts(spaceId)                 // → { [noteId]: 미해결 질문 수 }
+
+// revisions.ts
+listRevisions(noteId)
+getRevisionContent(noteId, revisionId)
+restoreRevision(noteId, revisionId)
 ```
+
+**초대·삭제처럼 소유자 전용 동작은 실패 시 404로 착지한다.** 버튼을 보여 줄지 말지는
+`requireSpaceMember`가 돌려주는 `role`로 판단한다.
 
 ### UI 프리미티브 — `@/components/ui/*`
 
@@ -123,6 +153,7 @@ todayInSeoul()                 // "YYYY-MM-DD"
 isOverdue(dueDate, doneAt)     // 지연 계산
 relativeTime(date)             // "2시간 전"
 linkToken()                    // 초대·공유 토큰
+absoluteUrl(path)              // 링크의 절대 URL
 ```
 
 ### 템플릿 — `@/lib/templates`
@@ -140,12 +171,14 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 
 | | 요청 | 요청자 | 상태 |
 | --- | --- | --- | --- |
-| 1 | `createSpace({ name, kind })` 액션 | — | ☐ 미착수 |
-| 2 | `createInviteLink(spaceId)` · `joinBySpaceToken(token)` 액션 | — | ☐ 미착수 |
-| 3 | `listSpaceMembers(spaceId)` 조회 | — | ☐ 미착수 |
-| 4 | 노트별 **미해결 질문 수** 집계 (S-02 배지용) | — | ☐ 미착수 |
-| 5 | `searchNotes(query, { spaceIds, from, to, status })` | — | ☐ 미착수 |
-| 6 | TODO(CODEX): S-02에서 요청 2·3·4 연결 대기. 멤버 조회는 id/name/image/role 필요. 초대는 발급 외 재발급·회수·만료일 지정도 필요. 스페이스 설정용 이름 변경·삭제 액션도 필요. 질문 집계는 다른 할 일이 섞이지 않도록 질문 영역만 집계하고 빈 항목은 제외 요청. | Codex | ☐ CLAUDE 구현 대기 |
+| 1 | `createSpace({ name, kind })` 액션 | — | ✅ 완료 |
+| 2 | 초대 링크 발급·재발급·회수·만료 · 참여 (`joinByInviteToken`) | — | ✅ 완료 |
+| 3 | `listSpaceMembers(spaceId)` — id/name/image/role | — | ✅ 완료 |
+| 4 | 노트별 **미해결 질문 수** 집계 (S-02 배지용) | — | ✅ 완료 |
+| 5 | `searchNotes(query, { spaceIds, from, to, status })` | — | ✅ 완료 |
+| 6 | 스페이스 이름 변경·삭제, 멤버 제외·소유권 이전 | Codex | ✅ 완료 |
+
+**큐가 비었다.** Codex는 S-02 멤버 탭·초대, S-05 검색, 스페이스 생성을 이어서 진행할 수 있다.
 
 새 요청은 아래에 행을 추가한다. 형식: `필요한 것 / 어느 화면에서 / 왜`.
 
@@ -213,9 +246,13 @@ aws-0-ap-southeast-1.pooler.supabase.com:5432    세션 모드
 ✓ 개발용 공유 스페이스 자동 준비 (샘플 노트 2건)
 ✓ 접근 제어 검증 (다른 사람 노트 → 404, 제목·스페이스명 유출 없음)
 
-☐ 화면 5개 (Codex)
-☐ 체크박스 ↔ tasks 동기화 (Claude)
-☐ 이력 · 공유 (Claude)
+✓ 본문 체크박스 ↔ tasks 양방향 동기화
+✓ S-06 변경 이력 (기록·미리보기·되돌리기)
+✓ 요청 큐 전량 처리 (스페이스·초대·멤버·검색·질문 집계)
+✓ S-01 홈 · S-02 스페이스 · S-04 내 할 일 (Codex)
+
+☐ S-02 멤버 탭·초대 UI · S-02a 템플릿 선택 · S-05 검색 (Codex)
+☐ S-07 공유 링크 · S-09 공유 열람 (Claude)
 ☐ 구글 OAuth (운영 배포 전에 필요. 개발은 위 임시 로그인으로 진행)
 ```
 

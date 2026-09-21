@@ -104,11 +104,16 @@ server/**                공동 편집 서버
 
 ## 작업 순서
 
-1. `src/app/(app)/page.tsx` — 홈. 내 할 일 블록과 스페이스 카드 그리드.
-2. `src/app/(app)/tasks/page.tsx` — 내 할 일. 묶음 정렬과 인라인 체크.
-3. `src/app/(app)/s/[spaceId]/page.tsx` — 스페이스. 탭 3개와 미해결 질문 수 배지.
-4. `src/app/(app)/s/[spaceId]/new/page.tsx` — 템플릿 선택 (`createNote` 액션 사용).
-5. `src/app/(app)/search/page.tsx` — 검색.
+완료: S-01 홈, S-04 내 할 일, S-02 스페이스(노트·할 일 탭), S-02a 템플릿 선택.
+
+**요청 큐가 비었다.** 막혀서 `TODO(CODEX)`로 남겨 둔 것들이 이제 전부 가능하다.
+필요한 액션은 `docs/work-split.md` §3에 시그니처가 적혀 있다.
+
+1. `src/app/(app)/s/[spaceId]/page.tsx` — **멤버 탭**과 **미해결 질문 수 배지**
+   (`listSpaceMembers` · `openQuestionCounts` · 초대 링크 액션들)
+2. `src/app/(app)/spaces/new/page.tsx` — 스페이스 생성 (`createSpace`)
+3. `src/app/join/[token]/page.tsx` — 초대 참여 (`peekInvite` → `joinByInviteToken`)
+4. `src/app/(app)/search/page.tsx` — 검색 (`searchNotes`). 결과에 일치 구획 배지를 붙인다
 
 각 파일 상단 주석에 해야 할 것이 적혀 있다. 한 화면 끝날 때마다
 `npm run typecheck && npm run build`를 돌리고 커밋한다.
