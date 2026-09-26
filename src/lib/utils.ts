@@ -48,6 +48,25 @@ export function linkToken(): string {
 }
 
 export function absoluteUrl(path: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return new URL(path, base).toString();
+  // 빈 환경변수도 실제 값으로 취급되므로 ??만 쓰면 링크 생성·목록 조회가 함께 실패한다.
+  // 별도 앱 주소가 없으면 공유 가능한 운영 도메인을 개별 배포 주소보다 우선한다.
+  const candidates = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_URL,
+    "http://localhost:3000",
+  ];
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (!value) continue;
+    let base: URL;
+    try {
+      base = new URL(value.includes("://") ? value : `https://${value}`);
+    } catch {
+      continue;
+    }
+    if (!["https:", "http:"].includes(base.protocol) || base.username || base.password) continue;
+    return new URL(path, base.origin).toString();
+  }
+  throw new Error("앱 주소를 구성할 수 없습니다.");
 }
