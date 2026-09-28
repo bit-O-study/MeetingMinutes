@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Markdown } from "@tiptap/markdown";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -19,6 +20,8 @@ import { SharePanel } from "@/components/editor/SharePanel";
 import { TaskPanel, type Member, type TaskPatch } from "@/components/editor/TaskPanel";
 import { TaskItemWithId, collectDocTasks } from "@/components/editor/TaskItemWithId";
 import { AvatarStack } from "@/components/ui/Avatar";
+import { ReadOnlyNote } from "@/components/ReadOnlyNote";
+import { ParagraphIndent, PasteMarkdown } from "@/components/editor/EditingExtensions";
 import type { Task } from "@/lib/db/schema";
 
 /** 입력이 잠잠해지면 저장한다. 진실의 원천은 Yjs 상태이고 이건 파생 사본이다. */
@@ -63,7 +66,10 @@ export function NoteWorkspace({
         // Yjs가 되돌리기를 담당하므로 Tiptap 자체 히스토리는 끈다.
         StarterKit.configure({ undoRedo: false }),
         TaskList,
-        TaskItemWithId.configure({ nested: false }),
+        TaskItemWithId.configure({ nested: true }),
+        Markdown.configure({ markedOptions: { breaks: true } }),
+        ParagraphIndent,
+        PasteMarkdown,
         Placeholder.configure({ placeholder: "여기에 적으세요" }),
         Collaboration.configure({ document: doc }),
         ...(provider
@@ -198,7 +204,13 @@ export function NoteWorkspace({
           </div>
         </div>
         <div className="min-w-0 flex-1 overflow-y-auto px-4 py-4">
-          <EditorContent editor={editor} />
+          {!syncedAt && (
+            <div aria-busy="true">
+              <p role="status" className="mb-2 text-xs text-ink-3">편집 연결 중…</p>
+              <ReadOnlyNote content={initialContent} />
+            </div>
+          )}
+          <div hidden={!syncedAt}><EditorContent editor={editor} /></div>
         </div>
       </div>
 

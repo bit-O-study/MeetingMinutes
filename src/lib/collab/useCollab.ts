@@ -8,7 +8,7 @@ import { WebsocketProvider } from "y-websocket";
  * 공동 편집 연결.
  *
  * 저장 버튼이 없으므로 연결 상태 표시가 유일한 안심 신호다.
- * 오프라인일 때 "입력은 저장됩니다"를 함께 보여 줘서 작업을 멈추지 않게 한다.
+ * 오프라인 입력은 재접속할 때 전송하므로 창을 유지하도록 안내한다.
  *
  * ── 왜 방(room)을 모듈 바깥에 두는가 ───────────────────────
  * 이전에는 effect 안에서 provider를 만들고 `setProvider`로 넘겼다. 그러면
@@ -103,7 +103,11 @@ function samePeers(a: CollabPeer[], b: CollabPeer[]): boolean {
 
 function createRoom(noteId: string, me: CollabUser): Room {
   const doc = new Y.Doc();
-  const provider = new WebsocketProvider(collabUrl(), noteId, doc, { connect: true });
+  const provider = new WebsocketProvider(collabUrl(), noteId, doc, {
+    connect: true,
+    // 혼자 편집해도 응답을 받아 30초 무응답 판정으로 재접속하지 않게 한다.
+    resyncInterval: 10_000,
+  });
 
   let snapshot: Snapshot = INITIAL;
   let refs = 0;

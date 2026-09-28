@@ -40,11 +40,11 @@ function render(node: Node, index: number): React.ReactNode {
       const level = Number(node.attrs?.level ?? 2);
       const Tag = (["h1", "h2", "h3", "h4", "h5", "h6"][Math.min(level, 6) - 1] ??
         "h2") as "h2";
-      return <Tag key={key}>{kids()}</Tag>;
+      return <Tag key={key} style={indentStyle(node)}>{kids()}</Tag>;
     }
 
     case "paragraph":
-      return <p key={key}>{kids()}</p>;
+      return <p key={key} style={indentStyle(node)}>{kids()}</p>;
 
     case "blockquote":
       return <blockquote key={key}>{kids()}</blockquote>;
@@ -53,7 +53,7 @@ function render(node: Node, index: number): React.ReactNode {
       return <ul key={key}>{kids()}</ul>;
 
     case "orderedList":
-      return <ol key={key}>{kids()}</ol>;
+      return <ol key={key} start={Number(node.attrs?.start) || 1}>{kids()}</ol>;
 
     case "listItem":
       return <li key={key}>{kids()}</li>;
@@ -95,6 +95,11 @@ function render(node: Node, index: number): React.ReactNode {
       // 모르는 노드도 내용은 살린다. 빈 화면보다 낫다.
       return node.content ? <Fragment key={key}>{kids()}</Fragment> : null;
   }
+}
+
+function indentStyle(node: Node) {
+  const indent = Math.max(0, Math.min(8, Number(node.attrs?.indent) || 0));
+  return indent ? { marginLeft: `${indent * 2}em` } : undefined;
 }
 
 function applyMarks(node: Node): React.ReactNode {

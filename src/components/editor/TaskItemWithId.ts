@@ -83,7 +83,8 @@ export function collectDocTasks(doc: {
     if (!blockId) return;
     out.push({
       blockId,
-      body: node.textContent.trim(),
+      // 하위 체크박스는 별도 할 일이므로 부모 본문에 중복해서 넣지 않는다.
+      body: ownTaskText(node),
       checked: Boolean(node.attrs.checked),
     });
   });
@@ -95,4 +96,13 @@ type DocNode = {
   type: { name: string };
   attrs: Record<string, unknown> & { blockId?: string | null; checked?: boolean };
   textContent: string;
+  forEach: (fn: (node: DocNode) => void) => void;
 };
+
+function ownTaskText(node: DocNode): string {
+  const parts: string[] = [];
+  node.forEach((child) => {
+    if (child.type.name !== "taskList") parts.push(child.textContent);
+  });
+  return parts.join("\n").trim();
+}

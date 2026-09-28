@@ -4,7 +4,7 @@ import type { ConnectionState } from "@/lib/collab/useCollab";
 
 /**
  * 저장 버튼이 없으므로 이 표시가 유일한 안심 신호다.
- * 오프라인 문구에 "입력은 저장됩니다"를 붙여 작업을 멈추지 않게 한다.
+ * 서버 확인 전에는 저장을 보장하는 문구를 쓰지 않는다.
  */
 export function ConnectionBadge({
   status,
@@ -17,7 +17,7 @@ export function ConnectionBadge({
     return (
       <span className="inline-flex items-center gap-1.5 rounded bg-surface-2 px-2 py-0.5 font-mono text-[10px] text-ink-3">
         <span aria-hidden>○</span>
-        오프라인 · 입력은 저장됩니다
+        오프라인 · 이 창을 닫지 마세요
       </span>
     );
   }
@@ -26,7 +26,7 @@ export function ConnectionBadge({
     return (
       <span className="inline-flex items-center gap-1.5 rounded bg-warn-soft px-2 py-0.5 font-mono text-[10px] text-warn">
         <span aria-hidden>◐</span>
-        재연결 중…
+        {syncedAt ? "재연결 중…" : "연결 중…"}
       </span>
     );
   }

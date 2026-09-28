@@ -13,6 +13,7 @@ import { NoteHeader } from "@/components/editor/NoteHeader";
 import { NoteWorkspace } from "@/components/editor/NoteWorkspace";
 import { userColor } from "@/components/ui/Avatar";
 import { requireNoteAccess } from "@/lib/access";
+import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { spaceMembers, tasks, users } from "@/lib/db/schema";
 import { relativeTime } from "@/lib/utils";
@@ -21,8 +22,8 @@ export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[no
   const { spaceId, noteId } = await params;
   const { note, space, userId } = await requireNoteAccess(noteId);
 
-  const [[me], noteTasks, members] = await Promise.all([
-    db.select().from(users).where(eq(users.id, userId)).limit(1),
+  const [me, noteTasks, members] = await Promise.all([
+    requireUser(),
     db.select().from(tasks).where(eq(tasks.noteId, noteId)).orderBy(tasks.sortOrder),
     // 담당자로 고를 수 있는 사람 = 이 스페이스 멤버. 권한은 위에서 이미 확인했다.
     db
