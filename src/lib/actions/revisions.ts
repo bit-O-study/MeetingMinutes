@@ -1,6 +1,6 @@
 "use server";
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { requireNoteAccess } from "@/lib/access";
 import { db } from "@/lib/db";
@@ -39,10 +39,12 @@ export async function listRevisions(noteId: string) {
 export async function getRevisionContent(noteId: string, revisionId: string) {
   await requireNoteAccess(noteId);
 
+  // 노트를 함께 건다. id만으로 찾으면 접근 권한이 있는 노트 하나만 가지고
+  // 남의 스페이스 노트의 이력을 그대로 읽을 수 있다.
   const [row] = await db
     .select({ content: noteRevisions.content, createdAt: noteRevisions.createdAt })
     .from(noteRevisions)
-    .where(eq(noteRevisions.id, revisionId))
+    .where(and(eq(noteRevisions.id, revisionId), eq(noteRevisions.noteId, noteId)))
     .limit(1);
 
   if (!row) throw new Error("이력을 찾을 수 없습니다.");
@@ -62,10 +64,10 @@ export async function restoreRevision(noteId: string, revisionId: string) {
   const [target] = await db
     .select()
     .from(noteRevisions)
-    .where(eq(noteRevisions.id, revisionId))
+    .where(and(eq(noteRevisions.id, revisionId), eq(noteRevisions.noteId, noteId)))
     .limit(1);
 
-  if (!target || target.noteId !== noteId) throw new Error("이력을 찾을 수 없습니다.");
+  if (!target) throw new Error("이력을 찾을 수 없습니다.");
 
   const stamp = new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",

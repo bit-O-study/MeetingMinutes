@@ -6,7 +6,7 @@ import { TopBar } from "@/components/shell/TopBar";
 import { listMySpaces } from "@/lib/access";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { tasks } from "@/lib/db/schema";
+import { notes, spaceMembers, spaces, tasks } from "@/lib/db/schema";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
@@ -23,7 +23,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(tasks)
-      .where(and(eq(tasks.assigneeId, user.id), isNull(tasks.doneAt))),
+      .innerJoin(notes, and(eq(notes.id, tasks.noteId), eq(notes.spaceId, tasks.spaceId)))
+      .innerJoin(spaces, eq(spaces.id, notes.spaceId))
+      .innerJoin(spaceMembers, and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.userId, user.id)))
+      .where(and(eq(tasks.assigneeId, user.id), isNull(tasks.doneAt), isNull(notes.deletedAt), isNull(spaces.deletedAt))),
   ]);
 
   return (

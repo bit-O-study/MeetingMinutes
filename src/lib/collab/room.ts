@@ -28,7 +28,8 @@ import * as Y from "yjs";
 import { yXmlFragmentToProsemirrorJSON } from "y-prosemirror";
 
 import { db } from "@/lib/db";
-import { noteDocs, noteRevisions } from "@/lib/db/schema";
+import { docToPlainText } from "@/lib/templates";
+import { noteDocs, noteRevisions, notes } from "@/lib/db/schema";
 import { sectionsFromDoc, summarizeChange, type Section } from "@/lib/revision-summary";
 
 const SNAPSHOT_DEBOUNCE_MS = 3000;
@@ -56,6 +57,8 @@ type Room = {
   idleTimer?: ReturnType<typeof setTimeout>;
   revisionTimer?: ReturnType<typeof setTimeout>;
   loaded: Promise<void>;
+  loadedOk: boolean;
+  loadFailed: boolean;
   /** 마지막으로 이력에 남긴 시점의 구획. 이것과 비교해 요약을 만든다. */
   lastSections: Section[];
   /** 가장 최근에 문서를 바꾼 사람. 이력의 작성자가 된다. */
@@ -88,20 +91,26 @@ function getRoom(name: string): Room {
     awareness,
     conns: new Map(),
     loaded: loadState(name, doc),
+    loadedOk: false,
+    loadFailed: false,
     lastSections: [],
     pendingActor: null,
   };
 
   room.loaded = room.loaded.then(() => {
     room.lastSections = sectionsFromDoc(docToJSON(doc));
+    room.loadedOk = true;
+  }).catch(() => {
+    // 복원 실패한 방은 다시 쓰지 않고 다음 접속에서 재시도한다.
+    room.loadFailed = true;
+    if (rooms.get(name) === room) rooms.delete(name);
   });
 
   doc.on("update", (update: Uint8Array, origin: unknown) => {
+    if (!room.loadedOk || origin === "db") return;
     broadcastUpdate(room, update, origin);
     scheduleSnapshot(room);
 
-    // DB에서 복원한 변경은 사람이 한 편집이 아니다.
-    if (origin === "db") return;
     const actor = connUser.get(origin as WebSocket);
     if (actor) room.pendingActor = actor;
     scheduleRevision(room);
@@ -161,6 +170,7 @@ async function loadState(noteId: string, doc: Y.Doc) {
     }
   } catch (err) {
     log(`${short(noteId)} 상태 복원 실패: ${(err as Error).message}`);
+    throw err;
   }
 }
 
@@ -170,6 +180,7 @@ function scheduleSnapshot(room: Room) {
 }
 
 async function snapshot(room: Room) {
+  if (!room.loadedOk) return;
   const state = Y.encodeStateAsUpdate(room.doc);
   try {
     await db
@@ -179,6 +190,11 @@ async function snapshot(room: Room) {
         target: noteDocs.noteId,
         set: { state, snapshotAt: new Date() },
       });
+    // 창을 바로 닫아 클라이언트 디바운스가 취소돼도 검색·공유 사본은 복구한다.
+    if (room.doc.getXmlFragment("default").length > 0) {
+      const content = docToJSON(room.doc);
+      if (content) await db.update(notes).set({ content: content as never, plainText: docToPlainText(content), updatedAt: new Date() }).where(eq(notes.id, room.name));
+    }
   } catch (err) {
     log(`${short(room.name)} 스냅샷 실패: ${(err as Error).message}`);
   }
@@ -225,6 +241,7 @@ function resolveActor(room: Room): string | null {
  * 그때마다 리비전이 생기면 목록이 의미 없어진다.
  */
 async function recordRevision(room: Room) {
+  if (!room.loadedOk) return;
   const content = docToJSON(room.doc);
   if (!content) return;
 
@@ -343,19 +360,22 @@ export function joinRoom(roomName: string, conn: WebSocket): Promise<void> {
     }
 
     if (room.conns.size === 0) {
+      if (room.loadFailed) { room.doc.destroy(); return; }
       room.idleTimer = setTimeout(async () => {
         // 마지막 사람이 나갈 때 남은 변경을 이력에 남긴다. 기다리다 놓치면 안 된다.
         if (room.revisionTimer) clearTimeout(room.revisionTimer);
         await recordRevision(room);
         await snapshot(room);
         room.doc.destroy();
-        rooms.delete(room.name);
+        if (rooms.get(room.name) === room) rooms.delete(room.name);
         log(`${short(room.name)} 방 정리`);
       }, ROOM_IDLE_MS);
     }
   });
 
   void room.loaded.then(() => {
+    if (!room.loadedOk) { pending.length = 0; conn.close(1013, "문서 복원 실패. 다시 연결하세요."); return; }
+    if (conn.readyState !== conn.OPEN) return;
     // 1) 서버 상태를 알린다  2) 클라이언트 상태를 요청한다
     const syncEnc = encoding.createEncoder();
     encoding.writeVarUint(syncEnc, MSG_SYNC);

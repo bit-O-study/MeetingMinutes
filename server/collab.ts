@@ -47,7 +47,7 @@ wss.on("connection", (conn: WebSocket, req) => {
   void joinRoom(roomName, conn);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, "127.0.0.1", () => {
   log(`공동 편집 서버 ws://localhost:${PORT}`);
 });
 

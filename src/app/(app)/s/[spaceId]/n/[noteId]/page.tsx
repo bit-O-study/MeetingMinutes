@@ -7,6 +7,7 @@
  * 1차는 할 일, 2차는 댓글, 3차는 전사 타임라인이 같은 자리에 들어간다.
  * 단일 컬럼으로 바꾸지 말 것 — 기능이 늘 때마다 핵심 화면을 다시 짜게 된다.
  */
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { NoteHeader } from "@/components/editor/NoteHeader";
@@ -21,6 +22,7 @@ import { relativeTime } from "@/lib/utils";
 export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[noteId]">) {
   const { spaceId, noteId } = await params;
   const { note, space, userId } = await requireNoteAccess(noteId);
+  if (spaceId !== space.id) redirect(`/s/${space.id}/n/${note.id}`);
 
   const [me, noteTasks, members] = await Promise.all([
     requireUser(),

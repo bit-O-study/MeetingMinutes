@@ -16,7 +16,7 @@ import { isOverdue, relativeTime, todayInSeoul } from "@/lib/utils";
 
 export default async function HomePage() {
   const spaceRows = await listMySpaces();
-  spaceRows.sort((a, b) => b.space.lastActivityAt.getTime() - a.space.lastActivityAt.getTime());
+  const sortedSpaceRows = [...spaceRows].sort((a, b) => b.space.lastActivityAt.getTime() - a.space.lastActivityAt.getTime());
   const spaceIds = spaceRows.map((row) => row.space.id);
   const spaceName = new Map(spaceRows.map((row) => [row.space.id, row.space.name]));
 
@@ -90,7 +90,7 @@ export default async function HomePage() {
       <section aria-labelledby="home-spaces-heading">
         <h2 id="home-spaces-heading" className="mb-3 text-sm font-semibold text-ink">내 스페이스 <span className="text-ink-3">{spaceRows.length}</span></h2>
         <ul className="grid gap-3 sm:grid-cols-2">
-          {spaceRows.map(({ space }) => {
+          {sortedSpaceRows.map(({ space }) => {
             const people = members.filter((member) => member.spaceId === space.id);
             return (
               <li key={space.id} className="min-w-0">

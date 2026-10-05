@@ -91,25 +91,17 @@ export async function removeMember(spaceId: string, userId: string) {
 export async function transferOwnership(spaceId: string, toUserId: string) {
   const { userId: actor } = await requireSpaceOwner(spaceId);
 
-  const [target] = await db
-    .select({ userId: spaceMembers.userId })
-    .from(spaceMembers)
-    .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, toUserId)))
-    .limit(1);
-
-  if (!target) throw new Error("멤버가 아닙니다.");
-
-  await db
-    .update(spaceMembers)
-    .set({ role: "owner" })
-    .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, toUserId)));
-
-  await db
-    .update(spaceMembers)
-    .set({ role: "member" })
-    .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, actor)));
-
-  await db.update(spaces).set({ ownerId: toUserId }).where(eq(spaces.id, spaceId));
+  if (actor === toUserId) return;
+  await db.transaction(async (tx) => {
+    const [current] = await tx.select().from(spaces).where(eq(spaces.id, spaceId)).for("update");
+    if (current?.ownerId !== actor) throw new Error("소유자가 변경되었습니다. 새로고침하세요.");
+    const [target] = await tx.select().from(spaceMembers)
+      .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, toUserId))).for("update");
+    if (!target) throw new Error("멤버가 아닙니다.");
+    await tx.update(spaceMembers).set({ role: "owner" }).where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, toUserId)));
+    await tx.update(spaceMembers).set({ role: "member" }).where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, actor)));
+    await tx.update(spaces).set({ ownerId: toUserId }).where(eq(spaces.id, spaceId));
+  });
 
   revalidatePath(`/s/${spaceId}`);
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { requireNoteAccess, requireSpaceMember } from "@/lib/access";
+import { assertNoteDoc } from "@/lib/action-input";
 import { db } from "@/lib/db";
 import { noteDocs, notes, spaces } from "@/lib/db/schema";
 import type { NoteStatus, TemplateKind } from "@/lib/db/schema";
@@ -103,12 +104,15 @@ export async function setNoteStatus(noteId: string, status: NoteStatus) {
  */
 export async function saveNoteContent(noteId: string, content: unknown) {
   const { note, userId } = await requireNoteAccess(noteId);
+  // 에디터가 보낸 값이라도 액션은 네트워크 경계다. 모양과 크기만 확인한다 —
+  // 노드 종류까지 묶으면 확장을 더할 때마다 멀쩡한 편집이 저장되지 않는다.
+  const doc = assertNoteDoc(content);
 
   await db
     .update(notes)
     .set({
-      content: content as never,
-      plainText: docToPlainText(content),
+      content: doc as never,
+      plainText: docToPlainText(doc),
       updatedAt: new Date(),
       updatedBy: userId,
     })

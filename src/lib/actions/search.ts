@@ -3,6 +3,7 @@
 import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { mySpaceIds, requireSpaceMember } from "@/lib/access";
+import { searchOptionsInput } from "@/lib/action-input";
 import { db } from "@/lib/db";
 import { notes, spaces } from "@/lib/db/schema";
 import type { NoteStatus } from "@/lib/db/schema";
@@ -58,15 +59,19 @@ export async function searchNotes(
   const q = query.trim();
   if (!q) return { total: 0, hits: [] };
 
+  // 날짜 형식과 건수 상한은 여기서 확정한다. 화면이 거르더라도 액션은 경계다.
+  const options = searchOptionsInput.parse(opts);
+
   const allowed = await mySpaceIds();
-  const scope = opts.spaceIds?.length
-    ? allowed.filter((id) => opts.spaceIds!.includes(id))
+  const scope = options.spaceIds?.length
+    ? allowed.filter((id) => options.spaceIds!.includes(id))
     : allowed;
 
   // 요청한 스페이스가 내 범위 밖이면 빈 결과다. 범위를 넓히지 않는다.
   if (scope.length === 0) return { total: 0, hits: [] };
 
-  const pattern = `%${q}%`;
+  const escaped = q.replace(/[\\%_]/g, (character) => "\\" + character);
+  const pattern = `%${escaped}%`;
 
   /*
     조건을 한 번만 적고 목록·집계에 함께 쓴다.
@@ -77,7 +82,7 @@ export async function searchNotes(
     isNull(notes.deletedAt),
     isNull(spaces.deletedAt),
     or(ilike(notes.title, pattern), ilike(notes.plainText, pattern)),
-    opts.status ? eq(notes.status, opts.status) : undefined,
+    options.status ? eq(notes.status, options.status) : undefined,
 
     /*
       날짜 경계를 서울 자정으로 못 박는다.
@@ -87,12 +92,12 @@ export async function searchNotes(
       21일 09:00(KST)부터가 되어, 그날 아침에 고친 노트가 빠진다.
       AT TIME ZONE으로 서울 자정을 명시한다.
     */
-    opts.from
-      ? sql`${notes.updatedAt} >= (${opts.from}::date::timestamp AT TIME ZONE ${TIME_ZONE})`
+    options.from
+      ? sql`${notes.updatedAt} >= (${options.from}::date::timestamp AT TIME ZONE ${TIME_ZONE})`
       : undefined,
     // 종료일은 그날 하루를 포함해야 한다. 사용자는 날짜를 골랐지 자정을 고른 게 아니다.
-    opts.to
-      ? sql`${notes.updatedAt} < ((${opts.to}::date + interval '1 day')::timestamp AT TIME ZONE ${TIME_ZONE})`
+    options.to
+      ? sql`${notes.updatedAt} < ((${options.to}::date + interval '1 day')::timestamp AT TIME ZONE ${TIME_ZONE})`
       : undefined,
   );
 
@@ -117,7 +122,7 @@ export async function searchNotes(
       .innerJoin(spaces, eq(spaces.id, notes.spaceId))
       .where(where)
       .orderBy(desc(notes.updatedAt), asc(notes.id))
-      .limit(opts.limit ?? 30),
+      .limit(options.limit),
   ]);
 
   const hits = rows.map(({ plainText, content, ...note }): SearchHit => {

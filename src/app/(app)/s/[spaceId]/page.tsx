@@ -1,3 +1,6 @@
+import { IssuePanel } from "@/components/screens/IssuePanel";
+import { listIssues } from "@/lib/actions/issues";
+import { ISSUE_STATUSES } from "@/lib/issue-input";
 /**
  * S-02 스페이스 · CODEX
  * 스페이스 권한을 먼저 확인하고 선택한 탭만 조회한다.
@@ -21,28 +24,32 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   const { spaceId } = await params;
   const { space, role, userId } = await requireSpaceMember(spaceId);
   const query = await searchParams;
-  const tab = query.tab === "tasks" || query.tab === "members" ? query.tab : "notes";
+  const tab = query.tab === "tasks" || query.tab === "members" || query.tab === "issues" ? query.tab : "notes";
   const today = todayInSeoul();
-  const members = await listSpaceMembers(spaceId);
-  const questionCounts = tab === "notes" ? await openQuestionCounts(spaceId) : {};
-  const noteRows = tab === "notes" ? await db
+  const status = query.status === "open" || query.status === "in_progress" || query.status === "closed" ? query.status : undefined;
+  const [members, questionCounts, noteRows, taskRows, issueList] = await Promise.all([
+    listSpaceMembers(spaceId),
+    tab === "notes" ? openQuestionCounts(spaceId) : {} as Record<string, number>,
+    tab === "notes" ? db
     .select({ id: notes.id, title: notes.title, status: notes.status, updatedAt: notes.updatedAt, updatedByName: users.name })
     .from(notes).leftJoin(users, eq(users.id, notes.updatedBy))
     .where(and(eq(notes.spaceId, spaceId), isNull(notes.deletedAt)))
-    .orderBy(desc(notes.updatedAt), asc(notes.id)) : [];
-  const taskRows = tab === "tasks" ? await db
+    .orderBy(desc(notes.updatedAt), asc(notes.id)) : [],
+    tab === "tasks" ? db
     .select({ task: tasks, noteTitle: notes.title, assigneeName: users.name })
     .from(tasks)
     .innerJoin(notes, and(eq(notes.id, tasks.noteId), eq(notes.spaceId, tasks.spaceId)))
     .leftJoin(users, eq(users.id, tasks.assigneeId))
     .where(and(eq(notes.spaceId, spaceId), isNull(notes.deletedAt)))
-    .orderBy(asc(tasks.dueDate), asc(tasks.createdAt), asc(tasks.id)) : [];
+    .orderBy(asc(tasks.dueDate), asc(tasks.createdAt), asc(tasks.id)) : [],
+    tab === "issues" ? listIssues(spaceId, status, Number(query.page ?? 1)) : null,
+  ]);
   const taskGroups = [
     { title: "미완료", rows: taskRows.filter((row) => !row.task.doneAt) },
     { title: "완료", rows: taskRows.filter((row) => row.task.doneAt) },
   ];
   const kindLabels = { study: "스터디", handover: "인수인계", general: "일반" };
-  const tabs = [{ value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "members", label: "멤버" }];
+  const tabs = [{ value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "issues", label: "이슈" }, { value: "members", label: "멤버" }];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-5 py-8">
@@ -106,6 +113,18 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
           {taskRows.length === 0 && <Card><EmptyState title="아직 할 일이 없습니다" hint="노트에 적은 할 일을 이곳에서 함께 관리합니다." action={{ href: "/s/" + spaceId + "?tab=notes", label: "노트 보기" }} /></Card>}
         </>
       )}
+      {tab === "issues" && issueList && <>
+        <nav aria-label="이슈 상태" className="flex flex-wrap gap-2 text-sm">
+          <Link href={"/s/" + spaceId + "?tab=issues"} aria-current={!status ? "page" : undefined} className="rounded border border-line px-3 py-2">전체</Link>
+          {Object.entries(ISSUE_STATUSES).map(([value, label]) => <Link key={value} aria-current={status === value ? "page" : undefined} href={"/s/" + spaceId + "?tab=issues&status=" + value} className="rounded border border-line px-3 py-2">{label}</Link>)}
+        </nav>
+        <p className="text-sm text-ink-3">{issueList.total}개 이슈</p>
+        <IssuePanel spaceId={spaceId} members={members} rows={issueList.rows} />
+        <nav aria-label="이슈 페이지" className="flex gap-4 text-sm text-accent">
+          {issueList.page > 1 && <Link href={"/s/" + spaceId + "?tab=issues&status=" + (status ?? "") + "&page=" + (issueList.page - 1)}>이전</Link>}
+          {issueList.page * 30 < issueList.total && <Link href={"/s/" + spaceId + "?tab=issues&status=" + (status ?? "") + "&page=" + (issueList.page + 1)}>다음</Link>}
+        </nav>
+      </>}
       {tab === "members" && <SpaceMembers spaceId={spaceId} role={role} userId={userId} members={members} />}
     </div>
   );

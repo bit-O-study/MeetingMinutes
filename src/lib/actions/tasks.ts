@@ -1,9 +1,11 @@
 "use server";
 
+import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { requireNoteAccess } from "@/lib/access";
+import { createTaskInput, taskPatchInput } from "@/lib/action-input";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { spaceMembers, tasks } from "@/lib/db/schema";
@@ -28,7 +30,8 @@ export async function toggleTask(taskId: string) {
     .where(eq(tasks.id, taskId))
     .limit(1);
 
-  if (!row) throw new Error("접근할 수 없습니다.");
+  if (!row) notFound();
+  await requireNoteAccess(row.task.noteId);
 
   // 완료한 항목은 되돌릴 수 있다.
   const doneAt = row.task.doneAt ? null : new Date();
@@ -37,6 +40,20 @@ export async function toggleTask(taskId: string) {
   revalidatePath("/tasks");
   revalidatePath(`/s/${row.task.spaceId}/n/${row.task.noteId}`);
   return { doneAt };
+}
+
+/**
+ * 담당자는 그 스페이스 멤버여야 한다. 아니면 본인 할 일 목록에서 볼 수 없어서
+ * 아무도 못 보는 할 일이 된다. 만드는 쪽과 고치는 쪽에 같은 규칙을 건다.
+ */
+async function assertAssignable(spaceId: string, assigneeId: string) {
+  const [member] = await db
+    .select({ userId: spaceMembers.userId })
+    .from(spaceMembers)
+    .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, assigneeId)))
+    .limit(1);
+
+  if (!member) throw new Error("이 스페이스의 멤버가 아닙니다.");
 }
 
 export async function createTask(input: {
@@ -49,17 +66,19 @@ export async function createTask(input: {
   /** 본문 체크박스 노드 id */
   blockId?: string | null;
 }) {
-  const { note } = await requireNoteAccess(input.noteId);
+  const parsed = createTaskInput.parse(input);
+  const { note } = await requireNoteAccess(parsed.noteId);
+  if (parsed.assigneeId) await assertAssignable(note.spaceId, parsed.assigneeId);
 
   const [created] = await db
     .insert(tasks)
     .values({
       noteId: note.id,
       spaceId: note.spaceId,
-      body: input.body,
-      assigneeId: input.assigneeId ?? null,
-      dueDate: input.dueDate ?? null,
-      blockId: input.blockId ?? null,
+      body: parsed.body,
+      assigneeId: parsed.assigneeId ?? null,
+      dueDate: parsed.dueDate ?? null,
+      blockId: parsed.blockId ?? null,
     })
     .returning();
 
@@ -78,6 +97,9 @@ export async function updateTask(
   taskId: string,
   patch: { body?: string; assigneeId?: string | null; dueDate?: string | null },
 ) {
+  // 파싱한 값만 쓴다. patch를 그대로 set()에 넘기면 noteId·spaceId 같은
+  // 실제 컬럼명이 전부 통과해서, 할 일을 남의 스페이스로 옮길 수 있다.
+  const fields = taskPatchInput.parse(patch);
   const user = await requireUser();
 
   const [row] = await db
@@ -90,25 +112,12 @@ export async function updateTask(
     .where(eq(tasks.id, taskId))
     .limit(1);
 
-  if (!row) throw new Error("접근할 수 없습니다.");
+  if (!row) notFound();
+  await requireNoteAccess(row.task.noteId);
 
-  // 담당자는 그 스페이스 멤버여야 한다. 아니면 본인 할 일 목록에서 볼 수 없다.
-  if (patch.assigneeId) {
-    const [member] = await db
-      .select({ userId: spaceMembers.userId })
-      .from(spaceMembers)
-      .where(
-        and(
-          eq(spaceMembers.spaceId, row.task.spaceId),
-          eq(spaceMembers.userId, patch.assigneeId),
-        ),
-      )
-      .limit(1);
+  if (fields.assigneeId) await assertAssignable(row.task.spaceId, fields.assigneeId);
 
-    if (!member) throw new Error("이 스페이스의 멤버가 아닙니다.");
-  }
-
-  await db.update(tasks).set(patch).where(eq(tasks.id, taskId));
+  await db.update(tasks).set(fields).where(eq(tasks.id, taskId));
 
   revalidatePath("/tasks");
   revalidatePath(`/s/${row.task.spaceId}/n/${row.task.noteId}`);
@@ -140,7 +149,8 @@ export async function deleteTask(taskId: string) {
     .where(eq(tasks.id, taskId))
     .limit(1);
 
-  if (!row) throw new Error("접근할 수 없습니다.");
+  if (!row) notFound();
+  await requireNoteAccess(row.task.noteId);
 
   await db.delete(tasks).where(eq(tasks.id, taskId));
   revalidatePath("/tasks");
@@ -161,6 +171,8 @@ export async function listNoteTasks(noteId: string) {
 
 /** 노트를 삭제하면 그 노트의 할 일도 함께 사라진다(FK cascade). 삭제 전 확인할 것. */
 export async function countNoteTasks(noteId: string) {
+  // 개수도 정보다. 검사 없이 두면 노트의 존재 여부가 새어 나간다 — 설계 원칙 6.
+  await requireNoteAccess(noteId);
   const rows = await db.select({ id: tasks.id }).from(tasks).where(eq(tasks.noteId, noteId));
   return rows.length;
 }
@@ -216,7 +228,7 @@ export async function toggleTaskInNote(noteId: string, taskId: string) {
   await requireNoteAccess(noteId);
 
   const [row] = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
-  if (!row || row.noteId !== noteId) throw new Error("접근할 수 없습니다.");
+  if (!row || row.noteId !== noteId) notFound();
 
   await db
     .update(tasks)

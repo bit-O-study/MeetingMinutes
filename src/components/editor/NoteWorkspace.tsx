@@ -50,6 +50,14 @@ export function NoteWorkspace({
   members: Member[];
 }) {
   const { doc, provider, status, syncedAt, peers } = useCollab(noteId, me);
+  const [saveError, setSaveError] = useState("");
+  const [taskError, setTaskError] = useState("");
+  const [connectionSlow, setConnectionSlow] = useState(false);
+  useEffect(() => {
+    if (syncedAt) return;
+    const timer = setTimeout(() => setConnectionSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, [syncedAt]);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   // 우측 패널은 한 번에 하나만 뜬다. 셋을 동시에 열면 본문이 좁아진다.
   const [panel, setPanel] = useState<"tasks" | "history" | "share">("tasks");
@@ -87,7 +95,7 @@ export function NoteWorkspace({
 
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => {
-          void saveNoteContent(noteId, editor.getJSON());
+          void saveNoteContent(noteId, editor.getJSON()).then(() => setSaveError(""), () => setSaveError("본문 저장에 실패했습니다. 연결을 확인하고 이 창을 유지하세요."));
         }, SAVE_DEBOUNCE_MS);
 
         // DB에서 밀어 넣은 변경이면 본문만 저장하고 할 일은 건드리지 않는다.
@@ -95,7 +103,7 @@ export function NoteWorkspace({
 
         if (taskTimer.current) clearTimeout(taskTimer.current);
         taskTimer.current = setTimeout(() => {
-          void syncNoteTasks(noteId, collectDocTasks(editor.state.doc)).then(setTasks);
+          void syncNoteTasks(noteId, collectDocTasks(editor.state.doc)).then((rows) => { setTasks(rows); setTaskError(""); }, () => setTaskError("할 일 동기화에 실패했습니다. 연결을 확인하세요."));
         }, TASK_DEBOUNCE_MS);
       },
     },
@@ -140,9 +148,11 @@ export function NoteWorkspace({
   const handleToggle = useCallback(
     async (task: Task) => {
       const next = !task.doneAt;
-      if (editor && task.blockId) setDocTaskChecked(editor, task.blockId, next);
-      const rows = await toggleTaskInNote(noteId, task.id);
-      setTasks(rows);
+      try {
+        const rows = await toggleTaskInNote(noteId, task.id);
+        if (editor && task.blockId) setDocTaskChecked(editor, task.blockId, next);
+        setTasks(rows); setTaskError("");
+      } catch { setTaskError("완료 상태를 저장하지 못했습니다. 다시 시도하세요."); }
     },
     [editor, noteId],
   );
@@ -153,14 +163,14 @@ export function NoteWorkspace({
    */
   const handleUpdate = useCallback(
     async (taskId: string, patch: TaskPatch) => {
-      setTasks(await updateTask(taskId, patch));
+      try { setTasks(await updateTask(taskId, patch)); setTaskError(""); } catch { setTaskError("할 일을 수정하지 못했습니다. 다시 시도하세요."); }
     },
     [],
   );
 
   /** 본문과 이어진 항목은 패널에서 삭제를 노출하지 않는다 — 다음 동기화 때 되살아난다. */
   const handleDelete = useCallback(async (taskId: string) => {
-    setTasks(await deleteTask(taskId));
+    try { setTasks(await deleteTask(taskId)); setTaskError(""); } catch { setTaskError("할 일을 삭제하지 못했습니다. 다시 시도하세요."); }
   }, []);
 
   /**
@@ -204,9 +214,11 @@ export function NoteWorkspace({
           </div>
         </div>
         <div className="min-w-0 flex-1 overflow-y-auto px-4 py-4">
+          {(saveError || taskError) && <p role="alert" className="mb-3 rounded border border-line bg-warn-soft p-3 text-sm text-warn">{saveError || taskError}</p>}
           {!syncedAt && (
-            <div aria-busy="true">
-              <p role="status" className="mb-2 text-xs text-ink-3">편집 연결 중…</p>
+            <div aria-busy={!connectionSlow}>
+              <p role="status" className="mb-2 text-xs text-ink-3">{connectionSlow ? "편집 연결이 지연되고 있습니다. 아래에서 내용을 읽을 수 있습니다." : "편집 연결 중…"}</p>
+              {connectionSlow && <button className="mb-3 rounded border border-line px-3 py-2 text-sm text-accent" onClick={() => { provider?.disconnect(); provider?.connect(); }}>다시 연결</button>}
               <ReadOnlyNote content={initialContent} />
             </div>
           )}
