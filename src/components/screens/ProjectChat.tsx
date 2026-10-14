@@ -86,7 +86,7 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
   // 내 말풍선은 프로젝트 색, 남의 말풍선은 흰 면. 이슈로 담기는 넓은 화면에선 말풍선 옆 버튼, 휴대폰에선 길게 누르기.
   return <section aria-label="프로젝트 대화" className="flex flex-col gap-3">
     {page * 30 < total && <Link className="self-center rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink-2" href={`/s/${spaceId}?tab=chat&page=${page + 1}`}>이전 대화 보기</Link>}
-    <ol aria-label="프로젝트 메시지" className="flex flex-col gap-1.5">
+    <ol aria-label="프로젝트 메시지" className="flex min-h-[calc(100dvh-26rem)] flex-col justify-end gap-1.5 md:min-h-[calc(100dvh-24rem)]">
       {sorted.map((row, index) => {
         const mine = row.createdBy === userId;
         const showName = !mine && (index === 0 || sorted[index - 1].createdBy !== row.createdBy);

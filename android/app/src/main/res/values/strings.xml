@@ -1,5 +1,5 @@
 ﻿<resources>
-    <string name="app_name">프로젝트 메모</string>
+    <string name="app_name">moa</string>
     <color name="icon_background">#245B54</color>
     <color name="icon_paper">#FFFFFF</color>
 </resources>

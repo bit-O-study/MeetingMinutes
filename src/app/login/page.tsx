@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { NotebookText } from "lucide-react";
+import { LogoMark } from "@/components/ui/Logo";
 
 import { auth } from "@/lib/auth";
 import { passwordSignIn, passwordSignUp } from "@/lib/actions/password-auth";
@@ -28,11 +28,11 @@ export default async function LoginPage({ searchParams }: {
   const inputClass = "w-full rounded-2xl ring-1 ring-inset ring-line bg-ground px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent";
 
   return <main className="flex flex-1 items-center justify-center px-5 py-12">
-    <section className="flex w-full max-w-sm flex-col gap-5 rounded-lg border border-line bg-surface px-7 py-9">
+    <section className="flex w-full max-w-sm flex-col gap-5 rounded-3xl bg-surface px-7 py-9 shadow-float">
       <div className="flex flex-col items-center gap-3 text-center">
-        <NotebookText className="size-8 text-accent" aria-hidden="true" />
-        <h1 className="font-extrabold text-2xl font-bold text-ink">{registering ? "회의록 회원가입" : "회의록 로그인"}</h1>
-        <p className="text-sm leading-relaxed text-ink-2">개발 스터디와 인수인계 메모를<br />같이 쓰고 같이 관리합니다.</p>
+        <LogoMark size={52} />
+        <h1 className="text-[28px] leading-none font-black tracking-[-0.04em] text-ink">moa</h1>
+        <p className="text-sm leading-relaxed text-ink-2">{registering ? "가입하고 팀의 대화·노트·이슈를 모아 보세요." : <>팀의 대화·노트·이슈를<br />한곳에 모아 같이 정리해요.</>}</p>
       </div>
       {returnTo !== "/" && <p className="text-sm text-ink-2">로그인 후 초대받은 스페이스 참여를 이어갑니다.</p>}
       {message && <p role="alert" className="rounded-2xl ring-1 ring-inset ring-line bg-ground px-3 py-2 text-sm text-warn">{message}</p>}

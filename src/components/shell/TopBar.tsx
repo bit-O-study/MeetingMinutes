@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { NotebookText, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 import { signOut } from "@/lib/auth";
 import { Avatar } from "@/components/ui/Avatar";
@@ -18,11 +19,8 @@ export function TopBar({
       className="sticky top-0 z-20 flex flex-none items-center gap-3 border-b border-line bg-surface/90 px-4 pb-2.5 backdrop-blur"
       style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)" }}
     >
-      <Link href="/" className="flex items-center gap-2 text-[15px] font-black tracking-tight text-ink">
-        <span className="grid size-7 place-items-center rounded-lg bg-accent text-on-accent">
-          <NotebookText className="size-4" />
-        </span>
-        프로젝트 메모
+      <Link href="/" aria-label="moa 홈" className="flex items-center">
+        <Logo />
       </Link>
 
       <Link

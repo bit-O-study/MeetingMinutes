@@ -10,7 +10,7 @@
  * 이 페이지에는 앱 셸이 없다 — 사이드바가 붙으면 남의 스페이스 목록이 보인다.
  */
 import type { Metadata } from "next";
-import { NotebookText } from "lucide-react";
+import { LogoMark } from "@/components/ui/Logo";
 
 import { ReadOnlyNote } from "@/components/ReadOnlyNote";
 import { readSharedNote } from "@/lib/shares";
@@ -31,8 +31,8 @@ export default async function SharedNotePage({ params }: PageProps<"/p/[token]">
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-5 py-10">
       <header className="flex flex-col gap-2 border-b border-line pb-4">
         <div className="flex items-center gap-2">
-          <NotebookText className="size-3.5 text-accent" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.09em] text-ink-3">
+          <LogoMark size={20} />
+          <span className="text-xs font-bold text-ink-3">
             읽기 전용으로 공유된 노트
           </span>
         </div>

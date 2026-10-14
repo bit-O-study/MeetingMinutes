@@ -35,8 +35,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "프로젝트 메모",
-  description: "개발 스터디와 인수인계 메모를 같이 쓰고 같이 관리하는 기록 도구",
+  title: { default: "moa", template: "%s · moa" },
+  description: "팀의 대화·노트·이슈를 한곳에 모아 같이 정리하는 도구",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
