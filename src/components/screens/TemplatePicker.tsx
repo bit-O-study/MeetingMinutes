@@ -40,19 +40,19 @@ function TemplateFields({ templates, selected, onSelect, title, onTitle }: {
       <legend className="mb-3 text-sm font-semibold text-ink">노트 양식</legend>
       <div className="grid gap-3 sm:grid-cols-3">
         {templates.map((template) => (
-          <label key={template.kind} className={cn("cursor-pointer rounded-md border p-4 transition-colors focus-within:outline-2 focus-within:outline-accent",
-            selected === template.kind ? "border-accent bg-accent-soft" : "border-line bg-surface hover:bg-surface-2")}>
+          <label key={template.kind} className={cn("press cursor-pointer rounded-2xl p-4 transition-shadow focus-within:outline-2 focus-within:outline-accent",
+            selected === template.kind ? "bg-surface ring-2 ring-accent" : "bg-surface hover:shadow-float")}>
             <span className="flex items-center gap-2">
               <input type="radio" name="template" value={template.kind} checked={selected === template.kind}
                 onChange={() => onSelect(template.kind)} className="size-4 accent-accent" />
-              <span className="text-sm font-semibold text-ink">{template.label}</span>
+              <span className="text-[15px] font-extrabold text-ink">{template.label}</span>
             </span>
             <span className="mt-2 block text-xs leading-relaxed text-ink-2">{template.blurb}</span>
           </label>
         ))}
       </div>
       {selected === "handover" && (
-        <p className="rounded border border-line bg-warn-soft p-3 text-sm text-warn">
+        <p className="rounded-2xl bg-warn-soft p-3 text-sm font-semibold text-warn">
           비밀번호·토큰·키 값은 적지 마세요. 보관 위치와 접근 요청처만 남겨 주세요.
         </p>
       )}
@@ -60,11 +60,11 @@ function TemplateFields({ templates, selected, onSelect, title, onTitle }: {
         <label htmlFor="note-title" className="mb-2 block text-sm font-medium text-ink">노트 제목</label>
         <input id="note-title" name="title" value={title} onChange={(event) => onTitle(event.target.value)}
           required maxLength={200}
-          className="w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none" />
+          className="h-11 w-full min-w-0 rounded-2xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none" />
         <p className="mt-2 text-xs text-ink-3">제목은 노트를 만든 뒤에도 바꿀 수 있습니다.</p>
       </div>
       <button type="submit" disabled={pending || !title.trim()}
-        className="rounded bg-accent px-4 py-2 text-sm text-on-accent hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+        className="press inline-flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-accent px-5 text-sm font-bold text-on-accent shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45 w-full sm:w-auto">
         {pending ? "노트 만드는 중…" : "노트 만들기"}
       </button>
       {pending && <p role="status" className="text-xs text-ink-3">노트를 만들고 있습니다. 잠시만 기다려 주세요.</p>}

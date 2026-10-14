@@ -1,19 +1,13 @@
-import type { Metadata } from "next";
-import { IBM_Plex_Mono, Noto_Sans_KR, Noto_Serif_KR } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Mono, Noto_Sans_KR } from "next/font/google";
 
 import "./globals.css";
 
 const notoSansKr = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-  display: "swap",
-});
-
-const notoSerifKr = Noto_Serif_KR({
-  variable: "--font-noto-serif-kr",
-  subsets: ["latin"],
-  weight: ["600", "700"],
+  // 재디자인: 굵은 고딕 제목(800·900)을 쓰고, 명조는 더 받지 않는다.
+  weight: ["400", "500", "700", "800", "900"],
   display: "swap",
 });
 
@@ -24,8 +18,24 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+/**
+ * 휴대폰 화면 설정. resizes-content — 키보드가 올라오면 화면 높이가 그만큼 줄어서,
+ * 노트 본문의 커서와 입력칸이 키보드 밑에 숨지 않는다(노트 본문 키보드 문제 의심 지점).
+ * viewport-fit=cover 는 아래 메뉴가 안전 영역(env(safe-area-inset-*))을 쓰기 위해.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2f4f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f131b" },
+  ],
+};
+
 export const metadata: Metadata = {
-  title: "회의록",
+  title: "프로젝트 메모",
   description: "개발 스터디와 인수인계 메모를 같이 쓰고 같이 관리하는 기록 도구",
 };
 
@@ -33,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${notoSansKr.variable} ${notoSerifKr.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${notoSansKr.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

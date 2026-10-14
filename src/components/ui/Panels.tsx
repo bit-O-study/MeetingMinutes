@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/** 화면 설계서의 카드 골격. 테두리·배경을 화면마다 다시 정하지 않도록 한다. */
+/**
+ * 카드 골격. 선 대신 면으로 묶는다(재디자인) — 맑은 바탕 위 흰 면 + 둥근 모서리.
+ * accent 는 테두리 대신 옅은 강조 면으로 표시한다.
+ */
 export function Card({
   children,
   className,
@@ -14,8 +17,8 @@ export function Card({
   return (
     <section
       className={cn(
-        "rounded-md border bg-surface",
-        tone === "accent" ? "border-accent" : "border-line",
+        "rounded-2xl",
+        tone === "accent" ? "bg-accent-soft" : "bg-surface",
         className,
       )}
     >
@@ -34,11 +37,12 @@ export function CardTitle({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+    <div className="flex items-center gap-2 px-4 pt-4 pb-1">
+      {/* 영문 대문자 고정폭 라벨은 설계 문서처럼 보여 한글 굵은 제목으로(재디자인). */}
       <h2
         className={cn(
-          "font-mono text-[10px] font-semibold uppercase tracking-[0.09em]",
-          tone === "accent" ? "text-accent" : "text-ink-3",
+          "text-[15px] font-extrabold tracking-tight",
+          tone === "accent" ? "text-accent" : "text-ink",
         )}
       >
         {children}
@@ -56,8 +60,8 @@ export function SectionHeading({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3 border-b border-line pb-2">
-      <h1 className="font-serif text-xl font-semibold text-ink">{children}</h1>
+    <div className="mb-5 flex flex-wrap items-center gap-3">
+      <h1 className="text-2xl font-black tracking-tight text-ink">{children}</h1>
       {action && <div className="ml-auto">{action}</div>}
     </div>
   );
@@ -75,12 +79,13 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-      <p className="text-sm font-medium text-ink-2">{title}</p>
-      {hint && <p className="max-w-xs text-xs leading-relaxed text-ink-3">{hint}</p>}
+      <EmptyArt />
+      <p className="mt-2 text-[15px] font-bold text-ink">{title}</p>
+      {hint && <p className="max-w-xs text-[13px] leading-relaxed text-ink-2">{hint}</p>}
       {action && (
         <Link
           href={action.href}
-          className="mt-1 rounded bg-accent px-3 py-1.5 text-xs text-on-accent transition-opacity hover:opacity-90"
+          className="press mt-2 inline-flex h-10 items-center rounded-xl bg-accent-soft px-4 text-sm font-bold text-accent"
         >
           {action.label}
         </Link>
@@ -96,17 +101,35 @@ export function EmptyState({
 export function AccessDenied() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-20 text-center">
-      <div className="size-7 rounded-full border border-line-2" />
-      <p className="font-serif text-base font-semibold text-ink">접근할 수 없습니다</p>
+      <EmptyArt />
+      <p className="mt-2 text-lg font-extrabold text-ink">접근할 수 없습니다</p>
       <p className="max-w-xs text-sm leading-relaxed text-ink-2">
         이 노트가 있는 스페이스의 멤버가 아닙니다.
       </p>
       <Link
         href="/"
-        className="mt-1 rounded border border-line px-3 py-1.5 text-xs text-ink-2 transition-colors hover:bg-surface-2"
+        className="press mt-2 inline-flex h-10 items-center rounded-xl bg-surface px-4 text-sm font-bold text-ink"
       >
         홈으로
       </Link>
+    </div>
+  );
+}
+
+/**
+ * 빈 화면 그림 — 겹친 카드 두 장과 체크 줄. 글자만 있던 빈 화면이 '고장'처럼 보여서 넣었다.
+ * 색은 토큰(accent 는 프로젝트 안이면 그 프로젝트 색)을 따른다.
+ */
+function EmptyArt() {
+  return (
+    <div className="relative h-20 w-28" aria-hidden="true">
+      <div className="absolute top-3 left-2 h-14 w-[70px] -rotate-6 rounded-xl bg-accent-soft" />
+      <div className="absolute top-1 left-7 h-16 w-[72px] rounded-xl bg-surface shadow-float">
+        <div className="absolute top-4 left-3 size-3 rounded bg-accent" />
+        <div className="absolute top-[18px] left-8 h-1.5 w-7 rounded-full bg-line" />
+        <div className="absolute top-9 left-3 size-3 rounded border-2 border-line" />
+        <div className="absolute top-[42px] left-8 h-1.5 w-5 rounded-full bg-line" />
+      </div>
     </div>
   );
 }

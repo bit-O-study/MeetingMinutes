@@ -15,7 +15,7 @@ function expiryDays(data: FormData) {
 function ExpirySelect({ id }: { id: string }) {
   return <div className="flex items-center gap-2">
     <label htmlFor={id} className="text-xs text-ink-2">유효 기간</label>
-    <select id={id} name="expiry" defaultValue="7" className="rounded border border-line bg-surface px-2 py-2 text-sm text-ink">
+    <select id={id} name="expiry" defaultValue="7" className="rounded-2xl ring-1 ring-inset ring-line bg-surface px-2 py-2 text-sm text-ink">
       <option value="1">1일</option><option value="7">7일</option><option value="30">30일</option><option value="none">만료 없음</option>
     </select>
   </div>;
@@ -64,7 +64,7 @@ export async function SpaceMembers({ spaceId, role, userId, members }: { spaceId
           </div>
           {invite.active && <div>
             <label htmlFor={`url-${invite.id}`} className="mb-1 block text-xs text-ink-2">초대 주소 · 복사해서 전달하세요</label>
-            <input id={`url-${invite.id}`} readOnly value={invite.url} className="w-full rounded border border-line bg-ground px-3 py-2 text-sm text-ink" />
+            <input id={`url-${invite.id}`} readOnly value={invite.url} className="w-full rounded-2xl ring-1 ring-inset ring-line bg-ground px-3 py-2 text-sm text-ink" />
           </div>}
           <div className="flex flex-wrap items-center gap-3">
             {invite.active && <form action={revokeInviteLink.bind(null, invite.id)}>

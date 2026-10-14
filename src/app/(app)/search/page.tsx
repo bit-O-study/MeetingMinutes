@@ -33,7 +33,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const to = one(params.to);
   const invalidDates = !validDate(from) || !validDate(to) || Boolean(from && to && from > to);
   const status = params.status === "draft" || params.status === "tidied" ? params.status : "";
-  const inputClass = "w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none";
+  const inputClass = "h-11 w-full min-w-0 rounded-2xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none";
   const formKey = [query, selectedSpace, from, to, status].join("|");
   const result = query && !invalidSpace && !invalidDates && spaceIds.length > 0
     ? await searchNotes(query, { spaceIds: selectedSpace ? [selectedSpace] : spaceIds, from, to, status: status || null, limit: 30 })
@@ -48,7 +48,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           <div className="flex gap-2">
             <input id="search-q" name="q" type="search" defaultValue={query} maxLength={200}
               placeholder="노트 제목과 본문에서 찾기" className={inputClass + " min-w-0 flex-1"} />
-            <button type="submit" className="shrink-0 rounded bg-accent px-4 py-2 text-sm text-on-accent hover:opacity-90">검색</button>
+            <button type="submit" className="shrink-0 press inline-flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-accent px-5 text-sm font-bold text-on-accent shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45">검색</button>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -80,7 +80,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         </div>
       </form>
       {invalidSpace || invalidDates ? (
-        <p id="search-error" role="alert" className="rounded border border-line bg-warn-soft p-3 text-sm text-warn">
+        <p id="search-error" role="alert" className="rounded-2xl ring-1 ring-inset ring-line bg-warn-soft p-3 text-sm text-warn">
           {invalidSpace ? "선택한 검색 범위를 사용할 수 없습니다. 검색 조건을 다시 선택해 주세요." : "검색 기간을 확인해 주세요. 시작일은 종료일보다 늦을 수 없습니다."}
         </p>
       ) : spaceIds.length === 0 ? (

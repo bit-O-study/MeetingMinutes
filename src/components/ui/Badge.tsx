@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 
 const TONES = {
-  neutral: "bg-surface-2 text-ink-3",
+  neutral: "bg-surface-2 text-ink-2",
   accent: "bg-accent-soft text-accent",
   ok: "bg-ok-soft text-ok",
   warn: "bg-warn-soft text-warn",
   info: "bg-info-soft text-info",
+  danger: "bg-danger-soft text-danger",
 } as const;
 
 export type BadgeTone = keyof typeof TONES;
@@ -22,7 +23,8 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex flex-none items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] leading-relaxed whitespace-nowrap",
+        // 10px 고정폭 글자는 너무 작고 딱딱했다 — 12px 굵은 알약(재디자인).
+        "inline-flex h-6 flex-none items-center gap-1 rounded-full px-2.5 text-xs font-bold whitespace-nowrap",
         TONES[tone],
         className,
       )}
@@ -55,7 +57,7 @@ export function DueBadge({
   today: string;
 }) {
   if (!dueDate) return null;
-  if (overdue) return <Badge tone="accent">지연 · {fmt(dueDate)}</Badge>;
+  if (overdue) return <Badge tone="danger">지연 · {fmt(dueDate)}</Badge>;
   if (dueDate === today) return <Badge tone="warn">오늘</Badge>;
   return <Badge tone="neutral">{fmt(dueDate)}</Badge>;
 }

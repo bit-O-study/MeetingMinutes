@@ -52,12 +52,12 @@ export function NoteHeader({
   }
 
   return (
-    <header className="flex flex-none flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2">
+    <header className="flex flex-none flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-surface px-4 py-3 md:px-6">
       <Link
         href={`/s/${spaceId}`}
-        className="font-mono text-[11px] text-ink-3 transition-colors hover:text-accent"
+        className="w-full truncate text-[13px] font-semibold text-ink-3 transition-colors hover:text-accent"
       >
-        ← {spaceName}
+        ‹ {spaceName}
       </Link>
 
       {editing ? (
@@ -75,14 +75,14 @@ export function NoteHeader({
               e.currentTarget.blur();
             }
           }}
-          className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0.5 font-serif text-base font-semibold text-ink outline-none"
+          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 text-xl font-black tracking-tight text-ink ring-2 ring-accent outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={() => setEditing(true)}
           title="클릭해서 제목 수정"
-          className="min-w-0 truncate rounded px-1 font-serif text-base font-semibold text-ink transition-colors hover:bg-surface-2"
+          className="min-w-0 truncate rounded-xl px-1 text-left text-xl font-black tracking-tight text-ink transition-colors hover:bg-surface-2"
         >
           {title}
         </button>
@@ -92,18 +92,18 @@ export function NoteHeader({
         <NoteStatusBadge status={status} />
       </button>
 
-      <span className="ml-auto font-mono text-[10px] text-ink-3">{updatedLabel}</span>
+      <span className="ml-auto text-xs text-ink-3">{updatedLabel}</span>
 
       {/* details를 쓰면 바깥 클릭으로 닫히는 동작과 키보드 접근을 브라우저가 처리한다. */}
       <details ref={menuRef} className="relative">
         <summary
           aria-label="노트 메뉴"
-          className="flex cursor-pointer list-none items-center rounded p-1 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink [&::-webkit-details-marker]:hidden"
+          className="flex size-9 cursor-pointer list-none items-center justify-center rounded-xl text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink [&::-webkit-details-marker]:hidden"
         >
           <MoreHorizontal className="size-4" />
         </summary>
 
-        <div className="absolute right-0 top-full z-10 mt-1 w-60 rounded-md border border-line bg-surface p-3 shadow-lg">
+        <div className="absolute right-0 top-full z-10 mt-1 w-64 rounded-2xl bg-surface p-3 shadow-float">
           <TrashAction noteId={noteId} taskCount={taskCount} pending={pending} />
         </div>
       </details>

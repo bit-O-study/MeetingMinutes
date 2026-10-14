@@ -1,70 +1,117 @@
 @import "tailwindcss";
 
 /*
-  디자인 토큰 — docs/ 의 화면 설계서와 같은 팔레트.
-  차가운 회색 중립 + 따뜻한 강조색 하나. 강조색은 아껴 쓴다.
+  디자인 토큰 — 2026-10-14 재디자인("프로젝트마다 색이 있는 메모장").
+  선 대신 면으로 묶는다: 맑은 회청색 바탕 위 흰 카드. 강조색은 기본 파랑이고,
+  프로젝트 안에서는 그 프로젝트 색(--pc)이 강조색 자리를 대신한다(.project-* 클래스).
+  옛 이름(ground·surface·accent…)은 그대로 두고 값만 바꿨다 — 아직 안 바꾼 화면도 새 색을 따라가게.
 */
 :root {
-  --ground: #f4f6f6;
+  --ground: #f2f4f8;
   --surface: #ffffff;
-  --surface-2: #ebeeee;
+  --surface-2: #eef1f6;
 
-  --ink: #1a1e1f;
-  --ink-2: #4e5659;
-  --ink-3: #818a8d;
+  --ink: #141925;
+  --ink-2: #4f586b;
+  --ink-3: #8a93a5;
 
-  --line: #dce1e1;
-  --line-2: #c4cbcb;
+  --line: #e3e7ee;
+  --line-2: #cfd5df;
 
-  --accent: #ab4e2c;
-  --accent-soft: #f8e8e1;
+  --accent: #3b5bdb;
+  --accent-soft: #e8edfd;
   --on-accent: #ffffff;
 
-  --ok: #2e6a4e;
-  --ok-soft: #e2f0e8;
-  --warn: #8b6412;
-  --warn-soft: #f7eeda;
-  --info: #28607f;
-  --info-soft: #e2edf3;
+  --ok: #1f7a4f;
+  --ok-soft: #e3f4ec;
+  --warn: #a35a06;
+  --warn-soft: #fdf1e2;
+  --info: #2a62a8;
+  --info-soft: #e5eef9;
+  --danger: #c93a32;
+  --danger-soft: #fdeceb;
+
+  /* 프로젝트 색 8가지 — 흰 글자를 올려도 4.5:1 이상 나오는 진하기. */
+  --p-blue: #3b5bdb;
+  --p-teal: #08707c;
+  --p-orange: #c2510c;
+  --p-violet: #7048e8;
+  --p-green: #237a35;
+  --p-pink: #c92a63;
+  --p-yellow: #8a6800;
+  --p-slate: #4f5d75;
 
   /* 공동 편집 커서·아바타 색. 접속 순서대로 배정한다. */
-  --user-1: #ab4e2c;
-  --user-2: #28607f;
-  --user-3: #2e6a4e;
-  --user-4: #7b4a86;
-  --user-5: #8b6412;
+  --user-1: #3b5bdb;
+  --user-2: #c2510c;
+  --user-3: #237a35;
+  --user-4: #7048e8;
+  --user-5: #c92a63;
+
+  --shadow-float: 0 10px 30px rgb(20 25 37 / 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #0f1314;
-    --surface: #171b1c;
-    --surface-2: #1f2425;
+    --ground: #0f131b;
+    --surface: #1a202c;
+    --surface-2: #232a38;
 
-    --ink: #e6eaea;
-    --ink-2: #a2acae;
-    --ink-3: #757f81;
+    --ink: #e9edf4;
+    --ink-2: #a8b1c2;
+    --ink-3: #737d90;
 
-    --line: #272d2e;
-    --line-2: #37403f;
+    --line: #2a3242;
+    --line-2: #3a4456;
 
-    --accent: #e08663;
-    --accent-soft: #2d1710;
-    --on-accent: #140805;
+    --accent: #7b93ff;
+    --accent-soft: #1c2645;
+    --on-accent: #0b1020;
 
-    --ok: #6fbe96;
-    --ok-soft: #132b21;
-    --warn: #d4a75e;
-    --warn-soft: #2e2514;
-    --info: #78aecc;
-    --info-soft: #14262f;
+    --ok: #5fd29b;
+    --ok-soft: #12392a;
+    --warn: #f2a54a;
+    --warn-soft: #3a2a13;
+    --info: #7fb2f0;
+    --info-soft: #16263b;
+    --danger: #ff7b72;
+    --danger-soft: #3c1d1b;
 
-    --user-1: #e08663;
-    --user-2: #78aecc;
-    --user-3: #6fbe96;
-    --user-4: #c095cb;
-    --user-5: #d4a75e;
+    /* 어두운 바탕에서는 프로젝트 색을 한 단계 밝힌다(글자·테두리로 쓸 때 읽히게). */
+    --p-blue: #6d87ff;
+    --p-teal: #2fb3c2;
+    --p-orange: #f0843d;
+    --p-violet: #9a7bff;
+    --p-green: #4cc36b;
+    --p-pink: #f06595;
+    --p-yellow: #e0b52b;
+    --p-slate: #8a9ab8;
+
+    --user-1: #6d87ff;
+    --user-2: #f0843d;
+    --user-3: #4cc36b;
+    --user-4: #9a7bff;
+    --user-5: #f06595;
+
+    --shadow-float: 0 10px 30px rgb(0 0 0 / 0.45);
   }
+}
+
+/*
+  프로젝트 색 — 프로젝트 안의 화면을 감싸는 요소에 project-* 를 붙이면
+  accent 계열(버튼·탭·칩·체크)이 그 색으로 바뀐다. 옅은 색은 진한 색에서 만든다.
+*/
+.project-blue { --pc: var(--p-blue); }
+.project-teal { --pc: var(--p-teal); }
+.project-orange { --pc: var(--p-orange); }
+.project-violet { --pc: var(--p-violet); }
+.project-green { --pc: var(--p-green); }
+.project-pink { --pc: var(--p-pink); }
+.project-yellow { --pc: var(--p-yellow); }
+.project-slate { --pc: var(--p-slate); }
+[class*="project-"] {
+  --accent: var(--pc);
+  --accent-soft: color-mix(in srgb, var(--pc) 13%, var(--surface));
 }
 
 @theme inline {
@@ -89,9 +136,23 @@
   --color-warn-soft: var(--warn-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --color-p-blue: var(--p-blue);
+  --color-p-teal: var(--p-teal);
+  --color-p-orange: var(--p-orange);
+  --color-p-violet: var(--p-violet);
+  --color-p-green: var(--p-green);
+  --color-p-pink: var(--p-pink);
+  --color-p-yellow: var(--p-yellow);
+  --color-p-slate: var(--p-slate);
+
+  --shadow-float: var(--shadow-float);
 
   --font-sans: var(--font-noto-sans-kr);
-  --font-serif: var(--font-noto-serif-kr);
+  /* 명조 제목은 회의록 양식처럼 딱딱해 보여 고딕으로 통일한다(재디자인). 이름은 남겨 둔다. */
+  --font-serif: var(--font-noto-sans-kr);
   --font-mono: var(--font-plex-mono);
 }
 
@@ -99,6 +160,14 @@ body {
   background: var(--ground);
   color: var(--ink);
   font-family: var(--font-noto-sans-kr), "Malgun Gothic", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 누르는 동안 살짝 작아진다 — 버튼·카드가 눌렸다는 느낌. 움직임 줄이기 설정이면 끈다. */
+.press { transition: transform 120ms ease, filter 120ms ease; }
+.press:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .press, .press:active { transition: none; transform: none; }
 }
 
 /* ── 에디터 ─────────────────────────────────────────────── */
@@ -123,7 +192,7 @@ body {
 .tiptap ul ul:not([data-type="taskList"]) { list-style-type: circle; }
 .tiptap ul ul ul:not([data-type="taskList"]) { list-style-type: square; }
 .tiptap li > p { margin: 0.15em 0; }
-.tiptap h1 { font-size: 1.75rem; font-weight: 700; margin: 1.2em 0 0.5em; }
+.tiptap h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin: 1.2em 0 0.5em; }
 .tiptap h3 { font-size: 1rem; font-weight: 600; margin: 1em 0 0.4em; }
 .tiptap h4, .tiptap h5, .tiptap h6 { font-weight: 600; margin: 0.8em 0 0.3em; }
 .tiptap a { color: var(--accent); text-decoration: underline; }
@@ -132,14 +201,13 @@ body {
 .tiptap pre code { padding: 0; background: none; }
 .tiptap hr { border-color: var(--line); margin: 1.5em 0; }
 
+/* 구획 제목 — 명조·밑줄은 양식 같아서 굵은 고딕으로(재디자인). */
 .tiptap h2 {
-  font-family: var(--font-noto-serif-kr), serif;
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  margin: 1.75rem 0 0.5rem;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid var(--line);
+  margin: 1.6rem 0 0.4rem;
 }
 
 .tiptap h2:first-child {
@@ -148,6 +216,7 @@ body {
 
 .tiptap p {
   margin: 0.4rem 0;
+  font-size: 0.9375rem;
   line-height: 1.8;
 }
 
@@ -162,7 +231,7 @@ body {
   color: var(--warn);
   padding: 0.6rem 0.85rem;
   margin: 0.6rem 0;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 10px 10px 0;
   font-size: 0.875rem;
 }
 
@@ -200,8 +269,8 @@ body {
 
 .tiptap input[type="checkbox"] {
   accent-color: var(--accent);
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.05rem;
+  height: 1.05rem;
   cursor: pointer;
 }
 

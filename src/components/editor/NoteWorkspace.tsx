@@ -120,6 +120,30 @@ export function NoteWorkspace({
     [provider, doc],
   );
 
+  /**
+   * 휴대폰 키보드가 올라오면(화면이 줄어들면) 커서 줄을 보이는 곳으로 올린다(2026-10-14).
+   * 노트 본문 키보드 문제의 의심 지점 — 키보드가 커서를 덮어 무엇을 치는지 안 보였다.
+   * 뷰포트를 키보드에 맞춰 줄이는 설정(layout.tsx 의 interactiveWidget)과 같이 쓴다.
+   */
+  useEffect(() => {
+    if (!editor) return;
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!vv) return;
+    let frame = 0;
+    const follow = () => {
+      if (!editor.isFocused || editor.isDestroyed) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => editor.commands.scrollIntoView());
+    };
+    vv.addEventListener("resize", follow);
+    editor.on("focus", follow);
+    return () => {
+      cancelAnimationFrame(frame);
+      vv.removeEventListener("resize", follow);
+      editor.off("focus", follow);
+    };
+  }, [editor]);
+
   /** 빈 Yjs 문서에만 템플릿을 심는다. 내용이 있는데 심으면 남이 쓴 것과 겹친다. */
   useEffect(() => {
     if (!editor || seeded.current || !initialContent) return;
@@ -205,7 +229,7 @@ export function NoteWorkspace({
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2 border-b border-line px-4 py-1.5">
+        <div className="flex items-center gap-2 border-b border-line px-4 py-2 md:px-6">
           <ConnectionBadge status={status} syncedAt={syncedAt} />
           <div className="ml-auto flex items-center gap-2">
             <AvatarStack people={peers.map((p) => ({ id: p.id, name: p.name, image: p.image }))} />
@@ -223,12 +247,13 @@ export function NoteWorkspace({
             />
           </div>
         </div>
-        <div className="min-w-0 flex-1 overflow-y-auto px-4 py-4">
-          {(saveError || taskError) && <p role="alert" className="mb-3 rounded border border-line bg-warn-soft p-3 text-sm text-warn">{saveError || taskError}</p>}
+        {/* 본문 줄 길이를 680px 안팎으로 묶는다 — 넓은 화면에서 한 줄이 너무 길면 읽기 어렵다(재디자인). */}
+        <div className="mx-auto w-full max-w-[720px] min-w-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+          {(saveError || taskError) && <p role="alert" className="mb-3 rounded-2xl bg-warn-soft p-3 text-sm font-semibold text-warn">{saveError || taskError}</p>}
           {!syncedAt && (
             <div aria-busy={!connectionSlow}>
               <p role="status" className="mb-2 text-xs text-ink-3">{connectionSlow ? "편집 연결이 지연되고 있습니다. 아래에서 내용을 읽을 수 있습니다." : "편집 연결 중…"}</p>
-              {connectionSlow && <button className="mb-3 rounded border border-line px-3 py-2 text-sm text-accent" onClick={() => { provider?.disconnect(); provider?.connect(); }}>다시 연결</button>}
+              {connectionSlow && <button className="press mb-3 inline-flex h-10 items-center rounded-xl bg-accent-soft px-4 text-sm font-bold text-accent" onClick={() => { provider?.disconnect(); provider?.connect(); }}>다시 연결</button>}
               <ReadOnlyNote content={initialContent} />
             </div>
           )}
@@ -275,7 +300,7 @@ function PanelToggle({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex items-center gap-1 rounded px-2 py-1 font-mono text-[10px] transition-colors ${
+      className={`flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold transition-colors ${
         active ? "bg-accent-soft text-accent" : "text-ink-3 hover:bg-surface-2 hover:text-ink-2"
       }`}
     >

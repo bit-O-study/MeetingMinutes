@@ -51,23 +51,24 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   const filters = [{ value: "open", label: "미완료" }, { value: "done", label: "완료" }, { value: "all", label: "전체" }];
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-5 py-8">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:px-6 md:py-8">
       <SectionHeading>내 할 일</SectionHeading>
       <p className="text-sm text-ink-2">참여 중인 스페이스에서 나에게 배정된 할 일입니다. 공용 할 일은 스페이스에서 확인하세요.</p>
       <nav aria-label="할 일 상태" className="flex flex-wrap gap-2">
         {filters.map((filter) => (
           <Link key={filter.value} href={"/tasks?status=" + filter.value}
             aria-current={status === filter.value ? "page" : undefined}
-            className={cn("rounded border px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-accent",
-              status === filter.value ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface text-ink-2 hover:bg-surface-2")}>
+            className={cn("press inline-flex h-9 items-center rounded-full px-4 text-[13px] font-bold focus-visible:outline-2 focus-visible:outline-accent",
+              status === filter.value ? "bg-accent text-on-accent" : "bg-surface text-ink-2 hover:text-ink")}>
             {filter.label}
           </Link>
         ))}
       </nav>
       <p className="text-xs text-ink-3">{rows.length}개 · 기한은 한국 시간 기준이며 이번 주는 일요일까지입니다.</p>
       {groups.filter((group) => group.rows.length > 0).map((group) => (
-        <Card key={group.title} tone={group.title === "지연" ? "accent" : "plain"}>
-          <CardTitle tone={group.title === "지연" ? "accent" : "plain"}>{group.title} · {group.rows.length}</CardTitle>
+        <Card key={group.title}>
+          {/* 지연은 상태가 아니라 묶음 제목이다 — 그 묶음 제목만 빨갛게(재디자인). */}
+          <CardTitle><span className={group.title === "지연" ? "text-danger" : undefined}>{group.title}</span> <span className="font-semibold text-ink-3">{group.rows.length}</span></CardTitle>
           <ul className="divide-y divide-line">
             {group.rows.map(({ task, noteTitle, spaceId }) => (
               <TaskRow key={task.id} today={today} task={{

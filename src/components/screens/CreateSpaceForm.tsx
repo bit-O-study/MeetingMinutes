@@ -12,7 +12,7 @@ export function CreateSpaceForm({ action }: {
     <div>
       <label htmlFor="space-name" className="mb-2 block text-sm font-medium text-ink">스페이스 이름</label>
       <input id="space-name" name="name" required maxLength={120} placeholder="예: 프론트엔드 스터디"
-        className="w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none" />
+        className="h-11 w-full min-w-0 rounded-2xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none" />
     </div>
     <fieldset className="space-y-2">
       <legend className="mb-2 text-sm font-medium text-ink">용도</legend>
@@ -20,7 +20,7 @@ export function CreateSpaceForm({ action }: {
         { value: "study", label: "스터디", hint: "함께 배운 내용과 막힌 질문, 다음 회차를 기록합니다." },
         { value: "handover", label: "인수인계", hint: "업무 절차와 주의사항, 미완료 건을 함께 정리합니다." },
         { value: "general", label: "일반", hint: "회의 메모와 자유로운 기록을 함께 작성합니다." },
-      ].map((kind) => <label key={kind.value} className="flex cursor-pointer items-start gap-3 rounded border border-line p-3 hover:bg-surface-2">
+      ].map((kind) => <label key={kind.value} className="flex cursor-pointer items-start gap-3 rounded-2xl bg-surface p-4 ring-1 ring-inset ring-line hover:ring-accent">
         <input type="radio" name="kind" value={kind.value} defaultChecked={kind.value === "study"} required className="mt-1 accent-accent" />
         <span><span className="block text-sm font-medium text-ink">{kind.label}</span><span className="mt-1 block text-xs text-ink-3">{kind.hint}</span></span>
       </label>)}

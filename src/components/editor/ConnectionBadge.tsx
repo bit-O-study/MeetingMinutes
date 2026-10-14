@@ -15,8 +15,8 @@ export function ConnectionBadge({
 }) {
   if (status === "offline") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded bg-surface-2 px-2 py-0.5 font-mono text-[10px] text-ink-3">
-        <span aria-hidden>○</span>
+      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-danger-soft px-3 text-xs font-bold text-danger">
+        <span aria-hidden className="size-2 rounded-full bg-danger" />
         오프라인 · 이 창을 닫지 마세요
       </span>
     );
@@ -24,16 +24,16 @@ export function ConnectionBadge({
 
   if (status === "connecting") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded bg-warn-soft px-2 py-0.5 font-mono text-[10px] text-warn">
-        <span aria-hidden>◐</span>
+      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-warn-soft px-3 text-xs font-bold text-warn">
+        <span aria-hidden className="size-2 animate-pulse rounded-full bg-warn motion-reduce:animate-none" />
         {syncedAt ? "재연결 중…" : "연결 중…"}
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded bg-ok-soft px-2 py-0.5 font-mono text-[10px] text-ok">
-      <span aria-hidden>●</span>
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-ok-soft px-3 text-xs font-bold text-ok">
+      <span aria-hidden className="size-2 rounded-full bg-ok" />
       연결됨{syncedAt && ` · ${timeLabel(syncedAt)} 반영`}
     </span>
   );

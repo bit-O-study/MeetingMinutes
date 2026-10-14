@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
+import { BottomNav } from "@/components/shell/BottomNav";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { listMySpaces } from "@/lib/access";
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notes, spaceMembers, spaces, tasks } from "@/lib/db/schema";
 
@@ -34,8 +35,17 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <TopBar user={user} />
       <div className="flex flex-1">
         <Sidebar spaces={spaceRows.map((r) => r.space)} openTaskCount={taskCount?.n ?? 0} />
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+        {/* 휴대폰에서는 아래 메뉴가 떠 있으므로 그만큼 아래를 비운다. */}
+        <main className="flex min-w-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom,0px)+88px)] md:pb-0">{children}</main>
       </div>
+      <BottomNav
+        user={user}
+        openTaskCount={taskCount?.n ?? 0}
+        signOutAction={async () => {
+          "use server";
+          await signOut({ redirectTo: "/login" });
+        }}
+      />
     </div>
   );
 }

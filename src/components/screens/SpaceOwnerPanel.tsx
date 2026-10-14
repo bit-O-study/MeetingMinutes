@@ -4,7 +4,7 @@ import { renameSpace, deleteSpace } from "@/lib/actions/spaces";
 /** 소유자 설정을 멤버 관리와 분리해 노트 목록에서도 바로 찾을 수 있게 한다. */
 export function SpaceOwnerPanel({ spaceId, name }: { spaceId: string; name: string }) {
   return (
-    <details className="rounded border border-line bg-surface px-4 py-3">
+    <details className="rounded-2xl ring-1 ring-inset ring-line bg-surface px-4 py-3">
       <summary className="cursor-pointer text-sm font-medium text-ink">스페이스 설정</summary>
       <div className="mt-4 space-y-5">
         <form className="space-y-2" action={async (data: FormData) => {
@@ -15,7 +15,7 @@ export function SpaceOwnerPanel({ spaceId, name }: { spaceId: string; name: stri
         }}>
           <label htmlFor="rename-space" className="block text-xs text-ink-2">스페이스 이름</label>
           <input id="rename-space" name="name" defaultValue={name} required maxLength={120} pattern={".*\\S.*"} title="공백이 아닌 문자를 포함해 1~120자로 입력해 주세요."
-            className="w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none" />
+            className="h-11 w-full min-w-0 rounded-2xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none" />
           <ActionSubmit>이름 변경</ActionSubmit>
         </form>
         <div className="space-y-2 border-t border-line pt-3">

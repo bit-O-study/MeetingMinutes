@@ -33,7 +33,7 @@ export default async function JoinPage({ params, searchParams }: {
   return <main className="mx-auto w-full max-w-lg px-5 py-12">
     <SectionHeading>스페이스 초대</SectionHeading>
     <Card className="space-y-5 p-5">
-      <h2 className="break-words font-serif text-xl font-semibold text-ink">{invite.spaceName}</h2>
+      <h2 className="break-words text-2xl font-black tracking-tight text-ink">{invite.spaceName}</h2>
       <section aria-label="함께할 멤버" className="space-y-3">
         <h3 className="text-sm font-medium text-ink-2">함께할 멤버</h3>
         <ul className="space-y-2">{invite.members.map((member) => <li key={member.id} className="flex items-center gap-2">
@@ -46,9 +46,9 @@ export default async function JoinPage({ params, searchParams }: {
       {query.login === "required" && !session?.user?.id && <p role="alert" className="text-sm text-warn">먼저 로그인한 뒤 참여해 주세요.</p>}
       {session?.user?.id ? <form action={join} className="space-y-3">
         <p className="text-xs text-ink-3">{session.user.name ?? "현재 계정"}님으로 참여합니다. 이미 멤버라면 스페이스로 이동합니다.</p>
-        <ActionSubmit>스페이스 참여하기</ActionSubmit>
+        <ActionSubmit wide>스페이스 참여하기</ActionSubmit>
       </form> : <div className="space-y-3">
-        <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="inline-block rounded bg-accent px-4 py-2 text-sm text-on-accent">로그인하고 계속</Link>
+        <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="inline-block press inline-flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-accent px-5 text-sm font-bold text-on-accent shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45">로그인하고 계속</Link>
         <p className="text-xs text-ink-3">계정이 없다면 로그인 화면에서 회원가입할 수 있습니다.</p>
       </div>}
       <Link href="/" className="inline-block text-sm text-ink-3 hover:text-accent">홈으로</Link>

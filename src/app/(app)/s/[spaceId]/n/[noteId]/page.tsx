@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { NoteHeader } from "@/components/editor/NoteHeader";
 import { NoteWorkspace } from "@/components/editor/NoteWorkspace";
 import { userColor } from "@/components/ui/Avatar";
+import { PROJECT_SCOPE_CLASS, projectColor } from "@/components/ui/projectColor";
 import { requireNoteAccess } from "@/lib/access";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -37,7 +38,7 @@ export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[no
   ]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className={`flex min-h-0 flex-1 flex-col ${PROJECT_SCOPE_CLASS[projectColor(space.id)]}`}>
       <NoteHeader
         noteId={note.id}
         spaceId={spaceId}
