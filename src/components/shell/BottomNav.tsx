@@ -7,7 +7,9 @@ import { NavLink } from "@/components/shell/NavLink";
 import { Avatar } from "@/components/ui/Avatar";
 
 /**
- * 휴대폰 아래 메뉴(재디자인) — 지금까지 휴대폰에서는 왼쪽 메뉴가 숨겨져 갈 곳이 없었다
+ * 휴대폰 아래 메뉴(재디자인). 처음엔 떠 있는 둥근 카드였는데 '둥둥 떠 있다'는 의견으로
+ * 화면 맨 아래에 붙는 일반 하단바로 바꿨다(2026-10-14).
+ * — 지금까지 휴대폰에서는 왼쪽 메뉴가 숨겨져 갈 곳이 없었다
  * (앱에서 '내 할 일'은 홈 카드로만 들어갈 수 있었다). '나'는 따로 화면이 없어 시트로 연다.
  */
 export function BottomNav({
@@ -29,14 +31,14 @@ export function BottomNav({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const tab = "flex flex-col items-center gap-0.5 py-1.5 text-[10.5px] font-bold text-ink-3";
+  const tab = "flex min-h-12 flex-col items-center justify-center gap-0.5 py-1 text-[11px] font-bold text-ink-3";
   const on = "text-accent";
   return (
     <>
       <nav
         aria-label="아래 메뉴"
-        className="fixed inset-x-3 z-30 grid grid-cols-4 rounded-3xl bg-surface px-1 py-1 shadow-float md:hidden"
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface pt-1 md:hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}
       >
         <NavLink href="/" exact className={tab} activeClassName={on}>
           <Home className="size-5" />홈

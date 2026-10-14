@@ -125,7 +125,7 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
     {message && <p role={failed ? "alert" : "status"} className={`rounded-xl px-3 py-2 text-sm font-semibold ${failed ? "bg-danger-soft text-danger" : "bg-ok-soft text-ok"}`}>{message}</p>}
 
     <form onSubmit={event => { event.preventDefault(); void send(); }}
-      className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+86px)] z-10 flex items-end gap-2 rounded-3xl bg-surface p-2 shadow-float md:bottom-4">
+      className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+68px)] z-10 flex items-end gap-2 rounded-3xl bg-surface p-2 shadow-float md:bottom-4">
       <label htmlFor="project-message" className="sr-only">메시지</label>
       <textarea ref={input} id="project-message" value={body} readOnly={pending} maxLength={10000} rows={1}
         onChange={event => setBody(event.target.value)}
