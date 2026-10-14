@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
@@ -8,6 +9,7 @@ import { listMySpaces } from "@/lib/access";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notes, spaceMembers, spaces, tasks } from "@/lib/db/schema";
+import { recordVisit } from "@/lib/visits";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
@@ -18,6 +20,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     name: session.user.name,
     image: session.user.image,
   };
+
+  // 하루 접속 기록(통합 어드민 통계) — 응답을 보낸 뒤에 써서 화면 여는 시간을 늘리지 않는다.
+  after(() => recordVisit(user.id));
 
   const [spaceRows, [taskCount]] = await Promise.all([
     listMySpaces(),

@@ -50,6 +50,13 @@
       "when": 1791940903514,
       "tag": "0006_narrow_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791982858145,
+      "tag": "0007_talented_roxanne_simpson",
+      "breakpoints": true
     }
   ]
 }

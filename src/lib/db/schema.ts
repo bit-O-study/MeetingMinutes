@@ -328,6 +328,28 @@ export type Space = typeof spaces.$inferSelect;
 export type SpaceMember = typeof spaceMembers.$inferSelect;
 export type InviteLink = typeof inviteLinks.$inferSelect;
 export type Note = typeof notes.$inferSelect;
+/* ────────────────────────────────────────────────────────────
+   하루 접속 — 통합 어드민의 "하루 몇 명 들어왔나" (2026-10-14)
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * 사람·날짜(서울)마다 한 줄. 로그인한 사람이 앱 화면을 열 때 기록한다.
+ * 화면을 몇 번 열었는지는 세지 않는다 — 궁금한 건 "몇 명"이고, 매 요청 쓰기를 늘리지 않으려고.
+ * last_seen_at 만 갱신해 그날 마지막으로 본 시각은 남긴다.
+ */
+export const dailyVisits = pgTable(
+  "daily_visits",
+  {
+    day: date("day").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.userId] })],
+).enableRLS();
+
 export type NewNote = typeof notes.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
