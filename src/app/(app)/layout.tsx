@@ -36,7 +36,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <div className="flex flex-1">
         <Sidebar spaces={spaceRows.map((r) => r.space)} openTaskCount={taskCount?.n ?? 0} />
         {/* 휴대폰에서는 아래 메뉴가 떠 있으므로 그만큼 아래를 비운다. */}
-        <main className="flex min-w-0 flex-1 flex-col pb-[calc(env(safe-area-inset-bottom,0px)+64px)] md:pb-0">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col pb-[calc(var(--safe-bottom)+64px)] md:pb-0">{children}</main>
       </div>
       <BottomNav
         user={user}

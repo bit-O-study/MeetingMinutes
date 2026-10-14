@@ -16,8 +16,8 @@ export function TopBar({
 }) {
   return (
     <header
-      className="sticky top-0 z-20 flex flex-none items-center gap-3 border-b border-line bg-surface/90 px-4 pb-2.5 backdrop-blur"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)" }}
+      className="sticky top-0 z-20 flex flex-none items-center gap-3 border-b border-line bg-surface/90 px-4 pb-2 backdrop-blur"
+      style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
     >
       <Link href="/" aria-label="moa 홈" className="flex items-center">
         <Logo />

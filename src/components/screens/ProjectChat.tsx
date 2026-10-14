@@ -125,7 +125,7 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
     {message && <p role={failed ? "alert" : "status"} className={`rounded-xl px-3 py-2 text-sm font-semibold ${failed ? "bg-danger-soft text-danger" : "bg-ok-soft text-ok"}`}>{message}</p>}
 
     <form onSubmit={event => { event.preventDefault(); void send(); }}
-      className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+68px)] z-10 flex items-end gap-2 rounded-3xl bg-surface p-2 shadow-float md:bottom-4">
+      className="sticky bottom-[calc(var(--safe-bottom)+68px)] z-10 flex items-end gap-2 rounded-3xl bg-surface p-2 shadow-float md:bottom-4">
       <label htmlFor="project-message" className="sr-only">메시지</label>
       <textarea ref={input} id="project-message" value={body} readOnly={pending} maxLength={10000} rows={1}
         onChange={event => setBody(event.target.value)}
@@ -145,7 +145,7 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
     {menuFor && <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="메시지 메뉴">
       <button type="button" aria-label="닫기" className="absolute inset-0 bg-ink/40" onClick={() => setMenuFor(null)} />
       <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 rounded-t-3xl bg-surface px-4 pt-3 shadow-float md:inset-x-auto md:right-6 md:bottom-6 md:w-80 md:rounded-3xl"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}>
+        style={{ paddingBottom: "calc(var(--safe-bottom) + 16px)" }}>
         <div className="mx-auto h-1 w-10 rounded-full bg-line md:hidden" />
         <p className="line-clamp-2 px-1 text-xs text-ink-3">{nameOf(menuFor.createdBy)} · {menuFor.body}</p>
         <button type="button" className="press flex h-12 items-center gap-3 rounded-2xl bg-surface-2 px-4 text-sm font-bold text-ink"

@@ -1,11 +1,11 @@
 # moa Android APK (옛 이름: 프로젝트 메모)
 
-- [APK 다운로드](https://github.com/bit-O-study/MeetingMinutes/raw/refs/heads/main/releases/apk/moa-1.0.2-debug.apk)
+- [APK 다운로드](https://github.com/bit-O-study/MeetingMinutes/raw/refs/heads/main/releases/apk/moa-1.0.3-debug.apk)
 - 실행하면 `https://meeting-minutes-orcin.vercel.app`에 바로 연결됩니다. 주소 입력/연결 설정 화면은 없습니다.
-- SHA-256: `5b8ffc0911b70f0ab780470c7328e558f4f18d2941036542c03453fd02bcaaa6`
+- SHA-256: `65d96486676c56e8fc149880f57abe6fba9dd899531f5175b42b7a679555dbda`
 - 2026-10-14 APK 저장소 등록 전 `npm run typecheck` / `npm run build` 통과.
 
-- 산출물: `releases/apk/moa-1.0.2-debug.apk` (개발용 서명, 직접 설치용)
+- 산출물: `releases/apk/moa-1.0.3-debug.apk` (개발용 서명, 직접 설치용)
 - 패키지: `kr.bito.projectmemo`, Android 8 이상, target SDK 36.
 - 운영 메모 주소가 앱에 내장되어 있으며 로그인 쿠키를 유지한다. 이전에 입력한 주소 설정은 사용하지 않는다.
 - 인터넷과 운영 중인 메모 웹 서버가 필요하다. APK 자체에 Next.js 서버나 DB는 포함하지 않는다.
@@ -44,3 +44,9 @@ cd android
 - versionCode 3, 패키지·서명 인증서는 1.0.1 과 동일(SHA-256 5988474c…48a6) — 기존 앱 위에 업데이트로 설치된다.
 - 화면(재디자인·하단바)은 웹 배포로 바뀌므로 APK 와 무관하다. 이 APK 는 바탕화면 이름·아이콘 때문에 다시 만든 것이다.
 - assembleDebug, apksigner verify, aapt 로 이름·버전·아이콘 확인. 실제 휴대폰 설치는 미검증.
+
+## 1.0.3 눈에 띄는 아이콘 (2026-10-14)
+
+- "기본 앱 같다"는 의견으로 아이콘 교체: 코랄→핑크→보라 그라데이션 + 굵은 흰 "m" + 노란 점. 웹 로고·탭 아이콘도 같은 그림.
+- versionCode 4, 서명 인증서 1.0.1~1.0.2 와 동일 — 위에 업데이트로 설치된다.
+- 위아래 막대가 길던 문제는 웹 쪽 수정(앱 안에서는 안전 영역 여백 0 — 앱이 이미 상태바·내비게이션 바만큼 비운다). APK 와 무관.

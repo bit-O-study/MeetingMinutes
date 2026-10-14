@@ -1,6 +1,29 @@
 @import "tailwindcss";
 
 /*
+ * 휴대폰 안전 영역(노치·상태바·제스처 바). 브라우저에서는 휴대폰마다 실제 값만큼 비운다.
+ * 안드로이드 앱(WebView)은 앱이 이미 상태바·내비게이션 바만큼 비워 두므로 0 으로 둔다 —
+ * 둘 다 더하면 위아래 막대가 두 배로 길어진다(2026-10-14 실기기 지적). 판별은 layout.tsx 의 data-shell.
+ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+:root[data-shell="app"] {
+  --safe-top: 0px;
+  --safe-bottom: 0px;
+}
+
+/* 브랜드(로고) 색 — 앱 아이콘과 같은 값. 라이트·다크 공통이라 한 번만 정의한다. */
+:root {
+  --brand-1: #ff8a5b;
+  --brand-2: #f0457e;
+  --brand-3: #7b3ff2;
+  --brand-spark: #ffe066;
+}
+
+
+/*
   디자인 토큰 — 2026-10-14 재디자인("프로젝트마다 색이 있는 메모장").
   선 대신 면으로 묶는다: 맑은 회청색 바탕 위 흰 카드. 강조색은 기본 파랑이고,
   프로젝트 안에서는 그 프로젝트 색(--pc)이 강조색 자리를 대신한다(.project-* 클래스).

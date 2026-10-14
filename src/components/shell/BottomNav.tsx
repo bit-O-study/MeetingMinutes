@@ -37,8 +37,8 @@ export function BottomNav({
     <>
       <nav
         aria-label="아래 메뉴"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface pt-1 md:hidden"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 4px)" }}
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface pt-0.5 md:hidden"
+        style={{ paddingBottom: "calc(var(--safe-bottom) + 2px)" }}
       >
         <NavLink href="/" exact className={tab} activeClassName={on}>
           <Home className="size-5" />홈
@@ -64,7 +64,7 @@ export function BottomNav({
           <button type="button" aria-label="닫기" className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
           <div
             className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-3xl bg-surface px-5 pt-3 shadow-float"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
+            style={{ paddingBottom: "calc(var(--safe-bottom) + 20px)" }}
           >
             <div className="mx-auto h-1 w-10 rounded-full bg-line" />
             <div className="flex items-center gap-3 py-1">
