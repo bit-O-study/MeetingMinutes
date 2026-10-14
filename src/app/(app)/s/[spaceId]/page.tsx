@@ -1,4 +1,6 @@
+import { ProjectChat } from "@/components/screens/ProjectChat";
 import { IssuePanel } from "@/components/screens/IssuePanel";
+import { listProjectMessages } from "@/lib/actions/project-chat";
 import { listIssues } from "@/lib/actions/issues";
 import { ISSUE_STATUSES } from "@/lib/issue-input";
 /**
@@ -24,10 +26,10 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   const { spaceId } = await params;
   const { space, role, userId } = await requireSpaceMember(spaceId);
   const query = await searchParams;
-  const tab = query.tab === "tasks" || query.tab === "members" || query.tab === "issues" ? query.tab : "notes";
+  const tab = query.tab === "notes" || query.tab === "chat" || query.tab === "tasks" || query.tab === "members" || query.tab === "issues" ? query.tab : "chat";
   const today = todayInSeoul();
-  const status = query.status === "open" || query.status === "in_progress" || query.status === "closed" ? query.status : undefined;
-  const [members, questionCounts, noteRows, taskRows, issueList] = await Promise.all([
+  const status = query.status === "raw" || query.status === "open" || query.status === "in_progress" || query.status === "closed" ? query.status : undefined;
+  const [members, questionCounts, noteRows, taskRows, issueList, chatList] = await Promise.all([
     listSpaceMembers(spaceId),
     tab === "notes" ? openQuestionCounts(spaceId) : {} as Record<string, number>,
     tab === "notes" ? db
@@ -43,13 +45,14 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
     .where(and(eq(notes.spaceId, spaceId), isNull(notes.deletedAt)))
     .orderBy(asc(tasks.dueDate), asc(tasks.createdAt), asc(tasks.id)) : [],
     tab === "issues" ? listIssues(spaceId, status, Number(query.page ?? 1)) : null,
+    tab === "chat" ? listProjectMessages(spaceId, Number(query.page ?? 1)) : null,
   ]);
   const taskGroups = [
     { title: "미완료", rows: taskRows.filter((row) => !row.task.doneAt) },
     { title: "완료", rows: taskRows.filter((row) => row.task.doneAt) },
   ];
   const kindLabels = { study: "스터디", handover: "인수인계", general: "일반" };
-  const tabs = [{ value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "issues", label: "이슈" }, { value: "members", label: "멤버" }];
+  const tabs = [{ value: "chat", label: "메인 · 채팅" }, { value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "issues", label: "이슈" }, { value: "members", label: "멤버" }];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-5 py-8">
@@ -66,7 +69,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
         {role === "owner" && <Link href={"/s/" + spaceId + "?tab=members"} className="ml-auto text-xs text-accent hover:underline">+ 멤버 초대</Link>}
       </div>
       {role === "owner" && <SpaceOwnerPanel key={space.name} spaceId={spaceId} name={space.name} />}
-      <nav aria-label="스페이스 메뉴" className="flex gap-2 border-b border-line pb-3">
+      <nav aria-label="스페이스 메뉴" className="flex flex-wrap gap-2 border-b border-line pb-3">
         {tabs.map((item) => (
           <Link key={item.value} href={"/s/" + spaceId + "?tab=" + item.value}
             aria-current={tab === item.value ? "page" : undefined}
@@ -74,6 +77,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
               tab === item.value ? "bg-accent-soft text-accent" : "text-ink-2 hover:bg-surface-2")}>{item.label}</Link>
         ))}
       </nav>
+      {tab === "chat" && chatList && <ProjectChat spaceId={spaceId} userId={userId} members={members} rows={chatList.rows} total={chatList.total} page={chatList.page} />}
       {tab === "notes" && (
         <Card>
           <ul className="divide-y divide-line">

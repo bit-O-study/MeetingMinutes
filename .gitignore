@@ -52,3 +52,9 @@ next-env.d.ts
 .idea/
 
 /.audit-runtime.json
+
+# Android local caches and build outputs
+/android/.gradle/
+/android/local.properties
+/android/**/build/
+/android/*.jks

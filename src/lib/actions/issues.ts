@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { issues, spaceMembers } from "@/lib/db/schema";
 import { issueInput, type IssueState } from "@/lib/issue-input";
 
-export async function listIssues(spaceId: string, status?: "open" | "in_progress" | "closed", page = 1) {
+export async function listIssues(spaceId: string, status?: "raw" | "open" | "in_progress" | "closed", page = 1) {
   await requireSpaceMember(spaceId);
   const safePage = Number.isSafeInteger(page) ? Math.max(1, Math.min(page, 10000)) : 1;
   const condition = and(eq(issues.spaceId, spaceId), status ? eq(issues.status, status) : undefined);
@@ -32,7 +32,7 @@ export async function saveIssue(_previous: IssueState, form: FormData): Promise<
     if (!member) return { ok: false, message: "이 스페이스의 멤버에게만 배정할 수 있습니다." };
   }
   if (id) {
-    const changed = await db.update(issues).set({ ...values, updatedAt: new Date(), version: sql`${issues.version} + 1` })
+    const changed = await db.update(issues).set({ ...values, originalBody: sql`coalesce(${issues.originalBody}, case when ${issues.status} = 'raw' then ${issues.body} else null end)`, updatedAt: new Date(), version: sql`${issues.version} + 1` })
       .where(and(eq(issues.id, id), eq(issues.spaceId, spaceId), eq(issues.version, version!))).returning({ id: issues.id });
     if (!changed.length) return { ok: false, message: "이슈가 변경되었거나 접근할 수 없습니다. 새로고침 후 다시 시도하세요." };
   } else {

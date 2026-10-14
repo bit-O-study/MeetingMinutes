@@ -43,6 +43,13 @@
       "when": 1791203074805,
       "tag": "0005_eminent_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791940903514,
+      "tag": "0006_narrow_galactus",
+      "breakpoints": true
     }
   ]
 }

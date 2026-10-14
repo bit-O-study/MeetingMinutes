@@ -70,6 +70,7 @@ export function NoteWorkspace({
   const editor = useEditor(
     {
       immediatelyRender: false,
+      shouldRerenderOnTransaction: false,
       extensions: [
         // Yjs가 되돌리기를 담당하므로 Tiptap 자체 히스토리는 끈다.
         StarterKit.configure({ undoRedo: false }),
@@ -85,7 +86,12 @@ export function NoteWorkspace({
           : []),
       ],
       editorProps: {
-        attributes: { class: "tiptap min-h-[60vh] px-1 py-2 text-[15px] text-ink" },
+        attributes: {
+          class: "tiptap min-h-[60vh] px-1 py-2 text-base text-ink",
+          role: "textbox", "aria-label": "노트 본문", "aria-multiline": "true",
+          // 모바일 예측 입력이 조합 중인 contenteditable 텍스트를 교체하지 않게 한다.
+          autocorrect: "off", autocapitalize: "off", autocomplete: "off", spellcheck: "false",
+        },
       },
       onUpdate({ editor, transaction }) {
         // 남이 친 글자까지 내가 저장하면 같은 쓰기를 접속자 수만큼 하게 된다.
@@ -94,7 +100,9 @@ export function NoteWorkspace({
         if (remote) return;
 
         if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
+        saveTimer.current = setTimeout(function saveWhenReady() {
+          if (editor.isDestroyed) return;
+          if (editor.view.composing) { saveTimer.current = setTimeout(saveWhenReady, 200); return; }
           void saveNoteContent(noteId, editor.getJSON()).then(() => setSaveError(""), () => setSaveError("본문 저장에 실패했습니다. 연결을 확인하고 이 창을 유지하세요."));
         }, SAVE_DEBOUNCE_MS);
 
@@ -102,7 +110,9 @@ export function NoteWorkspace({
         if (transaction.getMeta(FROM_DB)) return;
 
         if (taskTimer.current) clearTimeout(taskTimer.current);
-        taskTimer.current = setTimeout(() => {
+        taskTimer.current = setTimeout(function syncWhenReady() {
+          if (editor.isDestroyed) return;
+          if (editor.view.composing) { taskTimer.current = setTimeout(syncWhenReady, 200); return; }
           void syncNoteTasks(noteId, collectDocTasks(editor.state.doc)).then((rows) => { setTasks(rows); setTaskError(""); }, () => setTaskError("할 일 동기화에 실패했습니다. 연결을 확인하세요."));
         }, TASK_DEBOUNCE_MS);
       },

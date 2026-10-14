@@ -136,20 +136,31 @@ export const spaceMembers = pgTable(
   ],
 );
 
+/** 채팅 원문은 이슈 가공 후에도 그대로 남는다. */
+export const projectMessages = pgTable("project_messages", {
+  id: uuid("id").primaryKey(),
+  spaceId: uuid("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [index("project_messages_space_created_idx").on(t.spaceId, t.createdAt)]).enableRLS();
+
 /** 노트와 별개로 프로젝트에서 추적하는 이슈. 권한 경계는 스페이스다. */
 export const issues = pgTable("issues", {
+  sourceMessageId: uuid("source_message_id").references(() => projectMessages.id, { onDelete: "set null" }),
+  originalBody: text("original_body"),
   id: uuid("id").defaultRandom().primaryKey(),
   spaceId: uuid("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   body: text("body").notNull().default(""),
-  status: text("status").$type<"open" | "in_progress" | "closed">().notNull().default("open"),
+  status: text("status").$type<"raw" | "open" | "in_progress" | "closed">().notNull().default("open"),
   priority: text("priority").$type<"low" | "normal" | "high">().notNull().default("normal"),
   assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   version: integer("version").notNull().default(1),
-}, (t) => [index("issues_space_status_updated_idx").on(t.spaceId, t.status, t.updatedAt)]).enableRLS();
+}, (t) => [uniqueIndex("issues_source_message_idx").on(t.sourceMessageId), index("issues_space_status_updated_idx").on(t.spaceId, t.status, t.updatedAt)]).enableRLS();
 
 /** 이메일이 아니라 링크로 초대한다. 스터디에서 주소를 미리 받는 건 마찰이 크다. */
 export const inviteLinks = pgTable(
