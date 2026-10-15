@@ -11,6 +11,8 @@ import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { ySyncPluginKey } from "y-prosemirror";
 import { History, Share2 } from "lucide-react";
 
+import { createLatestSync } from "@/lib/latest-sync";
+import type { DocTaskInput } from "@/lib/tasks-diff";
 import { saveNoteContent } from "@/lib/actions/notes";
 import { deleteTask, syncNoteTasks, toggleTaskInNote, updateTask } from "@/lib/actions/tasks";
 import { useCollab, type CollabUser } from "@/lib/collab/useCollab";
@@ -64,6 +66,10 @@ export function NoteWorkspace({
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [syncTasks] = useState(() => createLatestSync<DocTaskInput[]>(
+    async items => { const rows = await syncNoteTasks(noteId, items); setTasks(rows); setTaskError(""); },
+    () => setTaskError("할 일 동기화에 실패했습니다. 연결을 확인하세요."),
+  ));
   const seeded = useRef(false);
   const reconciled = useRef(false);
 
@@ -113,7 +119,7 @@ export function NoteWorkspace({
         taskTimer.current = setTimeout(function syncWhenReady() {
           if (editor.isDestroyed) return;
           if (editor.view.composing) { taskTimer.current = setTimeout(syncWhenReady, 200); return; }
-          void syncNoteTasks(noteId, collectDocTasks(editor.state.doc)).then((rows) => { setTasks(rows); setTaskError(""); }, () => setTaskError("할 일 동기화에 실패했습니다. 연결을 확인하세요."));
+          void syncTasks(collectDocTasks(editor.state.doc));
         }, TASK_DEBOUNCE_MS);
       },
     },

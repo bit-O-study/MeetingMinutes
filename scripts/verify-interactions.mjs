@@ -26,6 +26,14 @@ try {
  const context=await browser.newContext({viewport:{width:390,height:844},permissions:['clipboard-read','clipboard-write']});
  await context.addCookies([{name:'authjs.session-token',value:token,domain:'localhost',path:'/',httpOnly:true,sameSite:'Lax'}]);
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if (process.env.PROFILE_ROUTES === '1') {
+   const measurements=[];
+   for(const path of ['/', '/tasks', '/search?q=노트', ...['chat','notes','tasks','issues','members'].map(tab => '/s/'+spaceId+'?tab='+tab), '/s/'+spaceId+'/new']) {
+     const start=performance.now();const response=await page.goto(base+path);await page.locator('main').waitFor();
+     measurements.push({route:path.replace(spaceId,':project'),ms:Math.round(performance.now()-start),status:response.status()});
+   }
+   console.log('ROUTE_PROFILE '+JSON.stringify(measurements));
+ }
  await page.goto(`${base}/s/${spaceId}?tab=issues&status=raw`);
  await page.getByRole('heading',{name:'완료 대상',exact:true}).waitFor();
  const stale=await context.newPage();await stale.goto(page.url());await stale.getByRole('heading',{name:'완료 대상',exact:true}).waitFor();

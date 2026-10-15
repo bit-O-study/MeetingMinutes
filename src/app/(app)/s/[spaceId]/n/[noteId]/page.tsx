@@ -49,7 +49,7 @@ export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[no
         taskCount={noteTasks.length}
       />
 
-      <NoteWorkspace
+      <NoteWorkspace key={noteId}
         noteId={note.id}
         initialContent={note.content}
         initialTasks={noteTasks}

@@ -199,6 +199,9 @@ export async function syncNoteTasks(noteId: string, items: DocTaskInput[]) {
 
   const existing = await db.select().from(tasks).where(eq(tasks.noteId, noteId));
   const diff = diffDocTasks(existing, items);
+  if (!diff.updates.length && !diff.inserts.length && !diff.deleteIds.length) {
+    return existing.sort((a, b) => a.sortOrder - b.sortOrder);
+  }
 
   for (const { id, patch } of diff.updates) {
     await db.update(tasks).set(patch).where(eq(tasks.id, id));

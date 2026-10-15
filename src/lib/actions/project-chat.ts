@@ -26,8 +26,8 @@ export async function sendProjectMessage(input: unknown): Promise<IssueState> {
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0].message };
   const { spaceId, id, body } = parsed.data;
   const { userId } = await requireSpaceMember(spaceId);
-  await db.insert(projectMessages).values({ id, spaceId, body, createdBy: userId }).onConflictDoNothing({ target: projectMessages.id });
-  const [saved] = await db.select({ body: projectMessages.body }).from(projectMessages)
+  const [inserted] = await db.insert(projectMessages).values({ id, spaceId, body, createdBy: userId }).onConflictDoNothing({ target: projectMessages.id }).returning({ body: projectMessages.body });
+  const [saved] = inserted ? [inserted] : await db.select({ body: projectMessages.body }).from(projectMessages)
     .where(and(eq(projectMessages.id, id), eq(projectMessages.spaceId, spaceId), eq(projectMessages.createdBy, userId))).limit(1);
   if (!saved || saved.body !== body) return { ok: false, message: "전송 결과를 확인할 수 없습니다. 다시 시도하세요." };
   revalidatePath(`/s/${spaceId}`);
