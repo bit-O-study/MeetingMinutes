@@ -1,0 +1,9 @@
+/* 빠른 이동에는 표시하지 않고, 실제 대기가 길어질 때만 안내한다. */
+.delayed {
+  visibility: hidden;
+  animation: reveal 0s linear 200ms forwards;
+}
+
+@keyframes reveal {
+  to { visibility: visible; }
+}
