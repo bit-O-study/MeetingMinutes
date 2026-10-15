@@ -2,7 +2,7 @@
  * S-05 검색 · CODEX
  * 소속 스페이스로 검색 범위를 먼저 확정하고 URL에 필터를 유지한다.
  */
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { listMySpaces, mySpaceIds } from "@/lib/access";
 import { searchNotes } from "@/lib/actions/search";

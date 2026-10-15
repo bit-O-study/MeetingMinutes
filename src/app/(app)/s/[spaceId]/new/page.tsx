@@ -2,7 +2,7 @@
  * S-02a 템플릿 선택 · CODEX
  * 용도에 맞는 템플릿을 먼저 선택하고 노트 생성은 기존 액션에 맡긴다.
  */
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { SectionHeading } from "@/components/ui/Panels";
 import { TemplatePicker } from "@/components/screens/TemplatePicker";
 import { requireSpaceMember } from "@/lib/access";

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DueBadge } from "@/components/ui/Badge";

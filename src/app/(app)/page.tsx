@@ -2,7 +2,7 @@
  * S-01 홈 · CODEX
  * 할 일은 먼저 알려 주고, 노트와 스페이스는 이어서 찾아갈 수 있게 한다.
  */
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { ChevronRight, Plus } from "lucide-react";
 import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";

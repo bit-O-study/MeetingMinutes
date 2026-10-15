@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireSpaceMember } from "@/lib/access";
 import { db } from "@/lib/db";
 import { issues, spaceMembers } from "@/lib/db/schema";
-import { issueInput, type IssueState } from "@/lib/issue-input";
+import { rawIssueActionInput, issueInput, type IssueState } from "@/lib/issue-input";
 
 export async function listIssues(spaceId: string, status?: "raw" | "open" | "in_progress" | "closed", page = 1) {
   await requireSpaceMember(spaceId);
@@ -40,4 +40,18 @@ export async function saveIssue(_previous: IssueState, form: FormData): Promise<
   }
   revalidatePath(`/s/${spaceId}`);
   return { ok: true, message: id ? "이슈를 수정했습니다." : "이슈를 등록했습니다." };
+}
+
+export async function resolveRawIssue(_previous: IssueState, form: FormData): Promise<IssueState> {
+  const parsed = rawIssueActionInput.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { ok: false, message: "이슈와 처리 방법을 확인하세요." };
+  const { spaceId, id, version, operation } = parsed.data;
+  await requireSpaceMember(spaceId);
+  const condition = and(eq(issues.id, id), eq(issues.spaceId, spaceId), eq(issues.version, version), eq(issues.status, "raw"));
+  const changed = operation === "delete"
+    ? await db.delete(issues).where(condition).returning({ id: issues.id })
+    : await db.update(issues).set({ status: "closed", originalBody: sql`coalesce(${issues.originalBody}, ${issues.body})`, updatedAt: new Date(), version: sql`${issues.version} + 1` }).where(condition).returning({ id: issues.id });
+  if (!changed.length) return { ok: false, message: "이슈가 이미 변경되었거나 삭제되었습니다. 새로고침 후 확인하세요." };
+  revalidatePath(`/s/${spaceId}`);
+  return { ok: true, message: operation === "delete" ? "미가공 이슈를 삭제했습니다. 채팅 원문은 유지됩니다." : "완료 처리했습니다. 해결됨 탭에서 확인할 수 있습니다." };
 }

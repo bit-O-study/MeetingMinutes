@@ -1,6 +1,6 @@
 ﻿import assert from "node:assert/strict";
 import { test } from "node:test";
-import { chatMessageInput, rawIssueTitle, issueInput } from "./issue-input.js";
+import { chatMessageInput, rawIssueTitle, issueInput, rawIssueActionInput } from "./issue-input.js";
 const ids = { spaceId: "cd62250e-4b9d-4d33-8b97-2961b6a57a87", id: "5af2c64c-0a23-4ac8-a922-c363ac8182d2" };
 test("미가공 메시지는 공백과 줄바꿈을 포함한 원문을 보존한다", () => {
   const body = "  w3 프로젝트 메모\n\n한글 입력 확인  ";
@@ -21,3 +21,10 @@ test("이슈 가공은 실제 상태만 허용하고 원문 변경 요청을 무
   assert.equal("originalBody" in parsed, false);
   assert.equal(issueInput.safeParse({ ...input, status: "raw" }).success, false);
 });
+
+ test("미가공 이슈 처리는 대상과 버전 및 허용한 작업을 검증한다", () => {
+  for (const operation of ["complete", "delete"]) assert.equal(rawIssueActionInput.safeParse({ ...ids, version: "1", operation }).success, true);
+  for (const patch of [{ version: 0 }, { version: "" }, { version: 1.5 }, { id: "invalid" }, { spaceId: "invalid" }, { operation: "publish" }]) {
+    assert.equal(rawIssueActionInput.safeParse({ ...ids, version: 1, operation: "delete", ...patch }).success, false);
+  }
+ });

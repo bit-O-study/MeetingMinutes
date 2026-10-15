@@ -7,7 +7,7 @@ import { ISSUE_STATUSES } from "@/lib/issue-input";
  * S-02 스페이스 · CODEX
  * 스페이스 권한을 먼저 확인하고 선택한 탭만 조회한다.
  */
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { Badge, NoteStatusBadge } from "@/components/ui/Badge";
 import { Card, EmptyState } from "@/components/ui/Panels";
@@ -33,16 +33,18 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   const query = await searchParams;
   const tab = query.tab === "notes" || query.tab === "chat" || query.tab === "tasks" || query.tab === "members" || query.tab === "issues" ? query.tab : "chat";
   const today = todayInSeoul();
+  const requestedPage = Number(query.page ?? 1);
+  const notePage = Number.isSafeInteger(requestedPage) ? Math.max(1, Math.min(10000, requestedPage)) : 1;
   const status = query.status === "raw" || query.status === "open" || query.status === "in_progress" || query.status === "closed" ? query.status : undefined;
   const [members, questionCounts, noteRows, taskRows, issueList, chatList] = await Promise.all([
     listSpaceMembers(spaceId),
-    tab === "notes" ? openQuestionCounts(spaceId) : {} as Record<string, number>,
+    tab === "notes" ? openQuestionCounts(spaceId, notePage) : {} as Record<string, number>,
     tab === "notes" ? db
     // 카드 미리보기용 본문 앞부분(재디자인) — 전체 본문을 읽지 않게 DB 에서 자른다.
     .select({ id: notes.id, title: notes.title, status: notes.status, updatedAt: notes.updatedAt, updatedByName: users.name, excerpt: sql<string>`left(${notes.plainText}, 140)` })
     .from(notes).leftJoin(users, eq(users.id, notes.updatedBy))
     .where(and(eq(notes.spaceId, spaceId), isNull(notes.deletedAt)))
-    .orderBy(desc(notes.updatedAt), asc(notes.id)) : [],
+    .orderBy(desc(notes.updatedAt), asc(notes.id)).limit(31).offset((notePage - 1) * 30) : [],
     tab === "tasks" ? db
     .select({ task: tasks, noteTitle: notes.title, assigneeName: users.name })
     .from(tasks)
@@ -103,7 +105,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
           <Card><EmptyState title="첫 노트를 만들어 보세요" hint="스터디 회의록, 인수인계 메모, 빈 노트로 시작할 수 있어요." action={{ href: "/s/" + spaceId + "/new", label: "새 노트" }} /></Card>
         ) : (
           <ul className="flex flex-col gap-2">
-            {noteRows.map((note) => (
+            {noteRows.slice(0, 30).map((note) => (
               <li key={note.id}>
                 <Link href={"/s/" + spaceId + "/n/" + note.id} className="press flex flex-col gap-1.5 rounded-2xl bg-surface px-4 py-3.5 transition-shadow hover:shadow-float focus-visible:outline-2 focus-visible:outline-accent">
                   <span className="flex items-center gap-2">
@@ -119,6 +121,8 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
           </ul>
         )
       )}
+
+      {tab === "notes" && <nav aria-label="노트 페이지" className="flex gap-3">{notePage > 1 && <Link href={`/s/${spaceId}?tab=notes&page=${notePage - 1}`} className={buttonClass("ghost", "sm")}>이전</Link>}{noteRows.length > 30 && <Link href={`/s/${spaceId}?tab=notes&page=${notePage + 1}`} className={buttonClass("ghost", "sm")}>다음</Link>}</nav>}
 
       {tab === "tasks" && (
         <>

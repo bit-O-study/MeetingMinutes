@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { issues } from "@/lib/db/schema";
-import { saveIssue } from "@/lib/actions/issues";
+import { resolveRawIssue, saveIssue } from "@/lib/actions/issues";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@/lib/issue-input";
 
 type Issue = typeof issues.$inferSelect;
@@ -46,6 +46,7 @@ export function IssuePanel({ spaceId, members, rows }: { spaceId: string; member
       </div>
       <h3 className="mt-2 break-words text-[15px] font-extrabold text-ink">{issue.title}</h3>
       {issue.body && <p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink-2">{issue.body}</p>}
+      {issue.status === "raw" && <RawIssueActions key={issue.version} spaceId={spaceId} issue={issue} />}
       <details className="mt-3" key={issue.status}>
         <summary className="inline-flex cursor-pointer items-center rounded-xl bg-accent-soft px-3 py-2 text-sm font-bold text-accent">{issue.status === "raw" ? "실제 이슈로 가공하기" : "이슈 편집 · 원문 보기"}</summary>
         <div className="mt-4 grid gap-5 md:grid-cols-2" aria-label={issue.status === "raw" ? "미가공 이슈 가공 화면" : "이슈 편집 화면"}>
@@ -59,4 +60,14 @@ export function IssuePanel({ spaceId, members, rows }: { spaceId: string; member
       </details>
     </li>)}</ul>
   </section>;
+}
+
+function RawIssueActions({ spaceId, issue }: { spaceId: string; issue: Issue }) {
+  const [state, action, pending] = useActionState(resolveRawIssue, { ok: false, message: "" });
+  return <form action={action} className="mt-3 space-y-2">
+    <input type="hidden" name="spaceId" value={spaceId} /><input type="hidden" name="id" value={issue.id} /><input type="hidden" name="version" value={issue.version} />
+    <div className="flex gap-2"><button name="operation" value="complete" disabled={pending} className="rounded-xl bg-ok-soft px-3 py-2 text-sm font-bold text-ok disabled:opacity-45">{pending ? "처리 중…" : "완료 처리"}</button>
+    <button name="operation" value="delete" disabled={pending} onClick={event => { if (!window.confirm("미가공 이슈를 삭제할까요? 채팅 원문은 유지됩니다.")) event.preventDefault(); }} className="rounded-xl bg-danger-soft px-3 py-2 text-sm font-bold text-danger disabled:opacity-45">삭제</button></div>
+    {state.message && <p role={state.ok ? "status" : "alert"} className="text-sm text-ink-2">{state.message}</p>}
+  </form>;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { useActionState } from "react";
 import { ActionSubmit } from "@/components/screens/ActionSubmit";
 

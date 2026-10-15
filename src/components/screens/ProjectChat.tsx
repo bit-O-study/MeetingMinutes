@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Copy, Flag } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { useRouter } from "next/navigation";
 import { sendProjectMessage, captureMessageIssue } from "@/lib/actions/project-chat";
 import type { listProjectMessages } from "@/lib/actions/project-chat";

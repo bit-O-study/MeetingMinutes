@@ -25,3 +25,5 @@ export function rawIssueTitle(body: string) {
 }
 
 export const messageIssueInput = z.object({ spaceId: z.uuid(), messageId: z.uuid() });
+
+export const rawIssueActionInput = z.object({ spaceId: z.uuid(), id: z.uuid(), version: z.coerce.number().int().positive(), operation: z.enum(["complete", "delete"]) });

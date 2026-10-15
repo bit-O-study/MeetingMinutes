@@ -1,3 +1,4 @@
+import { CopyInvite } from "./CopyInvite";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card, EmptyState } from "@/components/ui/Panels";
@@ -62,10 +63,7 @@ export async function SpaceMembers({ spaceId, role, userId, members }: { spaceId
             <Badge tone={invite.active ? "ok" : "neutral"}>{invite.revokedAt ? "회수됨" : invite.active ? "사용 가능" : "만료됨"}</Badge>
             <span className="text-xs text-ink-3">{invite.expiresAt ? `${invite.expiresAt.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} 만료 (한국 시간)` : "만료 없음"}</span>
           </div>
-          {invite.active && <div>
-            <label htmlFor={`url-${invite.id}`} className="mb-1 block text-xs text-ink-2">초대 주소 · 복사해서 전달하세요</label>
-            <input id={`url-${invite.id}`} readOnly value={invite.url} className="w-full rounded-2xl ring-1 ring-inset ring-line bg-ground px-3 py-2 text-sm text-ink" />
-          </div>}
+          {invite.active && <CopyInvite id={`url-${invite.id}`} url={invite.url} />}
           <div className="flex flex-wrap items-center gap-3">
             {invite.active && <form action={revokeInviteLink.bind(null, invite.id)}>
               <ActionSubmit confirmation="이 링크로는 더 이상 참여할 수 없게 됩니다. 회수할까요?">링크 회수</ActionSubmit>

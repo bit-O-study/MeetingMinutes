@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { Search } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 

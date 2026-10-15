@@ -159,17 +159,18 @@ function locate(q: string, plainText: string, content: unknown) {
 /**
  * 스페이스의 노트별 미해결 질문 수.
  *
- * content를 통째로 읽어 세므로 노트가 아주 많아지면 무거워진다.
- * 이 규모(스페이스당 수십 건)에서는 컬럼을 하나 더 두고 저장 시점마다
- * 갱신하는 것보다 어긋날 일이 없어 낫다.
+ * 표시 중인 페이지의 본문만 읽어 집계한다. 목록과 정렬·페이지 크기를 맞춰
+ * 프로젝트의 노트가 늘어도 한 번에 전체 본문을 전송하지 않는다.
  */
-export async function openQuestionCounts(spaceId: string): Promise<Record<string, number>> {
+export async function openQuestionCounts(spaceId: string, page = 1): Promise<Record<string, number>> {
   await requireSpaceMember(spaceId);
 
   const rows = await db
     .select({ id: notes.id, content: notes.content })
     .from(notes)
-    .where(and(eq(notes.spaceId, spaceId), isNull(notes.deletedAt)));
+    .where(and(eq(notes.spaceId, spaceId), isNull(notes.deletedAt)))
+    .orderBy(desc(notes.updatedAt), asc(notes.id)).limit(30)
+    .offset((Math.max(1, Math.min(10000, Number.isSafeInteger(page) ? page : 1)) - 1) * 30);
 
   const out: Record<string, number> = {};
   for (const row of rows) {

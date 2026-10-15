@@ -2,7 +2,7 @@
  * S-04 내 할 일 · CODEX
  * 지연은 상태가 아니라 기한으로 계산한 묶음이다.
  */
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { and, asc, eq, inArray, isNull, isNotNull } from "drizzle-orm";
 import { Card, CardTitle, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { TaskRow } from "@/components/screens/TaskRow";
