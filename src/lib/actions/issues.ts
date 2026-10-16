@@ -7,10 +7,12 @@ import { db } from "@/lib/db";
 import { issues, spaceMembers } from "@/lib/db/schema";
 import { rawIssueActionInput, issueInput, type IssueState } from "@/lib/issue-input";
 
-export async function listIssues(spaceId: string, status?: "raw" | "open" | "in_progress" | "closed", page = 1) {
+export async function listIssues(spaceId: string, status?: "raw" | "open" | "in_progress" | "closed", page = 1, issueId?: string) {
   await requireSpaceMember(spaceId);
   const safePage = Number.isSafeInteger(page) ? Math.max(1, Math.min(page, 10000)) : 1;
-  const condition = and(eq(issues.spaceId, spaceId), status ? eq(issues.status, status) : undefined);
+  // 내 할 일의 직접 링크는 목록 페이지 수와 무관하게 원본 이슈 한 건을 연다.
+  const selectedId = issueId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(issueId) ? issueId : undefined;
+  const condition = and(eq(issues.spaceId, spaceId), status ? eq(issues.status, status) : undefined, selectedId ? eq(issues.id, selectedId) : undefined);
   const [rows, totals] = await Promise.all([
     db.select().from(issues).where(condition).orderBy(desc(issues.updatedAt), desc(issues.id)).limit(30).offset((safePage - 1) * 30),
     db.select({ total: count() }).from(issues).where(condition),
@@ -39,6 +41,7 @@ export async function saveIssue(_previous: IssueState, form: FormData): Promise<
     await db.insert(issues).values({ ...values, spaceId, createdBy: userId });
   }
   revalidatePath(`/s/${spaceId}`);
+  revalidatePath("/", "layout");
   return { ok: true, message: id ? "이슈를 수정했습니다." : "이슈를 등록했습니다." };
 }
 
@@ -53,5 +56,6 @@ export async function resolveRawIssue(_previous: IssueState, form: FormData): Pr
     : await db.update(issues).set({ status: "closed", originalBody: sql`coalesce(${issues.originalBody}, ${issues.body})`, updatedAt: new Date(), version: sql`${issues.version} + 1` }).where(condition).returning({ id: issues.id });
   if (!changed.length) return { ok: false, message: "이슈가 이미 변경되었거나 삭제되었습니다. 새로고침 후 확인하세요." };
   revalidatePath(`/s/${spaceId}`);
+  revalidatePath("/", "layout");
   return { ok: true, message: operation === "delete" ? "미가공 이슈를 삭제했습니다. 채팅 원문은 유지됩니다." : "완료 처리했습니다. 해결됨 탭에서 확인할 수 있습니다." };
 }

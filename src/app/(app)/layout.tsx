@@ -10,6 +10,7 @@ import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notes, spaceMembers, spaces, tasks } from "@/lib/db/schema";
 import { recordVisit } from "@/lib/visits";
+import { assignedIssues } from "@/components/screens/assigned-issues";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
@@ -24,7 +25,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // 하루 접속 기록(통합 어드민 통계) — 응답을 보낸 뒤에 써서 화면 여는 시간을 늘리지 않는다.
   after(() => recordVisit(user.id));
 
-  const [spaceRows, [taskCount]] = await Promise.all([
+  const [spaceRows, [taskCount], myIssues] = await Promise.all([
     listMySpaces(),
     db
       .select({ n: sql<number>`count(*)::int` })
@@ -33,19 +34,20 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       .innerJoin(spaces, eq(spaces.id, notes.spaceId))
       .innerJoin(spaceMembers, and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.userId, user.id)))
       .where(and(eq(tasks.assigneeId, user.id), isNull(tasks.doneAt), isNull(notes.deletedAt), isNull(spaces.deletedAt))),
+    assignedIssues(),
   ]);
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <TopBar user={user} />
       <div className="flex flex-1">
-        <Sidebar spaces={spaceRows.map((r) => r.space)} openTaskCount={taskCount?.n ?? 0} />
+        <Sidebar spaces={spaceRows.map((r) => r.space)} openTaskCount={(taskCount?.n ?? 0) + myIssues.length} />
         {/* 휴대폰에서는 아래 메뉴가 떠 있으므로 그만큼 아래를 비운다. */}
         <main className="flex min-w-0 flex-1 flex-col pb-[calc(var(--safe-bottom)+64px)] md:pb-0">{children}</main>
       </div>
       <BottomNav
         user={user}
-        openTaskCount={taskCount?.n ?? 0}
+        openTaskCount={(taskCount?.n ?? 0) + myIssues.length}
         signOutAction={async () => {
           "use server";
           await signOut({ redirectTo: "/login" });

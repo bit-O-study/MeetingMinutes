@@ -6,6 +6,8 @@ import Link from "@/components/PendingLink";
 import { and, asc, eq, inArray, isNull, isNotNull } from "drizzle-orm";
 import { Card, CardTitle, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { TaskRow } from "@/components/screens/TaskRow";
+import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
+import { assignedIssues } from "@/components/screens/assigned-issues";
 import { mySpaceIds } from "@/lib/access";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -18,6 +20,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   const spaceIds = await mySpaceIds();
   const user = await requireUser();
   const today = todayInSeoul();
+  const myIssues = await assignedIssues(status);
   // 서울 날짜를 UTC 달력으로만 계산해 실행 서버의 시간대에 영향을 받지 않는다.
   const weekEnd = new Date(today + "T00:00:00Z");
   weekEnd.setUTCDate(weekEnd.getUTCDate() + (7 - weekEnd.getUTCDay()) % 7);
@@ -53,7 +56,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:px-6 md:py-8">
       <SectionHeading>내 할 일</SectionHeading>
-      <p className="text-sm text-ink-2">참여 중인 스페이스에서 나에게 배정된 할 일입니다. 공용 할 일은 스페이스에서 확인하세요.</p>
+      <p className="text-sm text-ink-2">참여 중인 프로젝트에서 나에게 배정된 할 일과 이슈입니다. 공용 항목은 프로젝트에서 확인하세요.</p>
       <nav aria-label="할 일 상태" className="flex flex-wrap gap-2">
         {filters.map((filter) => (
           <Link key={filter.value} href={"/tasks?status=" + filter.value}
@@ -64,7 +67,11 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
           </Link>
         ))}
       </nav>
-      <p className="text-xs text-ink-3">{rows.length}개 · 기한은 한국 시간 기준이며 이번 주는 일요일까지입니다.</p>
+      <p className="text-xs text-ink-3">{rows.length + myIssues.length}개 · 기한은 한국 시간 기준이며 이번 주는 일요일까지입니다.</p>
+      {myIssues.length > 0 && <Card>
+        <CardTitle>담당 이슈 <span className="font-semibold text-ink-3">{myIssues.length}</span></CardTitle>
+        <ul className="divide-y divide-line">{myIssues.map(row => <AssignedIssueRow key={row.issue.id} {...row} />)}</ul>
+      </Card>}
       {groups.filter((group) => group.rows.length > 0).map((group) => (
         <Card key={group.title}>
           {/* 지연은 상태가 아니라 묶음 제목이다 — 그 묶음 제목만 빨갛게(재디자인). */}
@@ -79,10 +86,10 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
           </ul>
         </Card>
       ))}
-      {rows.length === 0 && (
+      {rows.length === 0 && myIssues.length === 0 && (
         <Card><EmptyState
           title={status === "done" ? "완료한 할 일이 없습니다" : status === "open" ? "남은 할 일이 없습니다" : "배정된 할 일이 없습니다"}
-          hint={status === "done" ? "완료한 항목은 여기서 확인하고 다시 열 수 있습니다." : "노트에서 나에게 배정된 할 일이 여기에 모입니다."}
+          hint={status === "done" ? "완료한 항목은 여기서 확인할 수 있습니다." : "노트의 할 일과 프로젝트에서 나에게 배정된 이슈가 여기에 모입니다."}
           action={{ href: "/", label: "내 스페이스 보기" }} /></Card>
       )}
     </div>

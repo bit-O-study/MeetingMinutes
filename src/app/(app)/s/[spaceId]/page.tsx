@@ -52,7 +52,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
     .leftJoin(users, eq(users.id, tasks.assigneeId))
     .where(and(eq(notes.spaceId, spaceId), isNull(notes.deletedAt)))
     .orderBy(asc(tasks.dueDate), asc(tasks.createdAt), asc(tasks.id)) : [],
-    tab === "issues" ? listIssues(spaceId, status, Number(query.page ?? 1)) : null,
+    tab === "issues" ? listIssues(spaceId, status, query.issue ? 1 : Number(query.page ?? 1), typeof query.issue === "string" ? query.issue : undefined) : null,
     tab === "chat" ? listProjectMessages(spaceId, Number(query.page ?? 1)) : null,
   ]);
   const taskGroups = [

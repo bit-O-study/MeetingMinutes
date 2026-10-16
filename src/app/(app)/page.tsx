@@ -10,6 +10,8 @@ import { NoteStatusBadge } from "@/components/ui/Badge";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
 import { ProjectIcon } from "@/components/ui/ProjectIcon";
+import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
+import { assignedIssues } from "@/components/screens/assigned-issues";
 import { PROJECT_BG_CLASS, projectColor } from "@/components/ui/projectColor";
 import { listMySpaces } from "@/lib/access";
 import { requireUser } from "@/lib/auth";
@@ -38,6 +40,7 @@ export default async function HomePage() {
 
   const user = await requireUser();
   const today = todayInSeoul();
+  const myIssues = await assignedIssues();
   // 소속을 확인한 범위만 조회하고, 삭제한 노트의 내용과 할 일은 제외한다.
   const [recent, myTasks, noteCounts, members] = await Promise.all([
     db.select({ id: notes.id, title: notes.title, spaceId: notes.spaceId, status: notes.status, updatedAt: notes.updatedAt })
@@ -99,6 +102,14 @@ export default async function HomePage() {
           </ul>
         </section>
       )}
+
+      {myIssues.length > 0 && <Card>
+        <div className="flex items-center justify-between gap-2 px-3 pt-3">
+          <h2 className="text-sm font-bold text-ink">내 할 일 · 담당 이슈 {myIssues.length}개</h2>
+          <Link href="/tasks" className="text-sm font-bold text-accent">전체 보기</Link>
+        </div>
+        <ul className="divide-y divide-line">{myIssues.slice(0, 5).map(row => <AssignedIssueRow key={row.issue.id} {...row} />)}</ul>
+      </Card>}
 
       <section aria-labelledby="home-spaces-heading" className="flex flex-col gap-3">
         <div className="flex items-baseline gap-2 px-1">
