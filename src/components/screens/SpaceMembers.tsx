@@ -1,4 +1,5 @@
 import { CopyInvite } from "./CopyInvite";
+import { InviteExpirySelect, InviteForm } from "./InviteExpirySelect";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card, EmptyState } from "@/components/ui/Panels";
@@ -11,15 +12,6 @@ import {
 function expiryDays(data: FormData) {
   const value = String(data.get("expiry") ?? "7");
   return value === "none" ? null : value === "1" ? 1 : value === "30" ? 30 : 7;
-}
-
-function ExpirySelect({ id }: { id: string }) {
-  return <div className="flex items-center gap-2">
-    <label htmlFor={id} className="text-xs text-ink-2">유효 기간</label>
-    <select id={id} name="expiry" defaultValue="7" className="rounded-2xl ring-1 ring-inset ring-line bg-surface px-2 py-2 text-sm text-ink">
-      <option value="1">1일</option><option value="7">7일</option><option value="30">30일</option><option value="none">만료 없음</option>
-    </select>
-  </div>;
 }
 
 export async function SpaceMembers({ spaceId, role, userId, members }: { spaceId: string; role: "owner" | "member"; userId: string; members: Awaited<ReturnType<typeof listSpaceMembers>> }) {
@@ -51,12 +43,12 @@ export async function SpaceMembers({ spaceId, role, userId, members }: { spaceId
     {role === "owner" && <section aria-label="초대 링크 관리" className="space-y-3">
       <h2 className="text-sm font-semibold text-ink">초대 링크</h2>
       <p className="text-xs text-ink-3">링크로 참여한 멤버는 모든 노트와 할 일을 함께 편집합니다. 재발급하면 기존 링크는 회수됩니다.</p>
-      <form className="flex flex-wrap gap-3" action={async (data: FormData) => {
+      <InviteForm className="flex flex-wrap gap-3" action={async (data: FormData) => {
         "use server";
         await createInviteLink(spaceId, { expiresInDays: expiryDays(data) });
       }}>
-        <ExpirySelect id="invite-expiry" /><ActionSubmit>초대 링크 만들기</ActionSubmit>
-      </form>
+        <InviteExpirySelect id="invite-expiry" /><ActionSubmit>초대 링크 만들기</ActionSubmit>
+      </InviteForm>
       {invites.length === 0 ? <Card><EmptyState title="아직 초대 링크가 없습니다" hint="유효 기간을 고르고 초대 링크를 만들어 멤버에게 전달하세요." /></Card> :
         <ul className="space-y-3">{invites.map((invite) => <li key={invite.id}><Card className="space-y-3 p-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -68,13 +60,13 @@ export async function SpaceMembers({ spaceId, role, userId, members }: { spaceId
             {invite.active && <form action={revokeInviteLink.bind(null, invite.id)}>
               <ActionSubmit confirmation="이 링크로는 더 이상 참여할 수 없게 됩니다. 회수할까요?">링크 회수</ActionSubmit>
             </form>}
-            <form className="flex flex-wrap gap-2" action={async (data: FormData) => {
+            <InviteForm className="flex flex-wrap gap-2" action={async (data: FormData) => {
               "use server";
               await reissueInviteLink(invite.id, expiryDays(data));
             }}>
-              <ExpirySelect id={`expiry-${invite.id}`} />
+              <InviteExpirySelect id={`expiry-${invite.id}`} permanent={!invite.expiresAt} />
               <ActionSubmit confirmation="기존 링크를 회수하고 선택한 유효 기간으로 새 링크를 발급할까요?">재발급</ActionSubmit>
-            </form>
+            </InviteForm>
           </div>
         </Card></li>)}</ul>}
     </section>}
