@@ -11,7 +11,8 @@ const require = createRequire(import.meta.url);
 const { chromium, expect } = require(process.env.PLANNER_PLAYWRIGHT_PATH || "../../trip/node_modules/@playwright/test");
 const base = process.env.PLANNER_TEST_URL || "http://localhost:3137";
 const ids = [randomUUID(), randomUUID()];
-let browser: any;
+// Playwright는 다른 레포에서 런타임에 불러오므로 타입이 없다. launch 반환형을 그대로 따른다.
+let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
 try {
   await db.insert(users).values(ids.map((id, n) => ({ id, name: `플래너 검증 ${n}`, email: `planner-${id}@example.invalid` })));
   browser = await chromium.launch({ headless: true, channel: "msedge" });
@@ -27,7 +28,7 @@ try {
   const errors: string[] = [];
   page.on("pageerror", (error: Error) => errors.push(error.message));
   const mutations: { headers: Record<string,string>; body: string }[] = [];
-  page.on("request", (request: any) => { if (request.method() === "POST" && request.headers()["next-action"]) mutations.push({ headers: request.headers(), body: request.postData() }); });
+  page.on("request", (request: { method(): string; headers(): Record<string, string>; postData(): string }) => { if (request.method() === "POST" && request.headers()["next-action"]) mutations.push({ headers: request.headers(), body: request.postData() }); });
   await page.goto(`${base}/tasks`);
   await page.getByRole("button", { name: "할 일 추가", exact: true }).click();
   const dialog = page.getByRole("dialog");

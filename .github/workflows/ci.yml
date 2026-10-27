@@ -1,0 +1,44 @@
+name: ci
+
+# 운영 배포는 Vercel이 main push마다 따로 한다. 이 워크플로는 그 앞단의 검증만 맡는다.
+# 실패해도 Vercel 배포를 막지는 않으므로, 빨간불이면 바로 고친다.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # DB 모듈이 import 시점에 DATABASE_URL을 요구한다. 접속되지 않는 자리표시자라 실제 DB에는 닿지 않는다.
+      DATABASE_URL: postgres://ci:ci@127.0.0.1:1/ci_only
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npm run test
+      - name: Lint
+        run: npm run lint
+      # PageProps·RouteContext 같은 라우트 타입은 빌드가 생성한다. 그래서 타입 검사는 빌드 뒤에 둔다.
+      - name: Build
+        run: npm run build
+      - name: Type check
+        run: npm run typecheck
