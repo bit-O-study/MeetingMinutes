@@ -2,6 +2,10 @@ name: Windows storage and Moa deployment
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.github/workflows/storage-check.yml'
+      - 'docs/**'
+      - 'android/**'
   workflow_dispatch:
 permissions:
   contents: read

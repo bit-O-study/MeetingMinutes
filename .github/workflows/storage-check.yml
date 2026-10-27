@@ -25,6 +25,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: scripts/deploy
       - name: Verify exact file on persistent disk
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
         env:
           FILE_ID: ${{ inputs.file_id }}
           FILE_SHA256: ${{ inputs.sha256 }}
