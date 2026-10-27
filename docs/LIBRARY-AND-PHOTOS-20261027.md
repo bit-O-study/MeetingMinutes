@@ -9,3 +9,12 @@
 main 코드 push의 Windows storage workflow에서 웹 검사와 APK를 빌드한다. 기존 APK 서명 키를 암호화 secret에 보관해 업데이트 호환성을 유지한다. versionCode=1000+run_number, versionName=1.1.run_number. 서버 배포 성공 후 APK를 영구 디스크에 올리고 `모바프로젝트` 자료실에 버전·커밋·워크플로 실행을 기록한다. 같은 파일명·해시는 재실행에서 중복 등록하지 않으며 다른 해시는 실패한다. 원본 APK와 서버 파일/DB 해시를 대조한다. 실패 시 GitHub publish job도 실패한다. 문서만 변경한 push는 기존 정책대로 빌드를 생략한다.
 
 로컬 검증: 모아 테스트 70개, 타입 검사, lint(기존 Avatar 경고 1), production build 통과. 관리자 production build 통과. 운영 배포/브라우저 사진 저장·재조회·권한 및 APK 자동 등록은 배포 후 확인한다.
+
+## 운영 검증 결과
+
+- main `d490fae`: [Windows 배포 및 APK 등록 실행](https://github.com/bit-O-study/MeetingMinutes/actions/runs/40519692673) build/deploy/publish-apk 모두 success.
+- 자동 등록 파일 `moa-1.1.7-d490fae.apk`, versionCode 1007, 15,261 bytes. 파일 ID `2fd5ad1d-e65b-4358-8573-7ddb616fdbb1`, SHA-256 `a30b56cca78881ecf7af0796afd57decf58f316257488a6cf3ba0091a247eef9`. 서버 디스크/DB 해시 재조회 일치.
+- 초기 CI에서 폐지된 SDK tools 패키지와 Groovy 버전 대입식을 발견해 수정했다. 성공 실행의 실제 APK 빌드까지 검증했다.
+- 운영 브라우저: 사진 삽입, 자동 저장, 새로고침 후 이미지 표시, 이미지 다운로드 원본 해시/inline 응답, 비로그인·비멤버 차단, SVG 및 외부 Origin 차단 통과.
+- 모아 자료실 메뉴 제거, 이전 URL의 관리자 이동, 기존 패키지 업로드 410 확인. 관리자 파일 업로드/다운로드 원본 해시 일치 및 390px 모바일 가로 넘침 없음 확인.
+- 검증용 계정·프로젝트·사진·APK·서버 디스크 원본은 해시 대조 후 모두 삭제했다. 사용자의 기존 자료와 자동 배포 APK는 보존했다.
