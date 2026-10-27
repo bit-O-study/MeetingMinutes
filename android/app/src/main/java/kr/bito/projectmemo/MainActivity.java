@@ -10,11 +10,15 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebSettings;
+import android.webkit.WebChromeClient;
+import android.webkit.ValueCallback;
 import android.widget.LinearLayout;
 import android.view.WindowInsets;
 
 public final class MainActivity extends Activity {
     private WebView web;
+    private ValueCallback<Uri[]> filePicker;
+    private static final int PICK_FILE = 1001;
     private static final String origin = "https://meeting-minutes-orcin.vercel.app";
     private LinearLayout root;
     @Override public void onCreate(Bundle state) {
@@ -38,9 +42,24 @@ public final class MainActivity extends Activity {
         root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
         WebSettings config = web.getSettings();
         config.setJavaScriptEnabled(true); config.setDomStorageEnabled(true);
-        config.setAllowFileAccess(false); config.setAllowContentAccess(false);
+        config.setAllowFileAccess(false); config.setAllowContentAccess(true);
         config.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         CookieManager.getInstance().setAcceptCookie(true);
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                Uri current = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
+                if (!"https".equals(current.getScheme()) || !Uri.parse(origin).getHost().equals(current.getHost())) return false;
+                if (filePicker != null) filePicker.onReceiveValue(null);
+                filePicker = callback;
+                Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                picker.addCategory(Intent.CATEGORY_OPENABLE);
+                picker.setType("*/*");
+                picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try { startActivityForResult(picker, PICK_FILE); }
+                catch (android.content.ActivityNotFoundException ignored) { filePicker.onReceiveValue(null); filePicker = null; }
+                return true;
+            }
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
@@ -58,7 +77,15 @@ public final class MainActivity extends Activity {
         if (state == null || web.restoreState(state) == null) web.loadUrl(origin);
     }
     @Override protected void onSaveInstanceState(Bundle state) { if (web != null) web.saveState(state); super.onSaveInstanceState(state); }
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_FILE && filePicker != null) {
+            Uri selected = resultCode == RESULT_OK && data != null ? data.getData() : null;
+            filePicker.onReceiveValue(selected != null && "content".equals(selected.getScheme()) ? new Uri[]{selected} : null);
+            filePicker = null;
+        }
+    }
     @Override protected void onPause() { CookieManager.getInstance().flush(); super.onPause(); }
     @Override public void onBackPressed() { if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed(); }
-    @Override protected void onDestroy() { if (web != null) web.destroy(); super.onDestroy(); }
+    @Override protected void onDestroy() { if (filePicker != null) { filePicker.onReceiveValue(null); filePicker = null; } if (web != null) web.destroy(); super.onDestroy(); }
 }

@@ -52,7 +52,7 @@ export async function startStorageWorker() {
     if (active >= 2) { respond(503, { error: "파일 서버가 사용 중이에요. 잠시 후 다시 시도해 주세요." }); return; }
     active++;
     try {
-      const [member] = await sql`select 1 from space_members where space_id = ${ticket.spaceId} and user_id = ${ticket.userId}`;
+      const [member] = await sql`select 1 from space_members m join spaces s on s.id = m.space_id where m.space_id = ${ticket.spaceId} and m.user_id = ${ticket.userId} and s.deleted_at is null`;
       if (!member) { respond(404, { error: "접근할 수 없습니다." }); return; }
       const destination = path.join(directory, ticket.id);
       if (ticket.action === "download") {
@@ -83,7 +83,7 @@ export async function startStorageWorker() {
         // 업로드 도중 멤버 권한이 회수되면 메타데이터도 등록하지 않는다.
         const inserted = await sql`insert into project_files (id, space_id, note_id, kind, name, mime, size, sha256, version_label, description, uploaded_by)
           select ${ticket.id}, ${ticket.spaceId}, null, 'package', ${metadata.name}, ${metadata.mime}, ${metadata.size}, ${metadata.sha256}, ${ticket.version!}, ${ticket.description!}, ${ticket.userId}
-          where exists (select 1 from space_members where space_id = ${ticket.spaceId} and user_id = ${ticket.userId}) returning id`;
+          where exists (select 1 from space_members m join spaces s on s.id = m.space_id where m.space_id = ${ticket.spaceId} and m.user_id = ${ticket.userId} and s.deleted_at is null) returning id`;
         if (!inserted.length) throw new Error("Membership revoked");
       } catch (error) { await unlink(destination).catch(() => {}); throw error; }
       respond(201, { id: ticket.id, ...metadata });

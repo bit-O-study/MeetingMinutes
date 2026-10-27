@@ -37,6 +37,8 @@ jobs:
           if (Test-Path public) { Copy-Item -Recurse public release/public }
           @{project='MeetingMinutes';sha=$env:GITHUB_SHA;builtAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json | Set-Content -Encoding utf8 release/release.json
           Copy-Item scripts/deploy/configure-storage.cjs release/configure-storage.cjs
+          Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/download/2026.10.4/cloudflared-windows-amd64.exe' -OutFile release/cloudflared.exe
+          if ((Get-FileHash release/cloudflared.exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne '411b16d40c8d872243efeb52c550053d00af0a8a97fbb32e730fb8aba429eaa8') { throw 'Cloudflare binary checksum mismatch' }
           tar -cf release.tar -C release .
       - uses: actions/upload-artifact@v4
         with:
@@ -64,7 +66,7 @@ jobs:
           $ErrorActionPreference='Stop'
           $setup=Join-Path $env:RUNNER_TEMP 'moa-storage-setup'
           New-Item -ItemType Directory -Force -Path $setup | Out-Null
-          tar -xf $env:ARCHIVE -C $setup ./configure-storage.cjs
+          tar -xf $env:ARCHIVE -C $setup ./configure-storage.cjs ./cloudflared.exe
           if ($LASTEXITCODE -ne 0) { throw 'Storage setup extraction failed' }
           node (Join-Path $setup 'configure-storage.cjs')
           if ($LASTEXITCODE -ne 0) { throw 'Storage setup failed' }

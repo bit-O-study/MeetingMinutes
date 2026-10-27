@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
+const crypto = require('node:crypto');
 const root = 'C:/services/Bit-O/MeetingMinutes';
 if (process.env.GITHUB_REPOSITORY !== 'bit-O-study/MeetingMinutes' || process.env.GITHUB_REF !== 'refs/heads/main') throw Error('Only main can configure storage');
 const config = path.join(root, 'config/runtime.env');
@@ -20,7 +21,9 @@ function serialize(values) {
 fs.mkdirSync(path.dirname(config), { recursive: true });
 fs.mkdirSync(incoming.MOA_UPLOAD_DIR, { recursive: true });
 fs.mkdirSync(path.dirname(incoming.MOA_CLOUDFLARED_PATH), { recursive: true });
-if (!fs.existsSync(incoming.MOA_CLOUDFLARED_PATH)) fs.copyFileSync('C:/services/Bit-O/access/bin/cloudflared.exe', incoming.MOA_CLOUDFLARED_PATH);
+const binary = path.join(__dirname, 'cloudflared.exe');
+if (crypto.createHash('sha256').update(fs.readFileSync(binary)).digest('hex') !== '411b16d40c8d872243efeb52c550053d00af0a8a97fbb32e730fb8aba429eaa8') throw Error('Cloudflare binary checksum mismatch');
+if (!fs.existsSync(incoming.MOA_CLOUDFLARED_PATH)) fs.copyFileSync(binary, incoming.MOA_CLOUDFLARED_PATH);
 fs.writeFileSync(config + '.tmp', serialize(values), { mode: 0o600 });
 fs.renameSync(config + '.tmp', config);
 console.log('Persistent storage runtime configured; credentials omitted.');
