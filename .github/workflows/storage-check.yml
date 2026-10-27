@@ -1,0 +1,32 @@
+name: Verify persistent storage file
+on:
+  workflow_dispatch:
+    inputs:
+      file_id:
+        required: true
+        type: string
+      sha256:
+        required: true
+        type: string
+      cleanup:
+        default: false
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main' && github.repository == 'bit-O-study/MeetingMinutes'
+    runs-on: [self-hosted, Windows, X64, bito-MeetingMinutes]
+    environment: windows-server
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/deploy
+      - name: Verify exact file on persistent disk
+        env:
+          FILE_ID: ${{ inputs.file_id }}
+          FILE_SHA256: ${{ inputs.sha256 }}
+          CLEANUP: ${{ inputs.cleanup }}
+        run: node scripts/deploy/verify-storage.cjs

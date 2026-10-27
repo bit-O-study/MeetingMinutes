@@ -13,7 +13,12 @@ export function ProjectPackages({ spaceId, files, storageReady, page, hasNext }:
     const data = new FormData(event.currentTarget);
     setBusy(true); setMessage("");
     try {
-      const response = await fetch("/api/spaces/" + spaceId + "/files", { method: "POST", body: data });
+      const file = data.get("file");
+      if (!(file instanceof File) || !file.size || file.size > 64 * 1024 * 1024) throw new Error("64MB 이하의 파일을 선택해 주세요.");
+      const authorization = await fetch("/api/spaces/" + spaceId + "/files/ticket", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: file.name, size: file.size, version: data.get("version"), description: data.get("description") }) });
+      const transfer = await authorization.json();
+      if (!authorization.ok) throw new Error(transfer.error || "파일 서버에 연결하지 못했어요.");
+      const response = await fetch(transfer.url, { method: "PUT", headers: { Authorization: "Bearer " + transfer.token, "Content-Type": "application/octet-stream" }, body: file, credentials: "omit" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "업로드하지 못했어요.");
       formRef.current?.reset();

@@ -6,6 +6,8 @@ import { db } from "./db";
 import { projectFiles } from "./db/schema";
 import { attachmentIdPattern, inspectAttachment, PACKAGE_LIMIT, type AttachmentKind } from "./attachment-input";
 import { readAttachmentFile, removeAttachmentFile, uploadDirectory, writeAttachmentFile } from "./attachment-storage";
+import { storageEndpoint } from "./storage-endpoint";
+import { signStorageTicket } from "./storage-ticket";
 
 export async function listProjectPackages(spaceId: string, page = 1) {
   await requireSpaceMember(spaceId);
@@ -63,10 +65,16 @@ export async function uploadAttachment(request: Request, targetId: string, kind:
 export async function downloadAttachment(_request: Request, id: string) {
   const missing = () => new Response("접근할 수 없습니다.", { status: 404, headers: { "Cache-Control": "no-store" } });
   if (!attachmentIdPattern.test(id)) return missing();
-  await requireUser();
+  const user = await requireUser();
   const [file] = await db.select().from(projectFiles).where(and(eq(projectFiles.id, id), eq(projectFiles.kind, "package"))).limit(1);
   if (!file) return missing();
   await requireSpaceMember(file.spaceId);
+  const endpoint = await storageEndpoint();
+  if (endpoint) {
+    const ticket = signStorageTicket({ action: "download", id, spaceId: file.spaceId, userId: user.id, expires: Date.now() + 120000 });
+    return new Response(null, { status: 302, headers: { Location: endpoint + "/files?ticket=" + encodeURIComponent(ticket), "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" } });
+  }
+  if (process.env.VERCEL) return new Response("파일 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.", { status: 503, headers: { "Cache-Control": "no-store" } });
   let bytes: Buffer;
   try { bytes = await readAttachmentFile(id); } catch { return missing(); }
   if (bytes.length !== file.size) return missing();

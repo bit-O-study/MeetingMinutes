@@ -1,0 +1,71 @@
+name: Windows storage and Moa deployment
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-server-main
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgres://ci:ci@127.0.0.1:1/ci_only
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_APP_URL: https://meeting-minutes-orcin.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run typecheck
+      - name: Package standalone application
+        shell: pwsh
+        run: |
+          Copy-Item -Recurse .next/standalone release
+          Copy-Item -Recurse .next/static release/.next/static
+          if (Test-Path public) { Copy-Item -Recurse public release/public }
+          @{project='MeetingMinutes';sha=$env:GITHUB_SHA;builtAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json | Set-Content -Encoding utf8 release/release.json
+          Copy-Item scripts/deploy/configure-storage.cjs release/configure-storage.cjs
+          tar -cf release.tar -C release .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-storage-release
+          path: release.tar
+          retention-days: 1
+          if-no-files-found: error
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.repository == 'bit-O-study/MeetingMinutes'
+    runs-on: [self-hosted, Windows, X64, bito-MeetingMinutes]
+    environment: windows-server
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-storage-release
+          path: ${{ runner.temp }}/moa-storage-${{ github.run_id }}
+      - name: Configure persistent storage and activate
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        env:
+          MOA_RUNTIME_ENV: ${{ secrets.MOA_RUNTIME_ENV }}
+          ARCHIVE: ${{ runner.temp }}/moa-storage-${{ github.run_id }}/release.tar
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup=Join-Path $env:RUNNER_TEMP 'moa-storage-setup'
+          New-Item -ItemType Directory -Force -Path $setup | Out-Null
+          tar -xf $env:ARCHIVE -C $setup ./configure-storage.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Storage setup extraction failed' }
+          node (Join-Path $setup 'configure-storage.cjs')
+          if ($LASTEXITCODE -ne 0) { throw 'Storage setup failed' }
+          & C:/services/Bit-O/tools/deploy.ps1 -Project MeetingMinutes -Sha $env:GITHUB_SHA -Archive $env:ARCHIVE
