@@ -15,5 +15,7 @@ test("storage tickets bind action and metadata; reject tampering, expiry and siz
     assert.throws(() => verifyStorageTicket(signStorageTicket({ ...ticket, id: "../file" }), now));
     assert.throws(() => verifyStorageTicket(signStorageTicket({ ...ticket, name: "app.exe" }), now));
     assert.throws(() => verifyStorageTicket(signStorageTicket({ ...ticket, expires: now + 620000 }), now));
+    assert.throws(() => verifyStorageTicket(signStorageTicket({ ...ticket, review: true }), now));
+    assert.equal(verifyStorageTicket(signStorageTicket({ ...ticket, action: "download", review: true }), now).review, true);
   } finally { if (previous === undefined) delete process.env.MOA_STORAGE_SECRET; else process.env.MOA_STORAGE_SECRET = previous; }
 });

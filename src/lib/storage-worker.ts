@@ -53,10 +53,10 @@ export async function startStorageWorker() {
     active++;
     try {
       const [member] = await sql`select 1 from space_members m join spaces s on s.id = m.space_id where m.space_id = ${ticket.spaceId} and m.user_id = ${ticket.userId} and s.deleted_at is null`;
-      if (!member) { respond(404, { error: "접근할 수 없습니다." }); return; }
+      if (!member && !ticket.review) { respond(404, { error: "접근할 수 없습니다." }); return; }
       const destination = path.join(directory, ticket.id);
       if (ticket.action === "download") {
-        const [file] = await sql`select name, mime, size from project_files where id = ${ticket.id} and space_id = ${ticket.spaceId} and kind = 'package'`;
+        const [file] = await sql`select f.name, f.mime, f.size from project_files f join spaces s on s.id=f.space_id where f.id = ${ticket.id} and f.space_id = ${ticket.spaceId} and (${Boolean(ticket.review)} or f.kind = 'package') and s.deleted_at is null`;
         if (!file || (await stat(destination)).size !== file.size) { respond(404, { error: "파일을 찾을 수 없습니다." }); return; }
         res.writeHead(200, { "Content-Type": file.mime, "Content-Length": String(file.size), "Content-Disposition": `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(file.name).replaceAll("'", "%27")}` });
         await pipeline(createReadStream(destination), res);
