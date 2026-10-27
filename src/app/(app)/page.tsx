@@ -12,6 +12,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { ProjectIcon } from "@/components/ui/ProjectIcon";
 import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
 import { assignedIssues } from "@/components/screens/assigned-issues";
+import { PersonalPlannerHome } from "@/components/screens/PersonalPlannerHome";
 import { PROJECT_BG_CLASS, projectColor } from "@/components/ui/projectColor";
 import { listMySpaces } from "@/lib/access";
 import { requireUser } from "@/lib/auth";
@@ -29,6 +30,7 @@ export default async function HomePage() {
     return (
       <div className="mx-auto w-full max-w-3xl px-5 py-8">
         <SectionHeading>홈</SectionHeading>
+        <PersonalPlannerHome />
         <Card>
           <EmptyState title="첫 프로젝트를 만들어 보세요"
             hint="스터디 회차를 모아 두거나, 인수인계 메모를 함께 정리할 공간이에요."
@@ -79,6 +81,7 @@ export default async function HomePage() {
         <ButtonLink href="/spaces/new" size="sm" className="hidden sm:inline-flex"><Plus className="size-4" />새 프로젝트</ButtonLink>
       </div>
 
+      <PersonalPlannerHome />
       {myTasks.length > 0 && (
         <section className="relative overflow-hidden rounded-3xl bg-accent p-5 text-on-accent shadow-float">
           {/* 장식 원 — 카드가 평평한 상자로 보이지 않게. 읽는 내용은 없다. */}

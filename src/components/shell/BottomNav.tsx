@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckSquare, Home, Search, UserRound } from "lucide-react";
+import { CalendarDays, CheckSquare, Home, Search, UserRound } from "lucide-react";
 
 import { NavLink } from "@/components/shell/NavLink";
 import { Avatar } from "@/components/ui/Avatar";
@@ -37,11 +37,14 @@ export function BottomNav({
     <>
       <nav
         aria-label="아래 메뉴"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-surface pt-0.5 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-surface pt-0.5 md:hidden"
         style={{ paddingBottom: "calc(var(--safe-bottom) + 2px)" }}
       >
         <NavLink href="/" exact className={tab} activeClassName={on}>
           <Home className="size-5" />홈
+        </NavLink>
+        <NavLink href="/calendar" className={tab} activeClassName={on}>
+          <CalendarDays className="size-5" />일정
         </NavLink>
         <NavLink href="/tasks" className={`${tab} relative`} activeClassName={on}>
           <CheckSquare className="size-5" />할 일

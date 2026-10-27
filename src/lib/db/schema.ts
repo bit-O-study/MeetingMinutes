@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   customType,
   date,
   index,
@@ -355,3 +357,31 @@ export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type NoteRevision = typeof noteRevisions.$inferSelect;
 export type ShareLink = typeof shareLinks.$inferSelect;
+
+/** 개인 일정은 프로젝트 멤버십과 독립적이며 모든 조회/변경에서 ownerId를 검사한다. */
+export const personalPlannerItems = pgTable("personal_planner_items", {
+  id: uuid("id").primaryKey(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").$type<"event" | "task">().notNull(),
+  title: text("title").notNull(), memo: text("memo").notNull().default(""),
+  mode: text("mode").$type<"range" | "fixed" | "none">().notNull(),
+  startDate: date("start_date"), endDate: date("end_date"), scheduledDate: date("scheduled_date"),
+  startsAt: timestamp("starts_at", { withTimezone: true }), endsAt: timestamp("ends_at", { withTimezone: true }),
+  allDay: boolean("all_day").notNull().default(false),
+  doneAt: timestamp("done_at", { withTimezone: true }),
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  index("personal_planner_owner_idx").on(t.ownerId, t.kind, t.doneAt),
+  index("personal_planner_calendar_idx").on(t.ownerId, t.scheduledDate),
+  index("personal_planner_range_idx").on(t.ownerId, t.endDate),
+  check("personal_planner_kind_check", sql`${t.kind} IN ('event','task') AND (${t.kind} = 'task' OR (${t.mode} = 'fixed' AND ${t.doneAt} IS NULL))`),
+  check("personal_planner_title_check", sql`length(trim(${t.title})) BETWEEN 1 AND 160 AND length(${t.memo}) <= 4000 AND ${t.version} > 0`),
+  check("personal_planner_schedule_check", sql`(
+    (${t.mode} = 'none' AND ${t.startDate} IS NULL AND ${t.endDate} IS NULL AND ${t.scheduledDate} IS NULL AND ${t.startsAt} IS NULL AND ${t.endsAt} IS NULL AND NOT ${t.allDay}) OR
+    (${t.mode} = 'range' AND ${t.endDate} IS NOT NULL AND (${t.startDate} IS NULL OR ${t.startDate} <= ${t.endDate}) AND ${t.scheduledDate} IS NULL AND ${t.startsAt} IS NULL AND ${t.endsAt} IS NULL AND NOT ${t.allDay}) OR
+    (${t.mode} = 'fixed' AND ${t.scheduledDate} IS NOT NULL AND ${t.startDate} IS NULL AND ${t.endDate} IS NULL AND
+      ((${t.allDay} AND ${t.startsAt} IS NULL AND ${t.endsAt} IS NULL) OR
+       (NOT ${t.allDay} AND ${t.startsAt} IS NOT NULL AND ${t.endsAt} IS NOT NULL AND ${t.endsAt} > ${t.startsAt} AND (${t.startsAt} AT TIME ZONE 'Asia/Seoul')::date = ${t.scheduledDate} AND (${t.endsAt} AT TIME ZONE 'Asia/Seoul')::date = ${t.scheduledDate}))))`),
+]).enableRLS();
