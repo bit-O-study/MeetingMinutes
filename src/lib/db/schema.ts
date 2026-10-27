@@ -385,3 +385,18 @@ export const personalPlannerItems = pgTable("personal_planner_items", {
       ((${t.allDay} AND ${t.startsAt} IS NULL AND ${t.endsAt} IS NULL) OR
        (NOT ${t.allDay} AND ${t.startsAt} IS NOT NULL AND ${t.endsAt} IS NOT NULL AND ${t.endsAt} > ${t.startsAt} AND (${t.startsAt} AT TIME ZONE 'Asia/Seoul')::date = ${t.scheduledDate} AND (${t.endsAt} AT TIME ZONE 'Asia/Seoul')::date = ${t.scheduledDate}))))`),
 ]).enableRLS();
+
+export const projectFiles = pgTable("project_files", {
+  id: uuid("id").primaryKey(),
+  spaceId: uuid("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
+  noteId: uuid("note_id").references(() => notes.id, { onDelete: "set null" }),
+  kind: text("kind").$type<"image" | "package">().notNull(),
+  name: text("name").notNull(),
+  mime: text("mime").notNull(),
+  size: integer("size").notNull(),
+  sha256: text("sha256").notNull(),
+  versionLabel: text("version_label").notNull().default(""),
+  description: text("description").notNull().default(""),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [index("project_files_space_created_idx").on(t.spaceId, t.createdAt), index("project_files_note_idx").on(t.noteId)]).enableRLS();

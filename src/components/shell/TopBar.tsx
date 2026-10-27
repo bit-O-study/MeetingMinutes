@@ -1,5 +1,5 @@
 import Link from "@/components/PendingLink";
-import { Search } from "lucide-react";
+import { FolderDown, Search } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 
 import { signOut } from "@/lib/auth";
@@ -31,6 +31,9 @@ export function TopBar({
         <span className="truncate">노트·이슈 검색</span>
       </Link>
 
+      <Link href="/files" className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-bold text-accent hover:bg-accent-soft md:ml-0">
+        <FolderDown className="size-4" />자료실
+      </Link>
       <form
         className="ml-auto hidden items-center gap-2 md:flex"
         action={async () => {
