@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { noteImageUrl } from "@/lib/note-image";
 
 /**
  * 노트 본문을 읽기 전용으로 그린다.
@@ -85,6 +86,12 @@ function render(node: Node, index: number): React.ReactNode {
         </pre>
       );
 
+    case "image": {
+      const src = noteImageUrl(node.attrs?.src);
+      // 인증된 첨부 경로만 사용하고 임의 외부 이미지 주소는 렌더링하지 않는다.
+      // eslint-disable-next-line @next/next/no-img-element
+      return src ? <img key={key} src={src} alt={typeof node.attrs?.alt === "string" ? node.attrs.alt : "메모 사진"} className="note-image" loading="lazy" /> : null;
+    }
     case "horizontalRule":
       return <hr key={key} />;
 

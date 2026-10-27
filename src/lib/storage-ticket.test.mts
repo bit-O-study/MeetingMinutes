@@ -17,5 +17,13 @@ test("storage tickets bind action and metadata; reject tampering, expiry and siz
     assert.throws(() => verifyStorageTicket(signStorageTicket({ ...ticket, expires: now + 620000 }), now));
     assert.throws(() => verifyStorageTicket(signStorageTicket({ ...ticket, review: true }), now));
     assert.equal(verifyStorageTicket(signStorageTicket({ ...ticket, action: "download", review: true }), now).review, true);
+    const image: StorageTicket = { ...ticket, kind: "image", noteId: "44444444-4444-4444-4444-444444444444", name: "photo.png" };
+    assert.equal(verifyStorageTicket(signStorageTicket(image), now).noteId, image.noteId);
+    assert.throws(() => verifyStorageTicket(signStorageTicket({ ...image, noteId: undefined }), now));
+    assert.throws(() => verifyStorageTicket(signStorageTicket({ ...image, size: 5*1024*1024+1 }), now));
+    assert.throws(() => verifyStorageTicket(signStorageTicket({ ...image, adminUpload: true }), now));
+    assert.throws(() => verifyStorageTicket(signStorageTicket({ ...image, name: "script.svg" }), now));
+    assert.equal(verifyStorageTicket(signStorageTicket({ ...ticket, adminUpload: true }), now).adminUpload, true);
+    assert.throws(() => verifyStorageTicket(signStorageTicket({ ...ticket, action: "download", adminUpload: true }), now));
   } finally { if (previous === undefined) delete process.env.MOA_STORAGE_SECRET; else process.env.MOA_STORAGE_SECRET = previous; }
 });

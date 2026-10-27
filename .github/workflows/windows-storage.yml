@@ -5,7 +5,6 @@ on:
     paths-ignore:
       - '.github/workflows/storage-check.yml'
       - 'docs/**'
-      - 'android/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,6 +32,39 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run typecheck
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Build signed update-compatible APK
+        shell: pwsh
+        env:
+          MOA_ANDROID_KEYSTORE: ${{ secrets.MOA_ANDROID_KEYSTORE }}
+        run: |
+          if (!$env:MOA_ANDROID_KEYSTORE) { throw 'Stable Android signing key is missing' }
+          New-Item -ItemType Directory -Force "$HOME/.android" | Out-Null
+          [IO.File]::WriteAllBytes("$HOME/.android/debug.keystore", [Convert]::FromBase64String($env:MOA_ANDROID_KEYSTORE))
+          $env:APK_VERSION_CODE=[string](1000+[int]$env:GITHUB_RUN_NUMBER)
+          $env:APK_VERSION_NAME='1.1.'+$env:GITHUB_RUN_NUMBER
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+          if ($LASTEXITCODE -ne 0) { throw 'Android SDK install failed' }
+          Push-Location android
+          ./gradlew.bat --no-daemon assembleDebug
+          if ($LASTEXITCODE -ne 0) { throw 'APK build failed' }
+          Pop-Location
+          New-Item -ItemType Directory -Force apk-release/node_modules | Out-Null
+          $name='moa-'+$env:APK_VERSION_NAME+'-'+$env:GITHUB_SHA.Substring(0,7)+'.apk'
+          Copy-Item android/app/build/outputs/apk/debug/app-debug.apk "apk-release/$name"
+          Copy-Item scripts/deploy/publish-apk.cjs apk-release/publish-apk.cjs
+          Copy-Item -Recurse node_modules/postgres apk-release/node_modules/postgres
+          @{name=$name;version=$env:APK_VERSION_NAME;sha=$env:GITHUB_SHA;sha256=(Get-FileHash "apk-release/$name" -Algorithm SHA256).Hash.ToLowerInvariant()} | ConvertTo-Json | Set-Content -Encoding utf8NoBOM apk-release/apk.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moa-apk
+          path: apk-release/
+          retention-days: 7
+          if-no-files-found: error
       - name: Package standalone application
         shell: pwsh
         run: |
@@ -75,3 +107,17 @@ jobs:
           node (Join-Path $setup 'configure-storage.cjs')
           if ($LASTEXITCODE -ne 0) { throw 'Storage setup failed' }
           & C:/services/Bit-O/tools/deploy.ps1 -Project MeetingMinutes -Sha $env:GITHUB_SHA -Archive $env:ARCHIVE
+  publish-apk:
+    needs: [build, deploy]
+    if: github.ref == 'refs/heads/main' && github.repository == 'bit-O-study/MeetingMinutes'
+    runs-on: [self-hosted, Windows, X64, bito-MeetingMinutes]
+    environment: windows-server
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: moa-apk
+          path: ${{ runner.temp }}/moa-apk-${{ github.run_id }}
+      - name: Register APK in admin library and verify disk
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: node "$env:RUNNER_TEMP/moa-apk-$env:GITHUB_RUN_ID/publish-apk.cjs"

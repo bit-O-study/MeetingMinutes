@@ -6,8 +6,8 @@ android {
         applicationId 'kr.bito.projectmemo'
         minSdk 26
         targetSdk 36
-        versionCode 5
-        versionName '1.0.4'
+        versionCode (System.getenv('APK_VERSION_CODE') ?: '6').toInteger()
+        versionName (System.getenv('APK_VERSION_NAME') ?: '1.0.5')
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

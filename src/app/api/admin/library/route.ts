@@ -3,7 +3,8 @@ import { libraryAdmin } from "@/lib/library-admin";
 import { reviewInput, reviewStates } from "@/lib/library-review";
 import { attachmentIdPattern } from "@/lib/attachment-input";
 import { storageEndpoint } from "@/lib/storage-endpoint";
-import { signStorageTicket } from "@/lib/storage-ticket";
+import { signStorageTicket, verifyStorageTicket } from "@/lib/storage-ticket";
+import { randomUUID } from "node:crypto";
 export const runtime = "nodejs";
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "private, no-store" } });
 export async function GET(request: Request) {
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
       from project_files f join spaces s on s.id=f.space_id left join users u on u.id=f.uploaded_by left join file_reviews r on r.file_id=f.id
       where s.deleted_at is null and (${project}='' or f.space_id::text=${project}) and (${status}='' or coalesce(r.status,'pending')=${status}) and (${term}='' or f.name ilike ${pattern} or s.name ilike ${pattern})
       order by f.created_at desc,f.id desc limit 26 offset ${(page-1)*25}`;
-    const projects = await sql`select distinct s.id,s.name from spaces s join project_files f on f.space_id=s.id where s.deleted_at is null order by s.name`;
+    const projects = await sql`select s.id,s.name from spaces s where s.deleted_at is null order by s.name`;
     const [counts] = await sql`select count(*)::int as total,count(*) filter(where coalesce(r.status,'pending')='pending')::int as pending,count(*) filter(where r.status='reviewed')::int as reviewed,count(*) filter(where r.status='hold')::int as hold from project_files f join spaces s on s.id=f.space_id left join file_reviews r on r.file_id=f.id where s.deleted_at is null`;
     return json({ files: files.slice(0,25), projects, counts, page, hasNext: files.length>25, storageReady: Boolean(await storageEndpoint()) });
   } catch { return json({ error: "자료실 연결을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 503); }
@@ -43,6 +44,21 @@ export async function POST(request: Request) {
     if (Number(request.headers.get("content-length")) > 12000) return json({ error: "내용이 너무 깁니다." }, 413);
     const text = await request.text();
     if (text.length > 12000) return json({ error: "내용이 너무 깁니다." }, 413);
+    let body;
+    try { body = JSON.parse(text); } catch { return json({ error: "요청 형식을 확인해 주세요." }, 400); }
+    if (body?.action === "upload") {
+      if (typeof body.spaceId !== "string" || !attachmentIdPattern.test(body.spaceId)) return json({ error: "프로젝트를 선택해 주세요." }, 400);
+      const [space] = await sql`select id from spaces where id=${body.spaceId} and deleted_at is null`;
+      const [user] = await sql`select id from users where lower(email)=lower(${admin.email})`;
+      if (!space || !user) return json({ error: "프로젝트와 모아 계정 연결을 확인해 주세요." }, 404);
+      const endpoint = await storageEndpoint();
+      if (!endpoint) return json({ error: "파일 서버 연결을 확인해 주세요." }, 503);
+      try {
+        const token = signStorageTicket({ action: "upload", adminUpload: true, id: randomUUID(), spaceId: space.id, userId: user.id, expires: Date.now()+600000, name: body.name, size: body.size, version: body.version ?? "", description: body.description ?? "" });
+        verifyStorageTicket(token);
+        return json({ url: endpoint + "/files", token });
+      } catch { return json({ error: "64MB 이하 APK·AAB·APKS·ZIP 파일을 선택해 주세요." }, 400); }
+    }
     let input;
     try { input = reviewInput(JSON.parse(text)); } catch { return json({ error: "검수 상태와 메모를 확인해 주세요." }, 400); }
     const [file] = await sql`select f.id from project_files f join spaces s on s.id=f.space_id where f.id=${input.id} and s.deleted_at is null`;

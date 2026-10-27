@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { requireUser } from "./auth";
 import { and, desc, eq } from "drizzle-orm";
-import { requireSpaceMember } from "./access";
+import { requireSpaceMember, requireNoteAccess } from "./access";
 import { db } from "./db";
 import { projectFiles } from "./db/schema";
 import { attachmentIdPattern, inspectAttachment, PACKAGE_LIMIT, type AttachmentKind } from "./attachment-input";
@@ -66,12 +66,13 @@ export async function downloadAttachment(_request: Request, id: string) {
   const missing = () => new Response("접근할 수 없습니다.", { status: 404, headers: { "Cache-Control": "no-store" } });
   if (!attachmentIdPattern.test(id)) return missing();
   const user = await requireUser();
-  const [file] = await db.select().from(projectFiles).where(and(eq(projectFiles.id, id), eq(projectFiles.kind, "package"))).limit(1);
+  const [file] = await db.select().from(projectFiles).where(eq(projectFiles.id, id)).limit(1);
   if (!file) return missing();
-  await requireSpaceMember(file.spaceId);
+  if (file.kind === "image" && file.noteId) await requireNoteAccess(file.noteId);
+  else return missing();
   const endpoint = await storageEndpoint();
   if (endpoint) {
-    const ticket = signStorageTicket({ action: "download", id, spaceId: file.spaceId, userId: user.id, expires: Date.now() + 120000 });
+    const ticket = signStorageTicket({ action: "download", kind: "image", noteId: file.noteId!, id, spaceId: file.spaceId, userId: user.id, expires: Date.now() + 120000 });
     return new Response(null, { status: 302, headers: { Location: endpoint + "/files?ticket=" + encodeURIComponent(ticket), "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" } });
   }
   if (process.env.VERCEL) return new Response("파일 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.", { status: 503, headers: { "Cache-Control": "no-store" } });

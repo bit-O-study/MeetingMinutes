@@ -1,4 +1,4 @@
-import { CalendarDays, CheckSquare, FolderDown, Home, Plus, Search } from "lucide-react";
+import { CalendarDays, CheckSquare, Home, Plus, Search } from "lucide-react";
 
 import type { Space } from "@/lib/db/schema";
 import { NavLink } from "@/components/shell/NavLink";
@@ -35,9 +35,6 @@ export function Sidebar({
             {openTaskCount}
           </span>
         )}
-      </NavLink>
-      <NavLink href="/files" className={item} activeClassName={on}>
-        <FolderDown className="size-4" /> 자료실
       </NavLink>
       <NavLink href="/search" className={item} activeClassName={on}>
         <Search className="size-4" /> 검색

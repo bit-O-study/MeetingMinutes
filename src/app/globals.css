@@ -366,3 +366,6 @@ body {
     opacity: 1;
   }
 }
+
+.tiptap .note-image { display: block; max-width: 100%; height: auto; border-radius: 16px; margin: 1rem 0; }
+.tiptap .note-image.ProseMirror-selectednode { outline: 2px solid var(--accent); outline-offset: 3px; }

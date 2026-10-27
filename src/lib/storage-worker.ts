@@ -16,6 +16,7 @@ export async function startStorageWorker() {
   const statePath = path.join(directory, "tunnel-state.json");
   const executable = process.env.MOA_CLOUDFLARED_PATH;
   const origin = process.env.NEXT_PUBLIC_APP_URL;
+  const origins = [origin, process.env.MOA_ADMIN_ORIGIN || "https://heltch-admin.vercel.app"];
   if (!executable || !origin?.startsWith("https://")) throw new Error("Storage worker configuration missing");
   await mkdir(directory, { recursive: true });
   let endpoint = "", active = 0, closing = false, tunnel: ChildProcess | undefined;
@@ -33,17 +34,17 @@ export async function startStorageWorker() {
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     const requestOrigin = req.headers.origin;
-    if (requestOrigin === origin) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
+    if (requestOrigin && origins.includes(requestOrigin)) {
+      res.setHeader("Access-Control-Allow-Origin", requestOrigin);
       res.setHeader("Vary", "Origin");
       res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
       res.setHeader("Access-Control-Allow-Methods", "PUT, GET, OPTIONS");
     }
-    if (requestOrigin && requestOrigin !== origin) { res.writeHead(403).end(); return; }
+    if (requestOrigin && !origins.includes(requestOrigin)) { res.writeHead(403).end(); return; }
     const url = new URL(req.url ?? "/", "http://localhost");
     if (url.pathname === "/health" && req.method === "GET") { res.writeHead(200).end("ok"); return; }
     if (url.pathname !== "/files") { res.writeHead(404).end(); return; }
-    if (req.method === "OPTIONS") { res.writeHead(requestOrigin === origin ? 204 : 403).end(); return; }
+    if (req.method === "OPTIONS") { res.writeHead(requestOrigin && origins.includes(requestOrigin) ? 204 : 403).end(); return; }
     const respond = (status: number, data: object) => { res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" }).end(JSON.stringify(data)); };
     let ticket;
     try { ticket = verifyStorageTicket(req.method === "GET" ? url.searchParams.get("ticket") ?? "" : (req.headers.authorization ?? "").replace(/^Bearer /, "")); }
@@ -53,12 +54,16 @@ export async function startStorageWorker() {
     active++;
     try {
       const [member] = await sql`select 1 from space_members m join spaces s on s.id = m.space_id where m.space_id = ${ticket.spaceId} and m.user_id = ${ticket.userId} and s.deleted_at is null`;
-      if (!member && !ticket.review) { respond(404, { error: "접근할 수 없습니다." }); return; }
+      if (!member && !ticket.review && !ticket.adminUpload) { respond(404, { error: "접근할 수 없습니다." }); return; }
+      if (ticket.kind === "image") {
+        const [note] = await sql`select 1 from notes where id=${ticket.noteId!} and space_id=${ticket.spaceId} and deleted_at is null`;
+        if (!note) { respond(404, { error: "접근할 수 없습니다." }); return; }
+      }
       const destination = path.join(directory, ticket.id);
       if (ticket.action === "download") {
-        const [file] = await sql`select f.name, f.mime, f.size from project_files f join spaces s on s.id=f.space_id where f.id = ${ticket.id} and f.space_id = ${ticket.spaceId} and (${Boolean(ticket.review)} or f.kind = 'package') and s.deleted_at is null`;
+        const [file] = await sql`select f.name, f.mime, f.size, f.kind from project_files f join spaces s on s.id=f.space_id where f.id = ${ticket.id} and f.space_id = ${ticket.spaceId} and (${Boolean(ticket.review)} or (f.kind='image' and f.note_id::text=${ticket.noteId ?? ''})) and s.deleted_at is null`;
         if (!file || (await stat(destination)).size !== file.size) { respond(404, { error: "파일을 찾을 수 없습니다." }); return; }
-        res.writeHead(200, { "Content-Type": file.mime, "Content-Length": String(file.size), "Content-Disposition": `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(file.name).replaceAll("'", "%27")}` });
+        res.writeHead(200, { "Content-Type": file.mime, "Content-Length": String(file.size), "Content-Disposition": `${file.kind === "image" && !ticket.review ? "inline" : "attachment"}; filename="download"; filename*=UTF-8''${encodeURIComponent(file.name).replaceAll("'", "%27")}` });
         await pipeline(createReadStream(destination), res);
         return;
       }
@@ -76,17 +81,19 @@ export async function startStorageWorker() {
       }
       if (length !== ticket.size) throw new Error("Size mismatch");
       let metadata;
-      try { metadata = inspectAttachment(ticket.name!, Buffer.concat(chunks), "package"); }
-      catch { respond(400, { error: "올바른 APK·AAB·APKS·ZIP 파일을 선택해 주세요." }); return; }
+      try { metadata = inspectAttachment(ticket.name!, Buffer.concat(chunks), ticket.kind ?? "package"); }
+      catch { respond(400, { error: "파일 형식과 크기를 확인해 주세요." }); return; }
       await writeFile(destination, Buffer.concat(chunks), { flag: "wx", mode: 0o600 });
       try {
         // 업로드 도중 멤버 권한이 회수되면 메타데이터도 등록하지 않는다.
         const inserted = await sql`insert into project_files (id, space_id, note_id, kind, name, mime, size, sha256, version_label, description, uploaded_by)
-          select ${ticket.id}, ${ticket.spaceId}, null, 'package', ${metadata.name}, ${metadata.mime}, ${metadata.size}, ${metadata.sha256}, ${ticket.version!}, ${ticket.description!}, ${ticket.userId}
-          where exists (select 1 from space_members m join spaces s on s.id = m.space_id where m.space_id = ${ticket.spaceId} and m.user_id = ${ticket.userId} and s.deleted_at is null) returning id`;
+          select ${ticket.id}, ${ticket.spaceId}, ${ticket.noteId ?? null}, ${ticket.kind ?? 'package'}, ${metadata.name}, ${metadata.mime}, ${metadata.size}, ${metadata.sha256}, ${ticket.version!}, ${ticket.description!}, ${ticket.userId}
+          where exists (select 1 from spaces s where s.id=${ticket.spaceId} and s.deleted_at is null)
+          and (${Boolean(ticket.adminUpload)} or exists (select 1 from space_members m where m.space_id=${ticket.spaceId} and m.user_id=${ticket.userId}))
+          and (${ticket.kind !== 'image'} or exists (select 1 from notes n where n.id::text=${ticket.noteId ?? ''} and n.space_id=${ticket.spaceId} and n.deleted_at is null)) returning id`;
         if (!inserted.length) throw new Error("Membership revoked");
       } catch (error) { await unlink(destination).catch(() => {}); throw error; }
-      respond(201, { id: ticket.id, ...metadata });
+      respond(201, { id: ticket.id, url: `/api/attachments/${ticket.id}`, ...metadata });
     } catch {
       if (!res.headersSent) respond(503, { error: "파일 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요." });
       else res.destroy();

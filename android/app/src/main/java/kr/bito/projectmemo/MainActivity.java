@@ -53,7 +53,8 @@ public final class MainActivity extends Activity {
                 filePicker = callback;
                 Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 picker.addCategory(Intent.CATEGORY_OPENABLE);
-                picker.setType("*/*");
+                String[] accepted = params.getAcceptTypes();
+                picker.setType(accepted.length > 0 && accepted[0].startsWith("image/") ? "image/*" : "*/*");
                 picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 try { startActivityForResult(picker, PICK_FILE); }
                 catch (android.content.ActivityNotFoundException ignored) { filePicker.onReceiveValue(null); filePicker = null; }

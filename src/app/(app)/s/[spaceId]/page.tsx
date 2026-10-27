@@ -90,7 +90,6 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
       </header>
 
       <nav aria-label="프로젝트 메뉴" className="sticky top-[calc(var(--safe-top)+45px)] z-10 -mx-4 flex gap-1 overflow-x-auto border-b border-line bg-ground/95 px-4 backdrop-blur md:-mx-6 md:px-6">
-        <Link href={"/s/" + spaceId + "/files"} className="px-3 py-3 text-sm font-extrabold whitespace-nowrap text-ink-3">자료실</Link>
         {tabs.map((item) => (
           <Link key={item.value} href={"/s/" + spaceId + "?tab=" + item.value}
             aria-current={tab === item.value ? "page" : undefined}

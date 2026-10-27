@@ -9,6 +9,8 @@ import TaskList from "@tiptap/extension-task-list";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { ySyncPluginKey } from "y-prosemirror";
+import { NoteImage } from "./NoteImage";
+import { PhotoUpload } from "./PhotoUpload";
 import { History, Share2 } from "lucide-react";
 
 import { createLatestSync } from "@/lib/latest-sync";
@@ -83,6 +85,7 @@ export function NoteWorkspace({
         TaskList,
         TaskItemWithId.configure({ nested: true }),
         Markdown.configure({ markedOptions: { breaks: true } }),
+        NoteImage,
         ParagraphIndent,
         PasteMarkdown,
         Placeholder.configure({ placeholder: "여기에 적으세요" }),
@@ -237,6 +240,7 @@ export function NoteWorkspace({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2 border-b border-line px-4 py-2 md:px-6">
           <ConnectionBadge status={status} syncedAt={syncedAt} />
+          <PhotoUpload editor={syncedAt ? editor : null} noteId={noteId} />
           <div className="ml-auto flex items-center gap-2">
             <AvatarStack people={peers.map((p) => ({ id: p.id, name: p.name, image: p.image }))} />
             <PanelToggle
