@@ -23,6 +23,12 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
   const input = useRef<HTMLTextAreaElement>(null);
 
   const [capturing, setCapturing] = useState<string | null>(null);
+  // 성공은 잠깐만 알리고, 실패는 사용자가 재시도할 때까지 남긴다.
+  useEffect(() => {
+    if (!message || failed || pending || capturing) return;
+    const timer = setTimeout(() => setMessage(""), 3000);
+    return () => clearTimeout(timer);
+  }, [message, failed, pending, capturing]);
   // 길게 누르기 메뉴(재디자인) — 앱(WebView)에서 길게 누르면 글자 선택이 먼저 떠서, 메뉴에 '복사'를 꼭 둔다.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,13 +128,13 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
     </ol>
     {page > 1 && <Link className="self-center rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink-2" href={`/s/${spaceId}?tab=chat&page=${page - 1}`}>최근 대화로</Link>}
 
-    {message && <p role={failed ? "alert" : "status"} className={`rounded-xl px-3 py-2 text-sm font-semibold ${failed ? "bg-danger-soft text-danger" : "bg-ok-soft text-ok"}`}>{message}</p>}
+    {(message || pending || capturing || body.trim()) && <p data-testid="chat-feedback" role={failed ? "alert" : "status"} className={`px-3 text-xs leading-relaxed ${failed ? "text-danger" : "text-ink-3"}`}>{pending ? "보내는 중…" : capturing ? "이슈에 담는 중…" : message || "작성 중…"}</p>}
 
     <form onSubmit={event => { event.preventDefault(); void send(); }}
       className="sticky bottom-[calc(var(--safe-bottom)+68px)] z-10 flex items-end gap-2 rounded-3xl bg-surface p-2 shadow-float md:bottom-4">
       <label htmlFor="project-message" className="sr-only">메시지</label>
       <textarea ref={input} id="project-message" value={body} readOnly={pending} maxLength={10000} rows={1}
-        onChange={event => setBody(event.target.value)}
+        onChange={event => { setBody(event.target.value); if (!failed) setMessage(""); }}
         onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
         onKeyDown={event => {
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing && event.keyCode !== 229 && !composing.current) { event.preventDefault(); void send(); }

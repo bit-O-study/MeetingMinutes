@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "@tiptap/markdown";
@@ -19,6 +19,7 @@ import { saveNoteContent } from "@/lib/actions/notes";
 import { deleteTask, syncNoteTasks, toggleTaskInNote, updateTask } from "@/lib/actions/tasks";
 import { useCollab, type CollabUser } from "@/lib/collab/useCollab";
 import { ConnectionBadge } from "@/components/editor/ConnectionBadge";
+import { NoteHeader } from "./NoteHeader";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { SharePanel } from "@/components/editor/SharePanel";
 import { TaskPanel, type Member, type TaskPatch } from "@/components/editor/TaskPanel";
@@ -41,12 +42,14 @@ const TASK_DEBOUNCE_MS = 600;
 const FROM_DB = "mm-from-db";
 
 export function NoteWorkspace({
+  header,
   noteId,
   me,
   initialContent,
   initialTasks,
   members,
 }: {
+  header: Omit<ComponentProps<typeof NoteHeader>, "connection">;
   noteId: string;
   me: CollabUser;
   initialContent: unknown;
@@ -236,13 +239,13 @@ export function NoteWorkspace({
   }, [editor]);
 
   return (
+    <>
+    <NoteHeader {...header} connection={<ConnectionBadge status={status} syncedAt={syncedAt} />} />
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2 border-b border-line px-4 py-2 md:px-6">
-          <ConnectionBadge status={status} syncedAt={syncedAt} />
+      <div className={`flex min-w-0 flex-col ${panel === "tasks" ? "flex-1" : "flex-none lg:flex-1"}`}>
+        <div data-testid="note-toolbar" className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2 border-b border-line px-3 py-2 md:px-6">
           <PhotoUpload editor={syncedAt ? editor : null} noteId={noteId} />
-          <div className="ml-auto flex items-center gap-2">
-            <AvatarStack people={peers.map((p) => ({ id: p.id, name: p.name, image: p.image }))} />
+          <div className="flex shrink-0 items-center gap-1">
             <PanelToggle
               active={panel === "history"}
               onClick={() => setPanel((p) => (p === "history" ? "tasks" : "history"))}
@@ -256,9 +259,10 @@ export function NoteWorkspace({
               label="공유"
             />
           </div>
+          <div className="ml-auto max-w-full"><AvatarStack people={peers.map((p) => ({ id: p.id, name: p.name, image: p.image }))} /></div>
         </div>
         {/* 본문 줄 길이를 680px 안팎으로 묶는다 — 넓은 화면에서 한 줄이 너무 길면 읽기 어렵다(재디자인). */}
-        <div className="mx-auto w-full max-w-[720px] min-w-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+        <div className={`mx-auto w-full max-w-[720px] min-w-0 flex-1 overflow-y-auto px-4 py-5 md:px-6 ${panel !== "tasks" ? "hidden lg:block" : ""}`}>
           {(saveError || taskError) && <p role="alert" className="mb-3 rounded-2xl bg-warn-soft p-3 text-sm font-semibold text-warn">{saveError || taskError}</p>}
           {!syncedAt && (
             <div aria-busy={!connectionSlow}>
@@ -291,6 +295,7 @@ export function NoteWorkspace({
         />
       )}
     </div>
+    </>
   );
 }
 
@@ -310,7 +315,7 @@ function PanelToggle({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold transition-colors ${
+      className={`inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-xs font-semibold transition-colors ${
         active ? "bg-accent-soft text-accent" : "text-ink-3 hover:bg-surface-2 hover:text-ink-2"
       }`}
     >

@@ -1,177 +1,92 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { RotateCcw, X } from "lucide-react";
-
+import { RefreshCw, RotateCcw, X } from "lucide-react";
 import { getRevisionContent, listRevisions, restoreRevision } from "@/lib/actions/revisions";
 import { sectionsFromDoc, summarizeChange } from "@/lib/revision-summary";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
+import { ReadOnlyNote } from "@/components/ReadOnlyNote";
 import { relativeTime } from "@/lib/utils";
 
 type Revision = Awaited<ReturnType<typeof listRevisions>>[number];
 
-/**
- * S-06 변경 이력.
- *
- * 편집 화면 안에서 연다. 별도 페이지로 빼면 "돌아와서 계속 쓴다"는 흐름이 끊긴다.
- *
- * 미리보기는 본문을 그대로 렌더하지 않고 구획 단위로 보여 주면서
- * **지금과 다른 구획만 표시**한다. 되돌리면 무엇이 바뀌는지가 실제로 궁금한 것이고,
- * 문서 전문을 다시 읽게 하면 아무도 안 읽는다.
- */
-export function HistoryPanel({
-  noteId,
-  currentDoc,
-  onRestore,
-  onClose,
-}: {
-  noteId: string;
-  currentDoc: unknown;
-  onRestore: (content: unknown) => void;
-  onClose: () => void;
+export function HistoryPanel({ noteId, currentDoc, onRestore, onClose }: {
+  noteId: string; currentDoc: unknown; onRestore: (content: unknown) => void; onClose: () => void;
 }) {
   const [revisions, setRevisions] = useState<Revision[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [preview, setPreview] = useState<unknown>(null);
+  const [preview, setPreview] = useState<{ id: string; content: unknown } | null>(null);
+  const [listError, setListError] = useState("");
+  const [previewError, setPreviewError] = useState<{ id: string; message: string } | null>(null);
+  const [restoreError, setRestoreError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    void listRevisions(noteId).then((rows) => {
-      setRevisions(rows);
-      if (rows.length > 0) setSelected(rows[0].id);
-    });
-  }, [noteId]);
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    async function refresh() {
+      try {
+        const rows = await listRevisions(noteId);
+        if (!alive) return;
+        setRevisions(rows);
+        setListError("");
+        setSelected((id) => id ?? rows[0]?.id ?? null);
+      } catch { if (alive) setListError("이력을 불러오지 못했습니다."); }
+      // 편집이 멎은 뒤 만들어지는 이력도 패널을 다시 열지 않고 확인한다.
+      if (alive) timer = setTimeout(() => { if (!document.hidden) void refresh(); else timer = setTimeout(refresh, 5000); }, 5000);
+    }
+    void refresh();
+    return () => { alive = false; clearTimeout(timer); };
+  }, [noteId, attempt]);
 
   useEffect(() => {
     if (!selected) return;
-    void getRevisionContent(noteId, selected).then((row) => setPreview(row.content));
-  }, [noteId, selected]);
+    let alive = true;
+    getRevisionContent(noteId, selected).then(
+      (row) => { if (alive) { setPreview({ id: selected, content: row.content }); setPreviewError(null); } },
+      () => { if (alive) setPreviewError({ id: selected, message: "이 시점의 내용을 불러오지 못했습니다." }); },
+    );
+    return () => { alive = false; };
+  }, [noteId, selected, attempt]);
 
-  const hasPreview = preview != null;
-  const current = sectionsFromDoc(currentDoc);
-  const past = hasPreview ? sectionsFromDoc(preview) : [];
-  const identical = hasPreview && summarizeChange(past, current) === null;
+  // 선택한 시점과 일치하는 결과만 보여 준다. 늦게 온 이전 요청으로 복원하지 않는다.
+  const hasPreview = preview !== null && preview.id === selected;
+  const selectedError = previewError?.id === selected ? previewError.message : "";
+  const identical = hasPreview && summarizeChange(sectionsFromDoc(preview.content), sectionsFromDoc(currentDoc)) === null;
+  const selectedRow = revisions?.find((row) => row.id === selected);
+  const retry = () => { setPreviewError(null); setRestoreError(""); setAttempt((n) => n + 1); };
 
-  const changed = new Set(
-    past
-      .filter((s) => current.find((c) => c.heading === s.heading)?.text !== s.text)
-      .map((s) => s.heading),
-  );
-
-  return (
-    <aside className="flex w-full flex-none flex-col border-t border-line bg-surface lg:w-[26rem] lg:border-t-0 lg:border-l">
-      <header className="flex flex-none items-center gap-2 border-b border-line px-4 py-2">
-        <h2 className="font-serif text-sm font-semibold text-ink">변경 이력</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="이력 닫기"
-          className="ml-auto rounded p-1 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
-        >
-          <X className="size-3.5" />
+  return <aside aria-label="변경 이력" className="flex h-[calc(100dvh-20rem-var(--safe-bottom))] min-h-60 w-full flex-col border-t border-line bg-surface lg:h-auto lg:min-h-0 lg:w-[26rem] lg:flex-none lg:border-t-0 lg:border-l">
+    <header className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-3">
+      <h2 className="text-sm font-bold text-ink">변경 이력</h2>
+      <span className="text-xs text-ink-3">{revisions ? `${revisions.length}개` : ""}</span>
+      <button type="button" onClick={retry} aria-label="이력 새로고침" className="ml-auto grid size-8 place-items-center rounded-xl text-ink-3 hover:bg-surface-2"><RefreshCw className="size-3.5" /></button>
+      <button type="button" onClick={onClose} aria-label="이력 닫기" className="grid size-8 place-items-center rounded-xl text-ink-3 hover:bg-surface-2"><X className="size-4" /></button>
+    </header>
+    {listError && <div role="alert" className="flex items-center justify-between gap-2 bg-warn-soft px-4 py-2 text-xs text-warn">{listError}<button type="button" onClick={retry} className="shrink-0 font-bold">다시 시도</button></div>}
+    <ul aria-label="이력 목록" className="max-h-44 shrink-0 divide-y divide-line overflow-y-auto border-b border-line">
+      {revisions === null && !listError && <li role="status" className="px-4 py-4 text-xs text-ink-3">이력 불러오는 중…</li>}
+      {revisions?.length === 0 && <li className="px-4 py-5 text-xs leading-relaxed text-ink-3">아직 기록이 없습니다. 입력을 멈춘 뒤 약 15초 후 이곳에 표시됩니다.</li>}
+      {revisions?.map((rev) => <li key={rev.id}>
+        <button type="button" disabled={pending} aria-pressed={selected === rev.id} onClick={() => { setSelected(rev.id); setRestoreError(""); }} className={`flex w-full min-w-0 flex-col gap-1.5 px-4 py-3 text-left transition-colors ${selected === rev.id ? "bg-accent-soft" : "hover:bg-surface-2"}`}>
+          <span className="flex w-full min-w-0 items-center gap-2"><Avatar name={rev.actorName} image={rev.actorImage} seed={rev.actorId ?? rev.id} size={18} /><span className="min-w-0 truncate text-xs font-semibold text-ink">{rev.actorName ?? "알 수 없음"}</span><time className="ml-auto shrink-0 whitespace-nowrap text-[11px] text-ink-3" title={new Date(rev.createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}>{relativeTime(rev.createdAt)}</time>{rev.isRevert && <Badge tone="info">되돌림</Badge>}</span>
+          <span className="break-words text-xs leading-relaxed text-ink-2">{rev.summary}</span>
         </button>
-      </header>
-
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* 목록 */}
-        <ul className="flex-none divide-y divide-line overflow-y-auto border-b border-line lg:w-40 lg:border-b-0 lg:border-r">
-          {revisions === null && (
-            <li className="px-3 py-3 font-mono text-[10px] text-ink-3">불러오는 중…</li>
-          )}
-          {revisions?.length === 0 && (
-            <li className="px-3 py-4 text-xs leading-relaxed text-ink-3">
-              아직 기록이 없습니다. 편집이 멎으면 한 줄씩 쌓입니다.
-            </li>
-          )}
-          {revisions?.map((rev) => (
-            <li key={rev.id}>
-              <button
-                type="button"
-                onClick={() => setSelected(rev.id)}
-                className={`flex w-full flex-col items-start gap-1 px-3 py-2.5 text-left transition-colors ${
-                  selected === rev.id ? "bg-accent-soft" : "hover:bg-surface-2"
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Avatar
-                    name={rev.actorName}
-                    image={rev.actorImage}
-                    seed={rev.actorId ?? rev.id}
-                    size={15}
-                  />
-                  <span className="truncate text-xs text-ink">{rev.actorName ?? "알 수 없음"}</span>
-                </span>
-                <span className="font-mono text-[10px] text-ink-3">
-                  {relativeTime(rev.createdAt)}
-                </span>
-                <span className="text-[11px] leading-snug text-ink-2">{rev.summary}</span>
-                {rev.isRevert && <Badge tone="info">되돌림</Badge>}
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        {/* 미리보기 */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-            {!hasPreview && (
-              <p className="text-xs text-ink-3">왼쪽에서 시점을 고르세요.</p>
-            )}
-            {hasPreview && (
-              <>
-                <p className="mb-3 text-[11px] leading-relaxed text-ink-3">
-                  {identical
-                    ? "지금 내용과 같습니다."
-                    : `지금과 다른 곳 ${changed.size}군데. 되돌리면 아래 내용이 됩니다.`}
-                </p>
-                {past.map((section) => (
-                  <section
-                    key={section.heading}
-                    className={`mb-3 border-l-2 pl-2.5 ${
-                      changed.has(section.heading) ? "border-accent" : "border-line"
-                    }`}
-                  >
-                    <h3 className="font-mono text-[10px] uppercase tracking-[0.07em] text-ink-3">
-                      {section.heading}
-                      {changed.has(section.heading) && (
-                        <span className="ml-1.5 text-accent">달라짐</span>
-                      )}
-                    </h3>
-                    <p className="mt-0.5 text-xs leading-relaxed whitespace-pre-wrap text-ink-2">
-                      {section.text || "—"}
-                    </p>
-                  </section>
-                ))}
-              </>
-            )}
-          </div>
-
-          {hasPreview && (
-            <div className="flex-none border-t border-line px-4 py-2.5">
-              <button
-                type="button"
-                disabled={pending || identical}
-                onClick={() =>
-                  startTransition(async () => {
-                    const content = await restoreRevision(noteId, selected!);
-                    onRestore(content);
-                    setRevisions(await listRevisions(noteId));
-                  })
-                }
-                className="flex w-full items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-xs text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
-              >
-                <RotateCcw className="size-3" />
-                이 시점으로 되돌리기
-              </button>
-              {/* 되돌린 것도 이력에 남으므로 다시 되돌릴 수 있다. 그래야 마음 놓고 누른다. */}
-              <p className="mt-1.5 text-center text-[10px] text-ink-3">
-                되돌린 기록도 이력에 남습니다
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </aside>
-  );
+      </li>)}
+    </ul>
+    <div data-testid="revision-preview" className="min-h-0 flex-1 overflow-y-auto px-4 py-4 [overflow-wrap:anywhere] [&_.tiptap]:text-sm">
+      {selectedError ? <div role="alert" className="text-xs text-warn">{selectedError}<button type="button" onClick={retry} className="ml-2 font-bold">다시 시도</button></div> : selected && !hasPreview ? <p role="status" className="text-xs text-ink-3">내용 불러오는 중…</p> : !selected ? <p className="text-xs text-ink-3">기록을 선택하면 그때의 글과 사진을 볼 수 있습니다.</p> : null}
+      {hasPreview && !selectedError && <><p className="mb-3 text-xs leading-relaxed text-ink-3">{selectedRow?.summary} · {identical ? "지금 내용과 같습니다." : "선택한 시점의 내용입니다."}</p><ReadOnlyNote content={preview.content} /></>}
+    </div>
+    {restoreError && <p role="alert" className="px-4 py-2 text-xs text-danger">{restoreError}</p>}
+    {selected && <footer className="shrink-0 border-t border-line px-4 py-3">
+      <button type="button" disabled={pending || !hasPreview || !!selectedError || identical} onClick={() => startTransition(async () => {
+        try { const content = await restoreRevision(noteId, selected); onRestore(content); }
+        catch { setRestoreError("되돌리지 못했습니다. 연결을 확인하고 다시 시도하세요."); }
+      })} className="flex h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-accent text-xs font-semibold text-on-accent disabled:opacity-40"><RotateCcw className="size-3.5" />{pending ? "되돌리는 중…" : "이 시점으로 되돌리기"}</button>
+      <p className="mt-2 text-center text-[11px] text-ink-3">되돌린 기록도 이력에 남습니다.</p>
+    </footer>}
+  </aside>;
 }

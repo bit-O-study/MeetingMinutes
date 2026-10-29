@@ -49,7 +49,7 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
   }
 
   return (
-    <aside className="flex w-full flex-none flex-col border-t border-line bg-surface lg:w-80 lg:border-t-0 lg:border-l">
+    <aside className="flex h-[calc(100dvh-20rem-var(--safe-bottom))] min-h-60 w-full flex-col border-t border-line bg-surface lg:h-auto lg:min-h-0 lg:w-80 lg:flex-none lg:border-t-0 lg:border-l">
       <header className="flex flex-none items-center gap-2 border-b border-line px-4 py-2">
         <h2 className="font-serif text-sm font-semibold text-ink">공유 링크</h2>
         <button

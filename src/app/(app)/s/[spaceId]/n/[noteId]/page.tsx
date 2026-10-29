@@ -10,7 +10,6 @@
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { NoteHeader } from "@/components/editor/NoteHeader";
 import { NoteWorkspace } from "@/components/editor/NoteWorkspace";
 import { userColor } from "@/components/ui/Avatar";
 import { PROJECT_SCOPE_CLASS, projectColor } from "@/components/ui/projectColor";
@@ -39,17 +38,8 @@ export default async function NotePage({ params }: PageProps<"/s/[spaceId]/n/[no
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${PROJECT_SCOPE_CLASS[projectColor(space.id)]}`}>
-      <NoteHeader
-        noteId={note.id}
-        spaceId={spaceId}
-        spaceName={space.name}
-        title={note.title}
-        status={note.status}
-        updatedLabel={`${relativeTime(note.updatedAt)} 수정`}
-        taskCount={noteTasks.length}
-      />
-
       <NoteWorkspace key={noteId}
+        header={{ noteId: note.id, spaceId, spaceName: space.name, title: note.title, status: note.status, updatedLabel: `${relativeTime(note.updatedAt)} 수정`, taskCount: noteTasks.length }}
         noteId={note.id}
         initialContent={note.content}
         initialTasks={noteTasks}

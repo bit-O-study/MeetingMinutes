@@ -8,7 +8,21 @@
  * 어느 구획의 내용이 달라졌는지 비교한다.
  */
 
-export type Section = { heading: string; text: string };
+export type Section = { heading: string; text: string; images?: string[] };
+
+/** 같은 제목의 구획도 서로 덮어쓰지 않도록 발생 순서를 포함한다. */
+export function sectionKeys(sections: Section[]): string[] {
+  const counts = new Map<string, number>();
+  return sections.map(({ heading }) => {
+    const index = counts.get(heading) ?? 0;
+    counts.set(heading, index + 1);
+    return JSON.stringify([heading, index]);
+  });
+}
+
+function sectionValue(section: Section): string {
+  return JSON.stringify([section.text, section.images ?? []]);
+}
 
 type JsonNode = {
   type?: string;
@@ -35,16 +49,23 @@ export function sectionsFromDoc(doc: unknown): Section[] {
       continue;
     }
     current.text += plainText(node) + "\n";
+    const images = imageSources(node);
+    if (images.length) current.images = [...(current.images ?? []), ...images];
   }
   // 빈 앞머리는 구획이 아니다. 남기면 빈 문서가 구획 하나짜리로 보여서
   // 첫 작성이 "노트 작성"이 아니라 "머리말 삭제"까지 붙은 문장이 된다.
   if (current.text.trim() || current.heading !== PREAMBLE) sections.push(current);
 
-  return sections.map((s) => ({ heading: s.heading, text: s.text.trim() }));
+  return sections.map((s) => ({ ...s, text: s.text.trim() }));
+}
+
+function imageSources(node: JsonNode): string[] {
+  return node.type === "image" ? [String(node.attrs?.src ?? "")] : (node.content ?? []).flatMap(imageSources);
 }
 
 function plainText(node: JsonNode): string {
   if (node.type === "text") return node.text ?? "";
+  if (node.type === "image") return `[사진${node.attrs?.alt ? `: ${String(node.attrs.alt)}` : ""}]`;
 
   const inner = (node.content ?? []).map(plainText).join(" ");
   // 체크 상태가 바뀐 것도 변경으로 잡아야 한다. 글자만 보면 놓친다.
@@ -61,22 +82,22 @@ function plainText(node: JsonNode): string {
 export function summarizeChange(prev: Section[], next: Section[]): string | null {
   if (prev.length === 0) return next.length > 0 ? "노트 작성" : null;
 
-  const before = new Map(prev.map((s) => [s.heading, s.text]));
-  const after = new Map(next.map((s) => [s.heading, s.text]));
+  const before = new Map(sectionKeys(prev).map((key, i) => [key, prev[i]]));
+  const after = new Map(sectionKeys(next).map((key, i) => [key, next[i]]));
 
   const added: string[] = [];
   const edited: string[] = [];
   const removed: string[] = [];
 
-  for (const [heading, text] of after) {
-    if (!before.has(heading)) {
-      if (text) added.push(heading);
-    } else if (before.get(heading) !== text) {
-      edited.push(heading);
+  for (const [key, section] of after) {
+    if (!before.has(key)) {
+      if (section.text) added.push(section.heading);
+    } else if (sectionValue(before.get(key)!) !== sectionValue(section)) {
+      edited.push(section.heading);
     }
   }
-  for (const heading of before.keys()) {
-    if (!after.has(heading)) removed.push(heading);
+  for (const [key, section] of before) {
+    if (!after.has(key)) removed.push(section.heading);
   }
 
   const parts: string[] = [];

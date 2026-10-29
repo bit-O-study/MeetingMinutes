@@ -60,11 +60,11 @@ export function PhotoUpload({ editor, noteId }: { editor: Editor | null; noteId:
     return () => { dom.removeEventListener("paste", paste, true); dom.removeEventListener("drop", drop, true); };
   }, [editor, upload]);
 
-  return <div className="flex flex-wrap items-center gap-2">
+  return <div className="relative flex shrink-0 items-center gap-2">
     <input ref={input} type="file" className="hidden" accept="image/jpeg,image/png,image/webp" aria-label="노트 사진 선택" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(file); }} />
-    <button type="button" disabled={!editor || uploading} onClick={() => input.current?.click()} className="inline-flex h-8 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold text-ink-3 hover:bg-surface-2 disabled:opacity-50">
-      <ImagePlus className="size-3" />{uploading ? "사진 올리는 중…" : "사진"}
+    <button type="button" aria-label={uploading ? "사진 올리는 중" : "사진"} aria-busy={uploading} disabled={!editor || uploading} onClick={() => input.current?.click()} className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-xs font-semibold text-ink-3 hover:bg-surface-2 disabled:opacity-50">
+      <ImagePlus className="size-3 shrink-0" />{uploading ? "올리는 중…" : "사진"}
     </button>
-    {error && <span role="alert" className="text-xs text-danger">{error}</span>}
+    {error && <span role="alert" className="absolute left-0 top-full z-20 mt-1 w-60 max-w-[80vw] rounded-xl border border-line bg-surface p-3 text-xs text-danger shadow-float">{error}</span>}
   </div>;
 }

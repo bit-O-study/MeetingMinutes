@@ -20,6 +20,24 @@ const check = (text: string, checked = false) => ({
   ],
 });
 
+const photo = (src: string) => ({ type: "image", attrs: { src, alt: "회의 사진" } });
+
+test("사진만 추가하거나 바꿔도 변경 이력이 생긴다", () => {
+  const first = sectionsFromDoc(doc(photo("/api/attachments/first")));
+  const second = sectionsFromDoc(doc(photo("/api/attachments/second")));
+  assert.equal(summarizeChange([], first), "노트 작성");
+  assert.equal(first[0].text, "[사진: 회의 사진]");
+  assert.equal(summarizeChange(first, second), "머리말 수정");
+  assert.equal(summarizeChange(first, sectionsFromDoc(doc(photo("/api/attachments/first")))), null);
+  assert.equal(summarizeChange(first, []), "머리말 삭제");
+});
+
+test("같은 제목의 앞 구획 수정도 뒤 구획에 가려지지 않는다", () => {
+  const before = sectionsFromDoc(doc(h("메모"), p("앞 내용"), h("메모"), p("뒤 내용")));
+  const after = sectionsFromDoc(doc(h("메모"), p("앞 수정"), h("메모"), p("뒤 내용")));
+  assert.equal(summarizeChange(before, after), "메모 수정");
+});
+
 test("제목을 경계로 구획을 나눈다", () => {
   const s = sectionsFromDoc(doc(p("3회차 · 참석 김"), h("배운 것"), p("useEffect")));
   assert.deepEqual(

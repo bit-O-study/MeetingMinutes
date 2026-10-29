@@ -15,16 +15,16 @@ export function ConnectionBadge({
 }) {
   if (status === "offline") {
     return (
-      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-danger-soft px-3 text-xs font-bold text-danger">
+      <span role="status" title="오프라인 상태입니다. 입력을 보존하려면 이 창을 닫지 마세요." className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-danger-soft px-2 py-1 text-[10px] font-medium text-danger sm:text-[11px]">
         <span aria-hidden className="size-2 rounded-full bg-danger" />
-        오프라인 · 이 창을 닫지 마세요
+        오프라인 · 창 유지
       </span>
     );
   }
 
   if (status === "connecting") {
     return (
-      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-warn-soft px-3 text-xs font-bold text-warn">
+      <span role="status" className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warn-soft px-2 py-1 text-[10px] font-medium text-warn sm:text-[11px]">
         <span aria-hidden className="size-2 animate-pulse rounded-full bg-warn motion-reduce:animate-none" />
         {syncedAt ? "재연결 중…" : "연결 중…"}
       </span>
@@ -32,7 +32,7 @@ export function ConnectionBadge({
   }
 
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-ok-soft px-3 text-xs font-bold text-ok">
+    <span role="status" className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-ok-soft px-2 py-1 text-[10px] font-medium text-ok sm:text-[11px]">
       <span aria-hidden className="size-2 rounded-full bg-ok" />
       연결됨{syncedAt && ` · ${timeLabel(syncedAt)} 반영`}
     </span>

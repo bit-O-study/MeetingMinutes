@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 
@@ -16,6 +16,7 @@ export function NoteHeader({
   status: initialStatus,
   updatedLabel,
   taskCount,
+  connection,
 }: {
   noteId: string;
   spaceId: string;
@@ -25,6 +26,7 @@ export function NoteHeader({
   /** 서버에서 만든 문구를 그대로 받는다. 클라이언트에서 다시 계산하면 첫 렌더가 어긋난다. */
   updatedLabel: string;
   taskCount: number;
+  connection?: ReactNode;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [status, setStatus] = useState(initialStatus);
@@ -52,14 +54,16 @@ export function NoteHeader({
   }
 
   return (
-    <header className="flex flex-none flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-surface px-4 py-3 md:px-6">
+    <header className="grid flex-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 border-b border-line bg-surface px-4 py-3 md:px-6">
       <Link
         href={`/s/${spaceId}`}
-        className="w-full truncate text-[13px] font-semibold text-ink-3 transition-colors hover:text-accent"
+        className="min-w-0 truncate text-xs font-semibold text-ink-3 transition-colors hover:text-accent"
       >
         ‹ {spaceName}
       </Link>
+      <div data-testid="note-connection" className="justify-self-end">{connection}</div>
 
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
       {editing ? (
         <input
           autoFocus
@@ -75,27 +79,28 @@ export function NoteHeader({
               e.currentTarget.blur();
             }
           }}
-          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 text-xl font-black tracking-tight text-ink ring-2 ring-accent outline-none"
+          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 text-lg font-bold tracking-tight text-ink ring-2 ring-accent outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={() => setEditing(true)}
           title="클릭해서 제목 수정"
-          className="min-w-0 truncate rounded-xl px-1 text-left text-xl font-black tracking-tight text-ink transition-colors hover:bg-surface-2"
+          className="min-w-0 max-w-full truncate rounded-xl text-left text-lg font-bold tracking-tight text-ink transition-colors hover:bg-surface-2"
         >
           {title}
         </button>
       )}
 
-      <button type="button" onClick={toggleStatus} disabled={pending} title="상태 바꾸기">
+      <button type="button" onClick={toggleStatus} disabled={pending} title="상태 바꾸기" className="shrink-0 whitespace-nowrap">
         <NoteStatusBadge status={status} />
       </button>
 
-      <span className="ml-auto text-xs text-ink-3">{updatedLabel}</span>
+      <span className="hidden text-xs text-ink-3 sm:inline">{updatedLabel}</span>
+      </div>
 
       {/* details를 쓰면 바깥 클릭으로 닫히는 동작과 키보드 접근을 브라우저가 처리한다. */}
-      <details ref={menuRef} className="relative">
+      <details ref={menuRef} className="relative justify-self-end">
         <summary
           aria-label="노트 메뉴"
           className="flex size-9 cursor-pointer list-none items-center justify-center rounded-xl text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink [&::-webkit-details-marker]:hidden"
