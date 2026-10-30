@@ -28,10 +28,11 @@ export const maxDuration = 300;
 
 export async function GET(_request: Request, { params }: RouteContext<"/api/collab/[noteId]">) {
   const { noteId } = await params;
+  let userId: string;
 
   try {
     // 권한은 반드시 access를 경유한다. 없으면 notFound()가 404로 착지한다.
-    await requireNoteAccess(noteId);
+    ({ userId } = await requireNoteAccess(noteId));
   } catch (err) {
     if (err instanceof UnauthenticatedError) return new Response(null, { status: 401 });
     throw err;
@@ -39,5 +40,5 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/coll
 
   // 핸들러가 끝나면 런타임이 호출을 정리한다. 그래서 소켓이 닫힐 때까지 기다린다.
   // 여기서 기다리지 않으면 업그레이드 직후 연결이 끊겨 배포에서만 공동 편집이 죽는다.
-  return experimental_upgradeWebSocket((ws) => joinRoom(noteId, ws));
+  return experimental_upgradeWebSocket((ws) => joinRoom(noteId, ws, userId));
 }

@@ -34,6 +34,12 @@ try {
   await page.route(`**/api/attachments/${photoId}`, (route) => route.fulfill({ contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl2Z3sAAAAASUVORK5CYII=", "base64") }));
   await page.goto(`${base}/s/${spaceId}/n/${noteId}`, { waitUntil: "networkidle", timeout: 120000 });
   await page.locator('.tiptap[contenteditable="true"]').waitFor();
+  // 미리 삽입한 이력뿐 아니라 실제 편집으로 기록된 작성자도 확인한다.
+  await page.locator('.tiptap[contenteditable="true"]').fill("작성자 이름 연결 검증");
+  await expect.poll(async () => {
+    const rows = await db.select().from(noteRevisions).where(eq(noteRevisions.noteId, noteId));
+    return rows.some(row => row.id !== revA && row.id !== revB && row.actorId === userId && JSON.stringify(row.content).includes("작성자 이름 연결 검증"));
+  }, { timeout: 40000 }).toBe(true);
   for (const width of [320, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     const toolbar = page.getByTestId("note-toolbar");
@@ -48,6 +54,8 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "이력", exact: true }).click();
   const history = page.getByRole("complementary", { name: "변경 이력", exact: true });
+  await expect(history.getByRole("list", { name: "이력 목록" }).getByText("화면 검증", { exact: true }).first()).toBeVisible();
+  await history.getByRole("button", { name: /사진 추가/ }).click();
   await expect(history.getByTestId("revision-preview").getByText("사진이 있는 메모", { exact: true })).toBeVisible();
   await expect(history.getByRole("img", { name: "회의 사진" })).toBeVisible();
   assert.ok((await history.boundingBox()).y < 300);
@@ -71,7 +79,7 @@ try {
   await expect(page.getByRole("heading", { name: "공유 링크" })).toBeInViewport();
   await page.getByRole("button", { name: "공유 닫기" }).click();
   console.log("PASS toolbar at 320/390/430/1280px, header status above menu, history image/load/poll/retry, mobile panels");
-  await page.goto(`${base}/s/${spaceId}?tab=chat`, { waitUntil: "networkidle" });
+  await page.goto(`${base}/s/${spaceId}?tab=chat`, { waitUntil: "networkidle", timeout: 120000 });
   const input = page.getByRole("textbox", { name: "메시지", exact: true });
   const feedback = page.getByTestId("chat-feedback");
   await input.fill("첫 번째 회의 메모");

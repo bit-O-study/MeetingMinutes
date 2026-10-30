@@ -68,6 +68,8 @@ type Room = {
 const rooms = new Map<string, Room>();
 /** 연결 ↔ 사용자. awareness로 들어온 값을 기억해 두고 이력 작성자를 정한다. */
 const connUser = new WeakMap<WebSocket, string>();
+/** 인증된 연결은 클라이언트의 커서 정보로 작성자가 바뀌지 않는다. */
+const authenticatedConns = new WeakSet<WebSocket>();
 
 /** 헬스 체크용. 지금 이 인스턴스가 들고 있는 방 수. */
 export function roomCount(): number {
@@ -132,7 +134,7 @@ function getRoom(name: string): Room {
       }
 
       // 이 연결이 누구인지 기억해 둔다. 문서 변경에는 사용자 정보가 실려 오지 않는다.
-      if (origin && typeof origin === "object") {
+      if (origin && typeof origin === "object" && !authenticatedConns.has(origin as WebSocket)) {
         for (const clientId of added.concat(updated)) {
           const user = (awareness.getStates().get(clientId) as { user?: { id?: string } })?.user;
           if (user?.id) connUser.set(origin as WebSocket, user.id);
@@ -333,7 +335,8 @@ function handleMessage(room: Room, conn: WebSocket, data: Uint8Array) {
  * 업그레이드 핸들러가 먼저 끝나면 런타임은 요청이 끝난 줄 알고 호출을 정리하고,
  * 방금 붙은 소켓까지 같이 끊는다. 개발 서버는 이 값을 쓰지 않는다.
  */
-export function joinRoom(roomName: string, conn: WebSocket): Promise<void> {
+export function joinRoom(roomName: string, conn: WebSocket, userId?: string): Promise<void> {
+  if (userId) { connUser.set(conn, userId); authenticatedConns.add(conn); }
   const room = getRoom(roomName);
   room.conns.set(conn, new Set());
   conn.binaryType = "arraybuffer";

@@ -94,7 +94,7 @@ export function NoteWorkspace({
         Placeholder.configure({ placeholder: "여기에 적으세요" }),
         Collaboration.configure({ document: doc }),
         ...(provider
-          ? [CollaborationCaret.configure({ provider, user: { name: me.name, color: me.color } })]
+          ? [CollaborationCaret.configure({ provider, user: { id: me.id, name: me.name, color: me.color, image: me.image ?? null } })]
           : []),
       ],
       editorProps: {
