@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { poolOptions } from "./pool-options";
 import * as schema from "./schema";
 
 declare global {
@@ -31,18 +32,8 @@ if (!connectionString) {
  * 더 늘려야 하면 풀러를 트랜잭션 모드(:6543)로 옮기는 편이 맞다. 거기서는
  * 서버 연결을 여러 클라이언트가 나눠 쓴다. `prepare: false`는 이미 그쪽 전제다.
  */
-const MAX_CONNECTIONS = Number(process.env.DATABASE_POOL_MAX ?? 3);
-
-const sql =
-  globalThis.__mmSql ??
-  postgres(connectionString, {
-    max: process.env.NODE_ENV === "production" ? MAX_CONNECTIONS : 1,
-    // 세션 모드의 슬롯을 오래 쥐고 있지 않도록 노는 연결은 돌려준다. 초 단위.
-    idle_timeout: 20,
-    // Supavisor 풀러를 거치므로 prepared statement를 쓰지 않는다.
-    prepare: false,
-    ssl: "require",
-  });
+// 상한(DATABASE_POOL_MAX, 기본 3)·시간 제한은 pool-options.ts 에서 정한다.
+const sql = globalThis.__mmSql ?? postgres(connectionString, poolOptions(process.env));
 
 if (process.env.NODE_ENV !== "production") globalThis.__mmSql = sql;
 
