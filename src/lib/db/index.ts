@@ -2,11 +2,12 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import { poolOptions } from "./pool-options";
+import { resilientSql } from "./resilient";
 import * as schema from "./schema";
 
 declare global {
   // 개발 중 HMR로 커넥션이 쌓이는 것을 막는다.
-  var __mmSql: ReturnType<typeof postgres> | undefined;
+  var __mmSql: ReturnType<typeof resilientSql>["sql"] | undefined;
 }
 
 const connectionString = process.env.DATABASE_URL;
@@ -33,7 +34,8 @@ if (!connectionString) {
  * 서버 연결을 여러 클라이언트가 나눠 쓴다. `prepare: false`는 이미 그쪽 전제다.
  */
 // 상한(DATABASE_POOL_MAX, 기본 3)·시간 제한은 pool-options.ts 에서 정한다.
-const sql = globalThis.__mmSql ?? postgres(connectionString, poolOptions(process.env));
+// 풀 전체가 풀러에서 응답 없이 멈추면 resilient.ts 가 새 풀로 갈아 끼운다.
+const sql = globalThis.__mmSql ?? resilientSql(() => postgres(connectionString, poolOptions(process.env))).sql;
 
 if (process.env.NODE_ENV !== "production") globalThis.__mmSql = sql;
 
