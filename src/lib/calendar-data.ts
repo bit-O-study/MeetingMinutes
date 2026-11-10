@@ -15,6 +15,21 @@ import { todayInSeoul } from "@/lib/utils";
 /** 한 달에 올리는 스페이스 할 일 상한. 이 이상은 화면에서도 읽을 수 없다. */
 const SPACE_TASK_LIMIT = 400;
 
+/**
+ * 할 일 목록에 "연결 · 7회차 스터디" 칩을 붙이기 위한 제목 조회. 내 일정과 내가 속한 스페이스의 모임만 읽는다.
+ */
+export async function loadLinkTitles(ids: string[]): Promise<Record<string, string>> {
+  if (ids.length === 0) return {};
+  const user = await requireUser();
+  const mySpaces = await listMySpaces();
+  const spaceIds = mySpaces.map((row) => row.space.id);
+  const [events, found] = await Promise.all([
+    db.select({ id: items.id, title: items.title }).from(items).where(and(eq(items.ownerId, user.id), inArray(items.id, ids))),
+    spaceIds.length === 0 ? [] : db.select({ id: meetings.id, title: meetings.title }).from(meetings).where(and(inArray(meetings.spaceId, spaceIds), inArray(meetings.id, ids))),
+  ]);
+  return Object.fromEntries([...events, ...found].map((row) => [row.id, row.title]));
+}
+
 export type CalendarData = {
   layers: CalendarLayer[];
   entries: CalendarEntry[];

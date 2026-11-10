@@ -1,5 +1,6 @@
 import { PlannerScreen } from "@/components/screens/PlannerScreen";
 import { ProjectAssignments } from "@/components/screens/ProjectAssignments";
+import { loadLinkTargets, loadLinkTitles } from "@/lib/calendar-data";
 import { personalTaskItems, plannerSummary } from "@/lib/planner-data";
 import { todayInSeoul } from "@/lib/utils";
 export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
@@ -8,5 +9,7 @@ export default async function TasksPage({ searchParams }: PageProps<"/tasks">) {
   const page = typeof params.page === "string" && /^\d{1,6}$/.test(params.page) ? Math.max(1, Number(params.page)) : 1;
   const [result, summary] = await Promise.all([personalTaskItems(status, page), plannerSummary()]);
   const today = todayInSeoul();
-  return <PlannerScreen view="tasks" {...result} summary={summary} today={today} month={today.slice(0, 7)} status={status} page={page} projectTasks={<ProjectAssignments searchParams={searchParams} />} />;
+  const linkedIds = result.items.map((item) => item.linkedItemId ?? item.linkedMeetingId).filter((id): id is string => Boolean(id));
+  const [linkTargets, linkTitles] = await Promise.all([loadLinkTargets(), loadLinkTitles(linkedIds)]);
+  return <PlannerScreen view="tasks" {...result} summary={summary} today={today} month={today.slice(0, 7)} status={status} page={page} linkTargets={linkTargets} linkTitles={linkTitles} projectTasks={<ProjectAssignments searchParams={searchParams} />} />;
 }
