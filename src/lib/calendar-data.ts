@@ -4,18 +4,25 @@ import { and, asc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 
 import { listMySpaces } from "@/lib/access";
 import { requireUser } from "@/lib/auth";
-import { buildLayers, type CalendarEntry, type CalendarLayer } from "@/lib/calendar-entries";
+import { buildLayers, type CalendarEntry, type CalendarLayer, type LinkTarget } from "@/lib/calendar-entries";
 import { meetingToEntry, plannerToEntry, spaceTaskToEntry, type MeetingRow } from "@/lib/calendar-map";
 import { db } from "@/lib/db";
 import { meetingResponses, meetings, notes, personalPlannerItems as items, spaceMembers, tasks } from "@/lib/db/schema";
-import { monthWindow } from "@/lib/planner";
+import { monthWindow, type PlannerItem } from "@/lib/planner";
 import { plannerItem } from "@/lib/planner-data";
 import { todayInSeoul } from "@/lib/utils";
 
 /** 한 달에 올리는 스페이스 할 일 상한. 이 이상은 화면에서도 읽을 수 없다. */
 const SPACE_TASK_LIMIT = 400;
 
-export type CalendarData = { layers: CalendarLayer[]; entries: CalendarEntry[]; today: string; month: string };
+export type CalendarData = {
+  layers: CalendarLayer[];
+  entries: CalendarEntry[];
+  /** 편집 창을 열 때 쓰는 내 개인 항목 원본(id 로 찾는다) */
+  planner: PlannerItem[];
+  today: string;
+  month: string;
+};
 
 /**
  * 한 달 치 캘린더. 개인 일정·할 일, 내가 속한 스페이스의 할 일, 확정·투표 중인 모임을 한 모양으로 합친다.
@@ -141,10 +148,8 @@ export async function loadCalendarMonth(month: string): Promise<CalendarData> {
     const entry = meetingToEntry(meetingRow);
     if (entry) entries.push(entry);
   }
-  return { layers, entries, today, month };
+  return { layers, entries, planner: personal, today, month };
 }
-
-export type LinkTarget = { kind: "event" | "meeting"; id: string; title: string; when: string };
 
 /**
  * 할 일을 딸리게 할 수 있는 일정·모임 후보. 지난 지 오래된 것은 뺀다(고르는 목록이 길어지지 않게).

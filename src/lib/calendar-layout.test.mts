@@ -93,3 +93,31 @@ test("모바일 점: 최대 3개와 남은 개수", () => {
   assert.equal(extra, 2);
   assert.equal(dayDots(items, "2026-11-11").dots.length, 0);
 });
+
+import { layoutDayBlocks } from "./calendar-layout";
+
+test("시간표: 겹치는 일정은 나란히, 겹치지 않으면 한 열을 다 쓴다", () => {
+  const at = (id: string, from: string, to: string) => entry(id, "2026-11-12", "2026-11-12", { kind: "event", from, to });
+  const blocks = layoutDayBlocks([at("a", "10:00", "12:00"), at("b", "11:00", "13:00"), at("c", "11:30", "12:00"), at("d", "15:00", "16:00")]);
+  const byId = Object.fromEntries(blocks.map((b) => [b.entry.id, b]));
+  assert.equal(byId.d.cols, 1);
+  assert.equal(byId.d.col, 0);
+  assert.equal(byId.a.cols, 3); // a·b·c 가 한 묶음
+  assert.equal(new Set([byId.a.col, byId.b.col, byId.c.col]).size, 3);
+  // 같은 묶음 안에서 같은 열의 두 블록은 시간이 겹치지 않는다
+  for (const x of blocks) for (const y of blocks) {
+    if (x === y || x.col !== y.col) continue;
+    assert.ok(x.endMin <= y.startMin || y.endMin <= x.startMin, `${x.entry.id}/${y.entry.id} 같은 열에서 겹침`);
+  }
+});
+
+test("시간표: 짧은 일정은 최소 높이로 늘려 계산하고, 시각 없는 항목은 제외", () => {
+  const short = entry("s", "2026-11-12", "2026-11-12", { kind: "event", from: "10:00", to: "10:10" });
+  const blocks = layoutDayBlocks([short, entry("allday", "2026-11-12")]);
+  assert.equal(blocks.length, 1);
+  assert.equal(blocks[0].endMin - blocks[0].startMin, 45);
+  // 최소 높이 때문에 10:30 시작 일정과는 겹친다 → 나란히
+  const next = entry("n", "2026-11-12", "2026-11-12", { kind: "event", from: "10:30", to: "11:30" });
+  const two = layoutDayBlocks([short, next]);
+  assert.equal(two[0].cols, 2);
+});

@@ -106,3 +106,52 @@ export function dayDots(entries: CalendarEntry[], day: string, max = 3): { dots:
   const onDay = entries.filter((entry) => day >= entry.start && day <= entry.end).sort(compareEntries);
   return { dots: onDay.slice(0, max), extra: Math.max(0, onDay.length - max) };
 }
+
+export type DayBlock = {
+  entry: CalendarEntry;
+  /** 시각표 시작 시각(분)을 기준으로 한 위·높이(분) */
+  startMin: number;
+  endMin: number;
+  /** 시간이 겹치는 묶음 안에서의 칸 번호와 전체 칸 수. 겹치는 일정은 나란히 놓는다. */
+  col: number;
+  cols: number;
+};
+
+export function toMinutes(time: string): number {
+  return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+}
+
+/**
+ * 하루 안의 시각 지정 일정 배치. 시간이 겹치는 일정은 같은 높이를 나눠 쓰는 열로 놓아
+ * 서로를 가리지 않게 한다. 최소 높이(minMinutes)보다 짧은 일정도 글자가 보이도록 늘려 계산한다.
+ */
+export function layoutDayBlocks(entries: CalendarEntry[], minMinutes = 45): DayBlock[] {
+  const timed = entries
+    .filter((entry) => entry.from && entry.to)
+    .map((entry) => {
+      const startMin = toMinutes(entry.from!);
+      return { entry, startMin, endMin: Math.max(toMinutes(entry.to!), startMin + minMinutes) };
+    })
+    .sort((a, b) => a.startMin - b.startMin || b.endMin - a.endMin);
+
+  const blocks: DayBlock[] = [];
+  let cluster: DayBlock[] = [];
+  let clusterEnd = -1;
+  const flush = () => {
+    const cols = cluster.reduce((max, block) => Math.max(max, block.col + 1), 0);
+    for (const block of cluster) block.cols = cols;
+    blocks.push(...cluster);
+    cluster = [];
+    clusterEnd = -1;
+  };
+  for (const item of timed) {
+    if (cluster.length > 0 && item.startMin >= clusterEnd) flush();
+    const taken = new Set(cluster.filter((block) => block.endMin > item.startMin).map((block) => block.col));
+    let col = 0;
+    while (taken.has(col)) col += 1;
+    cluster.push({ ...item, col, cols: 1 });
+    clusterEnd = Math.max(clusterEnd, item.endMin);
+  }
+  if (cluster.length > 0) flush();
+  return blocks;
+}

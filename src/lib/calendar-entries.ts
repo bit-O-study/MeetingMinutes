@@ -11,6 +11,9 @@ export type CalendarLayer = { id: string; label: string; tone: number };
 
 export const PERSONAL_LAYER = "me";
 
+/** 할 일을 딸리게 할 수 있는 일정·모임 후보(편집 창의 선택 목록) */
+export type LinkTarget = { kind: "event" | "meeting"; id: string; title: string; when: string };
+
 export type EntrySource =
   | { type: "planner"; id: string; version: number }
   | { type: "task"; id: string; spaceId: string; noteId: string }
