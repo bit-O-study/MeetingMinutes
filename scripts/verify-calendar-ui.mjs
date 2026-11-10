@@ -72,8 +72,11 @@ async function open(width, url = "/dev/calendar") {
   const dialog = page.locator("dialog[open]");
   check(await dialog.count() === 1, "내 일정을 누르면 편집 창이 열린다");
   check((await dialog.getByRole("button", { name: "기간", exact: true }).getAttribute("aria-pressed")) === "true", "여러 날 일정은 '기간'이 선택된 채로 열린다");
-  const dates = await dialog.locator("input[type=date]").evaluateAll((a) => a.map((x) => x.value));
-  check(dates.join(",") === "2026-11-18,2026-11-20", "시작일·종료일이 채워져 있다", dates.join(" ~ "));
+  const picker = dialog.getByRole("grid", { name: "날짜 고르기" });
+  check((await picker.count()) === 1, "날짜는 달력 선택기로 고른다");
+  const summary = (await dialog.innerText()).match(/11\/18[^\n]+/)?.[0] ?? "";
+  check(summary.includes("11/18(수) – 11/20(금) · 3일"), "시작일·종료일이 달력에 채워져 있다", summary);
+  check((await dialog.getByRole("gridcell", { name: /^11\/19/ }).getAttribute("aria-selected")) === "true", "사이의 날짜도 선택된 것으로 보인다");
   await dialog.getByRole("button", { name: "닫기" }).click().catch(() => {});
   await page.keyboard.press("Escape");
 
@@ -84,8 +87,15 @@ async function open(width, url = "/dev/calendar") {
   const dlg2 = page.locator("dialog[open]");
   check(await dlg2.getByRole("button", { name: "하루", exact: true }).count() === 1, "새 일정에는 '하루 / 기간' 선택이 있다");
   await dlg2.getByRole("button", { name: "기간", exact: true }).click();
-  const labels = await dlg2.locator("label").allInnerTexts();
-  check(labels.some((t) => t.startsWith("시작일")) && labels.some((t) => t.startsWith("종료일")), "'기간'을 고르면 시작일·종료일 입력이 나온다");
+  check((await dlg2.getByRole("grid", { name: "날짜 고르기" }).count()) === 1, "'기간'을 고르면 달력에서 시작·종료를 고른다");
+  const dayCells = dlg2.getByRole("gridcell", { name: /^11\/1[3-5]/ });
+  await dayCells.nth(0).click();
+  await dayCells.nth(2).click();
+  check((await dlg2.innerText()).includes("3일"), "시작과 종료를 누르면 기간이 정해진다", (await dlg2.innerText()).match(/11\/13[^\n]+/)?.[0]);
+  await dlg2.getByRole("button", { name: "등록하기" }).click();
+  // 제목 칸은 required — 브라우저가 제출을 막고 안내한다(창은 그대로 열려 있다).
+  check((await dlg2.locator('input[aria-label="제목"]').evaluate((el) => el.validity.valueMissing)) && (await page.locator("dialog[open]").count()) === 1, "제목이 비어 있으면 저장하지 않고 창이 그대로 열려 있다");
+  await dlg2.getByRole("button", { name: "입력 취소" }).count();
   check(errors.length === 0, "콘솔 오류 없음", errors.join(" | "));
   await context.close();
 }

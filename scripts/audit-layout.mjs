@@ -114,6 +114,15 @@ function measure() {
     const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 16;
     if (r.height / lineHeight >= 3 && r.width < 40 && !el.closest("[role=grid]")) problems.push(`글자가 세로로 쪼개짐: ${label(el)} (${Math.round(r.width)}×${Math.round(r.height)}px)`);
   }
+  // 10) 입력칸 안의 글자가 칸보다 길어 잘리는 경우(예: 좁은 칸의 "오후 03:00")
+  for (const input of document.querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select")) {
+    if (!visible(input)) continue;
+    if (input.scrollWidth > input.clientWidth + 1) problems.push(`입력칸 글자 잘림: ${input.getAttribute("aria-label") || input.type} (scrollW=${input.scrollWidth} > ${input.clientWidth})`);
+    // 날짜·시각 입력칸은 브라우저 안쪽 부품이라 넘침을 알려 주지 않는다. 값이 온전히 보이는 최소 폭으로 따로 잰다.
+    const MIN_WIDTH = { time: 104, date: 128, "datetime-local": 200 };
+    const need = MIN_WIDTH[input.type];
+    if (need && rect(input).width < need) problems.push(`입력칸이 너무 좁아 값이 잘림: ${input.getAttribute("aria-label") || input.type} (${Math.round(rect(input).width)}px < ${need}px)`);
+  }
   return [...new Set(problems)];
 }
 

@@ -14,6 +14,12 @@ type Props = {
   /** 이 날짜 이전은 고를 수 없다(오늘) */
   min: string;
   onChange: (start: string, end: string) => void;
+  /** 하루만 고른다(누르면 바로 정해진다). 일정·할 일의 날짜 고르기에 쓴다. */
+  single?: boolean;
+  /** 달력의 읽기 이름 */
+  label?: string;
+  /** 기간 길이 상한(일). 모임은 두 달, 개인 일정은 넉넉하게. */
+  maxDays?: number;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -22,7 +28,7 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
  * 날짜 범위 고르기: 시작하는 날을 누르고, 끝나는 날을 누른다.
  * 하루만 고르려면 같은 날을 두 번 누른다. 달력만으로 고르고 입력칸은 두지 않는다.
  */
-export function RangePicker({ start, end, min, onChange }: Props) {
+export function RangePicker({ start, end, min, onChange, single = false, label = "후보 기간 고르기", maxDays = MAX_WINDOW_DAYS }: Props) {
   const [month, setMonth] = useState(monthOf(start || min));
   const [anchor, setAnchor] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -30,14 +36,18 @@ export function RangePicker({ start, end, min, onChange }: Props) {
   function pick(day: string) {
     if (day < min) return;
     setNote("");
+    if (single) {
+      onChange(day, day);
+      return;
+    }
     if (anchor === null) {
       setAnchor(day);
       onChange(day, day);
       return;
     }
     const [a, b] = day < anchor ? [day, anchor] : [anchor, day];
-    if (daysInclusive(a, b) > MAX_WINDOW_DAYS) {
-      setNote("두 달 이내로 골라 주세요");
+    if (daysInclusive(a, b) > maxDays) {
+      setNote(maxDays === MAX_WINDOW_DAYS ? "두 달 이내로 골라 주세요" : "기간이 너무 길어요");
       return;
     }
     setAnchor(null);
@@ -51,7 +61,7 @@ export function RangePicker({ start, end, min, onChange }: Props) {
         <p className="text-base font-black">{month.slice(0, 4)}년 {Number(month.slice(5))}월</p>
         <button type="button" aria-label="다음 달" onClick={() => setMonth(addMonths(month, 1))} className="press grid size-9 place-items-center rounded-full bg-surface shadow-sm hover:bg-surface-2"><ChevronRight className="size-4" /></button>
       </div>
-      <div role="grid" aria-label="후보 기간 고르기" className="select-none">
+      <div role="grid" aria-label={label} className="select-none">
         <div role="row" className="grid grid-cols-7 text-center text-xs font-bold text-ink-3">
           {WEEKDAYS.map((w) => <div key={w} role="columnheader" className="py-1">{w}</div>)}
         </div>
@@ -90,7 +100,7 @@ export function RangePicker({ start, end, min, onChange }: Props) {
       </div>
       <p role="status" className={cn("flex items-center gap-2 px-1 text-sm font-bold", note ? "text-danger" : "text-ink-2")}>
         {note ? <CircleAlert aria-hidden="true" className="size-4" /> : <CalendarRange aria-hidden="true" className="size-4 text-ink-3" />}
-        {note || (anchor ? "끝나는 날을 눌러 주세요" : `${dayRangeLabel(start, end)} · ${daysInclusive(start, end)}일`)}
+        {note || (single ? shortDay(start) : anchor ? "끝나는 날을 눌러 주세요" : `${dayRangeLabel(start, end)} · ${daysInclusive(start, end)}일`)}
       </p>
     </div>
   );
