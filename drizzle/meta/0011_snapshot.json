@@ -1,5 +1,5 @@
 {
-  "id": "abe21c28-dc04-4414-aea8-7c8b3c4f8db8",
+  "id": "71aacb52-7b31-4461-82ab-ca1fe7da211b",
   "prevId": "cf690c5e-c805-4398-a106-aca1c2d0648c",
   "version": "7",
   "dialect": "postgresql",
@@ -612,7 +612,7 @@
           "value": "\"meeting_responses\".\"answer\" IN ('yes','maybe','no')"
         }
       },
-      "isRLSEnabled": false
+      "isRLSEnabled": true
     },
     "public.meetings": {
       "name": "meetings",
@@ -863,7 +863,7 @@
           "value": "(\"meetings\".\"status\" = 'confirmed') = (\"meetings\".\"confirmed_start\" IS NOT NULL AND \"meetings\".\"confirmed_end\" IS NOT NULL AND \"meetings\".\"confirmed_at\" IS NOT NULL)\n    AND (\"meetings\".\"confirmed_start\" IS NULL OR \"meetings\".\"confirmed_end\" >= \"meetings\".\"confirmed_start\")\n    AND ((\"meetings\".\"confirmed_from\" IS NULL AND \"meetings\".\"confirmed_to\" IS NULL) OR (\"meetings\".\"confirmed_from\" IS NOT NULL AND \"meetings\".\"confirmed_to\" IS NOT NULL AND \"meetings\".\"confirmed_from\" < \"meetings\".\"confirmed_to\"))"
         }
       },
-      "isRLSEnabled": false
+      "isRLSEnabled": true
     },
     "public.note_docs": {
       "name": "note_docs",

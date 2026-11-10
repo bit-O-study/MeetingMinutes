@@ -8,6 +8,7 @@ CREATE TABLE "meeting_responses" (
 	CONSTRAINT "meeting_responses_answer_check" CHECK ("meeting_responses"."answer" IN ('yes','maybe','no'))
 );
 --> statement-breakpoint
+ALTER TABLE "meeting_responses" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "meetings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"space_id" uuid NOT NULL,
@@ -38,6 +39,7 @@ CREATE TABLE "meetings" (
     AND (("meetings"."confirmed_from" IS NULL AND "meetings"."confirmed_to" IS NULL) OR ("meetings"."confirmed_from" IS NOT NULL AND "meetings"."confirmed_to" IS NOT NULL AND "meetings"."confirmed_from" < "meetings"."confirmed_to")))
 );
 --> statement-breakpoint
+ALTER TABLE "meetings" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "personal_planner_items" DROP CONSTRAINT "personal_planner_kind_check";--> statement-breakpoint
 ALTER TABLE "personal_planner_items" ADD COLUMN "linked_item_id" uuid;--> statement-breakpoint
 ALTER TABLE "personal_planner_items" ADD COLUMN "linked_meeting_id" uuid;--> statement-breakpoint

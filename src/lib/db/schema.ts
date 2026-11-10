@@ -454,7 +454,7 @@ export const meetings = pgTable("meetings", {
   check("meetings_confirmed_check", sql`(${t.status} = 'confirmed') = (${t.confirmedStart} IS NOT NULL AND ${t.confirmedEnd} IS NOT NULL AND ${t.confirmedAt} IS NOT NULL)
     AND (${t.confirmedStart} IS NULL OR ${t.confirmedEnd} >= ${t.confirmedStart})
     AND ((${t.confirmedFrom} IS NULL AND ${t.confirmedTo} IS NULL) OR (${t.confirmedFrom} IS NOT NULL AND ${t.confirmedTo} IS NOT NULL AND ${t.confirmedFrom} < ${t.confirmedTo}))`),
-]);
+]).enableRLS();
 
 /** 한 사람이 한 날짜에 한 줄. 다른 사람과 같은 줄을 쓰지 않아 응답끼리 충돌하지 않는다. */
 export const meetingResponses = pgTable("meeting_responses", {
@@ -467,4 +467,4 @@ export const meetingResponses = pgTable("meeting_responses", {
   primaryKey({ columns: [t.meetingId, t.day, t.userId] }),
   index("meeting_responses_user_idx").on(t.userId, t.meetingId),
   check("meeting_responses_answer_check", sql`${t.answer} IN ('yes','maybe','no')`),
-]);
+]).enableRLS();
