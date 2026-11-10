@@ -1,3 +1,4 @@
+import { MeetingsTab } from "@/components/meetings/MeetingsTab";
 import { ProjectChat } from "@/components/screens/ProjectChat";
 import { IssuePanel } from "@/components/screens/IssuePanel";
 import { listProjectMessages } from "@/lib/actions/project-chat";
@@ -31,7 +32,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   const { spaceId } = await params;
   const { space, role, userId } = await requireSpaceMember(spaceId);
   const query = await searchParams;
-  const tab = query.tab === "notes" || query.tab === "chat" || query.tab === "tasks" || query.tab === "members" || query.tab === "issues" ? query.tab : "chat";
+  const tab = query.tab === "notes" || query.tab === "chat" || query.tab === "tasks" || query.tab === "members" || query.tab === "issues" || query.tab === "meetings" ? query.tab : "chat";
   const today = todayInSeoul();
   const requestedPage = Number(query.page ?? 1);
   const notePage = Number.isSafeInteger(requestedPage) ? Math.max(1, Math.min(10000, requestedPage)) : 1;
@@ -60,7 +61,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
     { title: "완료", rows: taskRows.filter((row) => row.task.doneAt) },
   ];
   const kindLabels = { study: "스터디", handover: "인수인계", general: "일반" };
-  const tabs = [{ value: "chat", label: "대화" }, { value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "issues", label: "이슈" }, { value: "members", label: role === "owner" ? "멤버·설정" : "멤버" }];
+  const tabs = [{ value: "chat", label: "대화" }, { value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "meetings", label: "일정" }, { value: "issues", label: "이슈" }, { value: "members", label: role === "owner" ? "멤버·설정" : "멤버" }];
   const color = projectColor(spaceId);
 
   // 재디자인(2026-10-14): 프로젝트 색 머리글 + 붙어 있는 밑줄 탭. 화면 전체를 project-* 로 감싸
@@ -98,6 +99,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
         ))}
       </nav>
 
+      {tab === "meetings" && <MeetingsTab spaceId={spaceId} query={query} />}
       {tab === "chat" && chatList && <ProjectChat spaceId={spaceId} userId={userId} members={members} rows={chatList.rows} total={chatList.total} page={chatList.page} />}
 
       {tab === "notes" && (

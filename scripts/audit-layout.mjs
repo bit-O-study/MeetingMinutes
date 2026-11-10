@@ -77,6 +77,43 @@ function measure() {
       if (r.right > cr.right + 1 || r.left < cr.left - 1 || r.bottom > cr.bottom + 1) problems.push(`열 밖 블록: ${label(block)}`);
     }
   }
+  // 6) 투표 칸처럼 칸 안에 여러 줄이 들어가는 버튼: 안쪽 내용이 칸 밖으로 나가지 않는지
+  for (const cell of document.querySelectorAll("button[role=gridcell]")) {
+    if (!visible(cell)) continue;
+    const cr = rect(cell);
+    for (const child of cell.children) {
+      if (!visible(child)) continue;
+      const r = rect(child);
+      if (r.bottom > cr.bottom + 1 || r.right > cr.right + 1) problems.push(`칸 안 내용 넘침: ${label(cell)} > ${label(child)}`);
+    }
+  }
+  // 7) 열려 있는 대화상자: 화면 폭을 넘지 않고, 안에서 가로로 넘치지 않는지
+  for (const dialog of document.querySelectorAll("dialog[open]")) {
+    const r = rect(dialog);
+    if (r.left < -1 || r.right > window.innerWidth + 1) problems.push(`대화상자가 화면 밖: ${Math.round(r.left)}~${Math.round(r.right)} / ${window.innerWidth}`);
+    if (dialog.scrollWidth > dialog.clientWidth + 1) problems.push("대화상자 안에서 가로 넘침");
+  }
+  // 8) 가로 배치(flex) 안에서 서로 겹친 형제. flex 자식은 설계상 겹치지 않으므로 겹치면 줄어든 칸에서 내용이 넘친 것이다.
+  for (const box of document.querySelectorAll("main *, body > div *")) {
+    if (!visible(box) || getComputedStyle(box).display !== "flex") continue;
+    const kids = [...box.children].filter((kid) => visible(kid) && getComputedStyle(kid).position !== "absolute");
+    for (let i = 0; i < kids.length; i++) {
+      for (let j = i + 1; j < kids.length; j++) {
+        const a = rect(kids[i]);
+        const b = rect(kids[j]);
+        const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (ox > 2 && oy > 2) problems.push(`형제 겹침: ${label(kids[i])} × ${label(kids[j])} (${Math.round(ox)}×${Math.round(oy)}px)`);
+      }
+    }
+  }
+  // 9) 글자가 한 글자씩 세로로 쪼개질 만큼 좁아진 칸(예: 확/정/됨)
+  for (const el of document.querySelectorAll("main p, main span, main h1, main h2, main h3, main div")) {
+    if (!visible(el) || el.children.length > 0 || !el.textContent || el.textContent.trim().length < 3) continue;
+    const r = rect(el);
+    const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 16;
+    if (r.height / lineHeight >= 3 && r.width < 40 && !el.closest("[role=grid]")) problems.push(`글자가 세로로 쪼개짐: ${label(el)} (${Math.round(r.width)}×${Math.round(r.height)}px)`);
+  }
   return [...new Set(problems)];
 }
 

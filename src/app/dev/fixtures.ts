@@ -72,3 +72,54 @@ export const PREVIEW_LINK_TARGETS: LinkTarget[] = [
   { kind: "event", id: "00000000-0000-4000-8000-000000000004", title: "부산 출장", when: "11/18~11/20" },
   { kind: "meeting", id: MEETING_7, title: "7회차 스터디", when: "11/13" },
 ];
+
+/* ── 모임 투표 미리보기 ─────────────────────────────────────────── */
+import type { MeetingDetail, MeetingSummary } from "@/lib/meeting-data";
+import type { Votes } from "@/lib/meetings";
+
+const MEMBERS = [
+  { id: "u1", name: "BO" },
+  { id: "u2", name: "지수" },
+  { id: "u3", name: "민준" },
+  { id: "u4", name: "서연" },
+  { id: "u5", name: "도현" },
+  { id: "u6", name: "하늘" },
+];
+
+/** 후보 11/21(토)~11/29(일), 연속 2일. 도현은 아직 응답하지 않았다. */
+export function previewMeeting(status: "polling" | "confirmed" = "polling", manager = true): MeetingDetail {
+  const answers: Record<string, Record<string, "yes" | "maybe" | "no">> = {
+    "2026-11-21": { u1: "yes", u2: "yes", u3: "no", u4: "yes", u6: "maybe" },
+    "2026-11-22": { u1: "maybe", u2: "yes", u3: "no", u4: "no", u6: "yes" },
+    "2026-11-23": { u1: "no", u2: "yes", u3: "yes", u4: "no", u6: "no" },
+    "2026-11-24": { u1: "yes", u2: "no", u3: "yes", u4: "yes", u6: "maybe" },
+    "2026-11-25": { u1: "yes", u2: "yes", u3: "yes", u4: "maybe", u6: "yes" },
+    "2026-11-26": { u1: "yes", u2: "no", u3: "yes", u4: "yes", u6: "yes" },
+    "2026-11-27": { u1: "yes", u2: "yes", u3: "yes", u4: "yes", u6: "yes" },
+    "2026-11-28": { u1: "yes", u2: "yes", u3: "yes", u4: "yes", u6: "maybe" },
+    "2026-11-29": { u1: "maybe", u2: "yes", u3: "no", u4: "yes", u6: "yes" },
+  };
+  const votes: Votes = answers;
+  const confirmed = status === "confirmed";
+  return {
+    meeting: {
+      id: MEETING_POLL, title: "송년회 날짜 정하기", location: "강남 스터디룸 B", memo: "저녁 식사 포함이에요. 불가능한 날은 꼭 칠해 주세요.",
+      status, spanDays: 2, windowStart: "2026-11-21", windowEnd: "2026-11-29",
+      confirmedStart: confirmed ? "2026-11-27" : null, confirmedEnd: confirmed ? "2026-11-28" : null,
+      confirmedFrom: confirmed ? "18:00" : null, confirmedTo: confirmed ? "21:00" : null,
+      respondBy: "2026-11-14T13:00:00.000Z", responded: 5, members: 6, needsMyAnswer: false, createdBy: "u1", noteId: confirmed ? "n-note" : null, version: 1,
+    },
+    members: MEMBERS,
+    votes,
+    myUserId: "u1",
+    canManage: manager,
+    busy: { "2026-11-22": ["가족 모임"], "2026-11-23": ["가족 모임"] },
+  };
+}
+
+export const PREVIEW_MEETING_LIST: MeetingSummary[] = [
+  { id: "m-1", title: "송년회 날짜 정하기", location: "강남 스터디룸 B", status: "polling", spanDays: 2, windowStart: "2026-11-21", windowEnd: "2026-11-29", confirmedStart: null, confirmedEnd: null, confirmedFrom: null, confirmedTo: null, respondBy: null, responded: 5, members: 6, needsMyAnswer: true },
+  { id: "m-2", title: "8회차 스터디 시간", location: "", status: "polling", spanDays: 1, windowStart: "2026-11-16", windowEnd: "2026-11-20", confirmedStart: null, confirmedEnd: null, confirmedFrom: null, confirmedTo: null, respondBy: null, responded: 6, members: 6, needsMyAnswer: false },
+  { id: "m-3", title: "7회차 스터디", location: "강남 스터디룸 B", status: "confirmed", spanDays: 1, windowStart: "2026-11-12", windowEnd: "2026-11-14", confirmedStart: "2026-11-13", confirmedEnd: "2026-11-13", confirmedFrom: "19:00", confirmedTo: "21:00", respondBy: null, responded: 5, members: 6, needsMyAnswer: false },
+  { id: "m-4", title: "리팩터링 워크숍(1박2일) 아주 긴 이름의 모임이 목록 카드에서 어떻게 줄바꿈되는지", location: "경기도 가평 어딘가의 아주 긴 이름의 펜션과 주소", status: "confirmed", spanDays: 2, windowStart: "2026-11-27", windowEnd: "2026-11-28", confirmedStart: "2026-11-27", confirmedEnd: "2026-11-28", confirmedFrom: null, confirmedTo: null, respondBy: null, responded: 6, members: 6, needsMyAnswer: false },
+];
