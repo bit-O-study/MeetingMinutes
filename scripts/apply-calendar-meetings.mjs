@@ -18,7 +18,11 @@ import postgres from "postgres";
 
 const TAG = "0011_calendar_meetings";
 const CHECK_ONLY = process.argv.includes("--check");
-const digest = (body) => createHash("sha256").update(body).digest("hex");
+/**
+ * 해시는 줄바꿈을 LF 로 맞춘 뒤 계산한다. 이전 마이그레이션은 LF 파일의 해시로 기록돼 있는데,
+ * Windows 작업 폴더(autocrlf)에서는 같은 파일이 CRLF 라 그대로 해시하면 기준선이 어긋난다.
+ */
+const digest = (body) => createHash("sha256").update(body.replace(/\r\n/g, "\n")).digest("hex");
 const sql = postgres(process.env.DATABASE_URL, { ssl: "require", max: 1, prepare: false });
 
 try {
