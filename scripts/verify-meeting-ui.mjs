@@ -37,13 +37,13 @@ const cell = (page, label) => page.getByRole("gridcell", { name: new RegExp(`^${
 {
   const { page, context, errors } = await open(1280, "/dev/meeting");
   const top = page.locator('section[aria-label="추천 구간"]');
-  check((await top.innerText()).includes("11/27(금) – 11/28(토)"), "추천 1순위는 11/27~28(두 날 모두 가능한 사람이 가장 많다)");
+  check((await top.locator("li").first().innerText()).replace(/\s+/g, "").includes("27–28"), "추천 1순위는 27~28일(두 날 모두 가능한 사람이 가장 많다)");
 
   // 내 응답: 11/27 을 불가로 칠하면 그 구간은 추천에서 내려간다
   await page.getByRole("button", { name: "불가", exact: true }).first().click();
   await cell(page, "11/27").click();
   check((await cell(page, "11/27").getAttribute("aria-label")).includes("내 응답 불가"), "날짜를 누르면 내 응답이 칠해진다");
-  check(!(await top.locator("li").first().innerText()).includes("11/27(금) – 11/28(토)"), "내 응답을 바꾸면 추천 구간이 바로 다시 계산된다");
+  check(!(await top.locator("li").first().innerText()).replace(/\s+/g, "").includes("27–28"), "내 응답을 바꾸면 추천 구간이 바로 다시 계산된다");
 
   // 같은 값을 다시 누르면 지워진다
   await cell(page, "11/27").click();
@@ -53,8 +53,8 @@ const cell = (page, label) => page.getByRole("gridcell", { name: new RegExp(`^${
   await page.getByRole("button", { name: "가능", exact: true }).first().click();
   await cell(page, "11/27").click();
   await cell(page, "11/28").click();
-  const label = await top.innerText();
-  check(label.includes("11/27(금) – 11/28(토)"), "다시 가능으로 칠하면 추천이 돌아온다");
+  const label = (await top.locator("li").first().innerText()).replace(/\s+/g, "");
+  check(label.includes("27–28"), "다시 가능으로 칠하면 추천이 돌아온다");
 
   // 끌어서 칠하기(마우스)
   await page.getByRole("button", { name: "조건부", exact: true }).first().click();
@@ -108,12 +108,12 @@ const cell = (page, label) => page.getByRole("gridcell", { name: new RegExp(`^${
   const { page, context, errors } = await open(1280, "/dev/meetings?open=1");
   const dialog = page.locator("dialog[open]");
   check(await dialog.count() === 1, "?open=1 이면 만들기 창이 열려 있다");
-  check((await dialog.innerText()).includes("후보 기간 11/21(토)"), "캘린더에서 넘어온 시작 날짜가 채워져 있다");
+  check((await dialog.innerText()).includes("11/21(토)"), "캘린더에서 넘어온 시작 날짜가 채워져 있다");
   await dialog.getByRole("gridcell", { name: /^11\/25/ }).click();
   check((await dialog.innerText()).includes("끝나는 날을 눌러"), "시작을 누르면 끝나는 날을 안내한다");
   await dialog.getByRole("gridcell", { name: /^11\/29/ }).click();
-  check((await dialog.innerText()).includes("후보 기간 11/25(수) – 11/29(일) · 5일"), "끝을 누르면 기간이 정해진다", (await dialog.innerText()).match(/후보 기간 [^\n]+/)?.[0]);
-  const options = await dialog.locator("select option").allInnerTexts();
+  check((await dialog.innerText()).includes("11/25(수) – 11/29(일) · 5일"), "끝을 누르면 기간이 정해진다", (await dialog.innerText()).match(/11\/25[^\n]+/)?.[0]);
+  const options = await dialog.getByRole("radio").evaluateAll((a) => a.map((x) => x.getAttribute("aria-label")));
   check(options.length === 5 && options[0] === "하루", "이어지는 일수 선택지는 기간 길이(5일)까지만 나온다", options.join("/"));
   await dialog.getByRole("button", { name: "일정 조사 시작" }).click();
   check((await dialog.innerText()).includes("모임 이름을 입력"), "이름이 비어 있으면 안내가 나온다");
@@ -131,7 +131,7 @@ const cell = (page, label) => page.getByRole("gridcell", { name: new RegExp(`^${
   const { page, context } = await open(1280, "/dev/meetings");
   const t = await page.innerText("body");
   check(t.includes("투표 중") && t.includes("확정"), "목록은 '투표 중'과 '확정'으로 나뉜다");
-  check(t.includes("내 응답 필요"), "내가 아직 답하지 않은 투표에 '내 응답 필요'가 붙는다");
+  check((await page.getByRole("img", { name: "내 응답 필요" }).count()) === 1, "내가 아직 답하지 않은 투표에만 '내 응답 필요' 표시가 붙는다");
   const empty = await open(1280, "/dev/meetings?empty=1");
   check((await empty.page.innerText("body")).includes("아직 잡은 일정이 없어요"), "비어 있으면 안내 문구가 나온다");
   await empty.context.close();

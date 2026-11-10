@@ -46,10 +46,10 @@ async function open(width, url = "/dev/calendar") {
   const bars = await page.getByRole("link", { name: /부산 출장/ }).count() + await page.getByRole("button", { name: /부산 출장/ }).count();
   check(bars === 1, "기간 일정(출장 11/18~20)은 막대 하나로 그려진다", `${bars}개`);
 
-  const hiddenBefore = await page.getByRole("button", { name: /\+\d+ 더 보기/ }).count();
+  const hiddenBefore = await page.getByRole("button", { name: /항목 \d+개 더 보기/ }).count();
   check(hiddenBefore >= 1, "항목이 많은 날은 '+N 더 보기'로 접힌다", `${hiddenBefore}곳`);
-  await page.getByRole("button", { name: /\+\d+ 더 보기/ }).first().click();
-  check((await panel.innerText()).includes("개"), "'+N 더 보기'를 누르면 그날 전체 목록이 패널에 열린다");
+  await page.getByRole("button", { name: /항목 \d+개 더 보기/ }).first().click();
+  check((await panel.locator("li").count()) >= 4, "'+N'을 누르면 그날 전체 목록이 패널에 열린다", `${await panel.locator("li").count()}개`);
 
   const before = await page.getByRole("button", { name: /치과/ }).count();
   await page.getByRole("button", { name: "프론트엔드 스터디", exact: true }).click();
@@ -72,7 +72,9 @@ async function open(width, url = "/dev/calendar") {
   await page.keyboard.press("Escape");
 
   // 새 일정: 하루 ↔ 기간 전환
-  await page.getByRole("button", { name: "새로 만들기" }).click();
+  // 머리의 + 버튼은 메뉴(일정·할 일·모임)를 연다.
+  await page.locator('summary[aria-label="새로 만들기"]').click();
+  await page.locator("header details").getByRole("button", { name: "일정", exact: true }).click();
   const dlg2 = page.locator("dialog[open]");
   check(await dlg2.getByRole("button", { name: "하루", exact: true }).count() === 1, "새 일정에는 '하루 / 기간' 선택이 있다");
   await dlg2.getByRole("button", { name: "기간", exact: true }).click();

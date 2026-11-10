@@ -26,7 +26,7 @@ function Dot({ entry, tone }: { entry: CalendarEntry; tone: number }) {
       aria-hidden="true"
       style={layerStyle(tone)}
       className={cn(
-        "block size-[7px]",
+        "block size-[6px]",
         entry.kind === "event" && "rounded-full bg-[var(--c)]",
         entry.kind === "task" && "rounded-full border-[1.5px] border-[var(--c)]",
         entry.kind === "meeting" && "rotate-45 rounded-[2px] bg-[var(--c)]",
@@ -42,10 +42,10 @@ function Dot({ entry, tone }: { entry: CalendarEntry; tone: number }) {
  */
 export function MobileMonth({ month, weeks, entries, toneOf, selectedDay, today, onSelectDay }: Props) {
   return (
-    <div role="grid" aria-label={`${month.slice(0, 4)}년 ${Number(month.slice(5))}월 캘린더`} className="px-2">
-      <div role="row" className="grid grid-cols-7 text-center text-[13px] font-bold text-ink-3">
-        {WEEKDAYS.map((label) => (
-          <div key={label} role="columnheader" className="py-1.5">{label}</div>
+    <div role="grid" aria-label={`${month.slice(0, 4)}년 ${Number(month.slice(5))}월 캘린더`} className="px-3 pb-2">
+      <div role="row" className="grid grid-cols-7 text-center text-xs font-bold text-ink-3">
+        {WEEKDAYS.map((label, index) => (
+          <div key={label} role="columnheader" className={cn("py-2", index === 0 && "text-danger/80")}>{label}</div>
         ))}
       </div>
       {weeks.map((weekStart) => (
@@ -63,10 +63,10 @@ export function MobileMonth({ month, weeks, entries, toneOf, selectedDay, today,
                 onClick={() => onSelectDay(day)}
                 style={selected ? ({ "--c": "var(--on-accent)" } as React.CSSProperties) : undefined}
                 className={cn(
-                  "mx-auto flex h-[3.4rem] w-full max-w-[3.4rem] flex-col items-center justify-start gap-1 rounded-xl pt-1.5 text-base",
+                  "mx-auto my-0.5 flex h-[3.6rem] w-full max-w-[3.6rem] flex-col items-center justify-start gap-1 rounded-[1.4rem] pt-2 text-[15px] tabular-nums transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
-                  selected ? "bg-accent font-bold text-on-accent" : isInMonth(day, month) ? "font-medium text-ink" : "font-medium text-ink-3",
-                  day === today && !selected && "font-black text-accent",
+                  selected ? "bg-accent font-black text-on-accent shadow-md" : isInMonth(day, month) ? "font-bold text-ink" : "font-medium text-ink-3",
+                  day === today && !selected && "bg-accent-soft text-accent",
                 )}
               >
                 <span>{Number(day.slice(8))}</span>
@@ -74,7 +74,7 @@ export function MobileMonth({ month, weeks, entries, toneOf, selectedDay, today,
                   {dots.map((entry) => (
                     <Dot key={entry.id} entry={entry} tone={toneOf(entry.layerId)} />
                   ))}
-                  {extra > 0 && <span aria-hidden="true" className="text-[9px] font-bold leading-none">+</span>}
+                  {extra > 0 && <span aria-hidden="true" className="text-[9px] font-black leading-none">+</span>}
                 </span>
               </button>
             );

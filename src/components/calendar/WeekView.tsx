@@ -117,6 +117,7 @@ export function WeekView({ weekStart, entries, toneOf, today, selectedDay, onSel
                 tone={toneOf(block.entry.layerId)}
                 wrap
                 lines={block.endMin - block.startMin >= 75 ? 2 : 1}
+                shortTime={block.cols > 1}
                 className="absolute m-0 overflow-hidden"
                 style={{
                   top: ((block.startMin - startHour * 60) / 60) * HOUR_PX + 1,

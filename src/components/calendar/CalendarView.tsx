@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "@/components/PendingLink";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { AlarmClock, CalendarDays, CalendarPlus, CalendarRange, ChevronLeft, ChevronRight, Eye, EyeOff, ListChecks, ListPlus, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 
 import { PlannerEditor } from "@/components/screens/PlannerEditor";
 import { completePlannerItem } from "@/lib/actions/planner";
@@ -33,12 +33,14 @@ type Props = {
 };
 
 const HIDE_DONE = "~done";
+const ROUND = "press grid size-10 shrink-0 place-items-center rounded-full bg-surface text-ink shadow-sm hover:bg-surface-2";
 
 /**
  * 통합 캘린더 화면.
  *
  * 데이터 모양과 배치 계산은 lib/calendar-* 가 맡고, 여기서는 상태(선택한 날, 꺼 둔 레이어, 편집 창)와
- * 화면 크기별 구성만 정한다. 모바일은 점 + 아래 목록, 데스크톱은 막대·칩 격자 + 오른쪽 패널이다.
+ * 화면 크기별 구성만 정한다. 모바일은 점 + 아래 목록, 데스크톱은 칩 격자 + 오른쪽 패널이다.
+ * 글자는 제목과 날짜에만 쓰고, 나머지는 아이콘·색 점·숫자로 말한다.
  */
 export function CalendarView({ data, linkTargets, view, anchorDay, preview = false }: Props) {
   const router = useRouter();
@@ -48,6 +50,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
   const [hidden, toggleHidden] = useStoredSet("moa.calendar.hidden");
   const [selectedDay, setSelectedDay] = useState(anchorDay);
   const [editor, setEditor] = useState<{ item: PlannerItem | null; kind: "event" | "task"; date: string } | null>(null);
+  const menu = useRef<HTMLDetailsElement>(null);
   const closeEditor = useCallback(() => setEditor(null), []);
 
   const { layers, today, month } = data;
@@ -99,7 +102,10 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
     [preview, router],
   );
 
-  const create = useCallback((kind: "event" | "task", day: string) => setEditor({ item: null, kind, date: day }), []);
+  const create = useCallback((kind: "event" | "task", day: string) => {
+    if (menu.current) menu.current.open = false;
+    setEditor({ item: null, kind, date: day });
+  }, []);
 
   // 오늘 요약은 지금 보고 있는 달이 이번 달일 때만 의미가 있다.
   const summary = useMemo(() => {
@@ -113,9 +119,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
   }, [entries, month, today]);
 
   const isWeek = view === "week";
-  const title = isWeek
-    ? `${Number(weekStart.slice(5, 7))}월 ${Number(weekStart.slice(8))}일 – ${Number(addDays(weekStart, 6).slice(5, 7))}월 ${Number(addDays(weekStart, 6).slice(8))}일`
-    : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
+  const weekEnd = addDays(weekStart, 6);
   const base = preview ? "/dev/calendar" : "/calendar";
   const prevHref = isWeek ? `${base}?view=week&day=${addDays(weekStart, -7)}` : `${base}?month=${addMonths(month, -1)}`;
   const nextHref = isWeek ? `${base}?view=week&day=${addDays(weekStart, 7)}` : `${base}?month=${addMonths(month, 1)}`;
@@ -139,60 +143,89 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-[84rem] flex-col gap-3 px-3 py-4 md:px-5 md:py-6">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 className="mr-1 text-2xl font-black tracking-tight md:text-[1.75rem]">{title}</h1>
+    <div className="mx-auto flex w-full max-w-[84rem] flex-col gap-4 px-3 py-4 md:px-6 md:py-7">
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <h1 className="flex items-baseline gap-2" aria-label={isWeek ? `${weekStart} 부터 ${weekEnd} 까지` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`}>
+          {isWeek ? (
+            <span className="text-[2.1rem] font-black leading-none tracking-tight tabular-nums">{Number(weekStart.slice(5, 7))}.{Number(weekStart.slice(8))}<span className="mx-1.5 text-ink-3">–</span>{Number(weekEnd.slice(5, 7))}.{Number(weekEnd.slice(8))}</span>
+          ) : (
+            <>
+              <span className="text-[2.5rem] font-black leading-none tracking-tight">{Number(month.slice(5))}월</span>
+              <span className="text-base font-bold text-ink-3">{month.slice(0, 4)}</span>
+            </>
+          )}
+        </h1>
         <div className="flex items-center gap-1.5">
-          <Link href={prevHref} aria-label={isWeek ? "이전 주" : "이전 달"} className="press grid size-10 place-items-center rounded-xl bg-surface ring-1 ring-inset ring-line hover:bg-surface-2"><ChevronLeft className="size-5" /></Link>
-          <Link href={todayHref} className="press inline-flex h-10 items-center rounded-xl bg-surface px-3.5 text-sm font-bold ring-1 ring-inset ring-line hover:bg-surface-2">오늘</Link>
-          <Link href={nextHref} aria-label={isWeek ? "다음 주" : "다음 달"} className="press grid size-10 place-items-center rounded-xl bg-surface ring-1 ring-inset ring-line hover:bg-surface-2"><ChevronRight className="size-5" /></Link>
+          <Link href={prevHref} aria-label={isWeek ? "이전 주" : "이전 달"} className={ROUND}><ChevronLeft className="size-5" /></Link>
+          <Link href={todayHref} aria-label="오늘로" className="press inline-flex h-10 items-center rounded-full bg-surface px-4 text-sm font-bold shadow-sm hover:bg-surface-2">오늘</Link>
+          <Link href={nextHref} aria-label={isWeek ? "다음 주" : "다음 달"} className={ROUND}><ChevronRight className="size-5" /></Link>
         </div>
-        <nav aria-label="보기 방식" className="inline-flex overflow-hidden rounded-xl ring-1 ring-inset ring-line-2">
-          <Link href={monthHref} aria-current={!isWeek ? "page" : undefined} className={cn("px-3.5 py-2 text-sm font-bold", !isWeek ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>월</Link>
-          <Link href={weekHref} aria-current={isWeek ? "page" : undefined} className={cn("px-3.5 py-2 text-sm font-bold", isWeek ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>주</Link>
+        <nav aria-label="보기 방식" className="inline-flex rounded-full bg-surface-2 p-1">
+          <Link href={monthHref} aria-label="월 보기" title="월" aria-current={!isWeek ? "page" : undefined} className={cn("grid size-9 place-items-center rounded-full", !isWeek ? "bg-surface text-accent shadow-sm" : "text-ink-3 hover:text-ink")}><CalendarDays className="size-[1.15rem]" /></Link>
+          <Link href={weekHref} aria-label="주 보기" title="주" aria-current={isWeek ? "page" : undefined} className={cn("grid size-9 place-items-center rounded-full", isWeek ? "bg-surface text-accent shadow-sm" : "text-ink-3 hover:text-ink")}><CalendarRange className="size-[1.15rem]" /></Link>
         </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <Link href="/tasks" className="press hidden h-10 items-center rounded-xl bg-surface px-3.5 text-sm font-bold ring-1 ring-inset ring-line hover:bg-surface-2 sm:inline-flex">할 일 목록</Link>
-          <button type="button" onClick={() => create("event", selectedDay)} className="press inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent shadow-sm hover:brightness-105">
-            <Plus className="size-4" aria-hidden="true" />새로 만들기
-          </button>
+
+        <div className="ml-auto flex items-center gap-3">
+          {summary && (
+            <p className="flex items-center gap-3 text-sm font-black tabular-nums text-ink" aria-label={`오늘 일정 ${summary.events}개, 할 일 ${summary.tasks}개, 지연 ${summary.overdue}개`}>
+              <span className="inline-flex items-center gap-1.5" title="오늘 일정"><CalendarDays aria-hidden="true" className="size-4 text-ink-3" />{summary.events}</span>
+              <span className="inline-flex items-center gap-1.5" title="오늘 할 일"><ListChecks aria-hidden="true" className="size-4 text-ink-3" />{summary.tasks}</span>
+              {summary.overdue > 0 && <span className="inline-flex items-center gap-1.5 text-danger" title="지연"><AlarmClock aria-hidden="true" className="size-4" />{summary.overdue}</span>}
+            </p>
+          )}
+          <Link href="/tasks" aria-label="할 일 목록" title="할 일 목록" className={cn(ROUND, "max-sm:hidden")}><ListChecks className="size-[1.15rem]" /></Link>
+          <details ref={menu} className="relative">
+            <summary aria-label="새로 만들기" title="새로 만들기" className="press grid size-11 cursor-pointer list-none place-items-center rounded-full bg-accent text-on-accent shadow-md hover:brightness-105 [&::-webkit-details-marker]:hidden">
+              <Plus className="size-5" strokeWidth={2.6} />
+            </summary>
+            <div className="absolute right-0 top-13 z-30 w-56 rounded-2xl bg-surface p-1.5 shadow-[var(--shadow-float)]">
+              <button type="button" onClick={() => create("event", selectedDay)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold hover:bg-surface-2"><CalendarPlus className="size-[1.15rem] text-accent" aria-hidden="true" />일정</button>
+              <button type="button" onClick={() => create("task", selectedDay)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold hover:bg-surface-2"><ListPlus className="size-[1.15rem] text-accent" aria-hidden="true" />할 일</button>
+              {spaces.length > 0 && <p className="mx-3 mt-1 border-t border-line pt-2 text-xs font-bold text-ink-3">모임</p>}
+              {spaces.map((space) => (
+                <Link key={space.id} href={`/s/${space.id}?tab=meetings&new=1&start=${selectedDay}`} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-2"><Users className="size-[1.15rem] text-accent" aria-hidden="true" /><span className="min-w-0 truncate">{space.label}</span></Link>
+              ))}
+            </div>
+          </details>
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="보여 줄 일정">
-          {layers.map((layer) => {
-            const on = !hidden.has(layer.id);
-            return (
-              <button
-                key={layer.id}
-                type="button"
-                aria-pressed={on}
-                onClick={() => toggleHidden(layer.id)}
-                style={layerStyle(layer.tone)}
-                className={cn("inline-flex min-h-9 items-center gap-2 rounded-full px-3 text-sm font-medium ring-1 ring-inset", on ? "bg-surface text-ink ring-line-2" : "bg-transparent text-ink-3 ring-line")}
-              >
-                <i aria-hidden="true" className={cn("size-2.5 rounded-full", on ? "bg-[var(--c)]" : "border border-[var(--c)]")} />
-                <span className={cn(!on && "line-through")}>{layer.label}</span>
-              </button>
-            );
-          })}
-          <button type="button" aria-pressed={hideDone} onClick={() => toggleHidden(HIDE_DONE)} className={cn("inline-flex min-h-9 items-center rounded-full px-3 text-sm font-medium ring-1 ring-inset", hideDone ? "bg-accent-soft text-accent ring-transparent" : "bg-surface text-ink-2 ring-line-2")}>
-            완료한 할 일 숨기기
-          </button>
-        </div>
-        {summary && (
-          <p className="ml-auto text-sm text-ink-2">
-            오늘 일정 <b className="text-ink">{summary.events}</b> · 할 일 <b className="text-ink">{summary.tasks}</b>
-            {summary.overdue > 0 && <> · 지연 <b className="text-danger">{summary.overdue}</b></>}
-          </p>
-        )}
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="보여 줄 일정">
+        {layers.map((layer) => {
+          const on = !hidden.has(layer.id);
+          return (
+            <button
+              key={layer.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggleHidden(layer.id)}
+              style={layerStyle(layer.tone)}
+              className={cn(
+                "press inline-flex min-h-9 items-center gap-2 rounded-full px-3.5 text-[13px] font-bold transition-colors",
+                on ? "bg-[color-mix(in_srgb,var(--c)_14%,var(--surface))] text-ink" : "bg-transparent text-ink-3 hover:bg-surface-2",
+              )}
+            >
+              <i aria-hidden="true" className={cn("size-2.5 rounded-full", on ? "bg-[var(--c)]" : "border-[1.5px] border-[var(--c)]")} />
+              <span className={cn(!on && "line-through")}>{layer.label}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          aria-pressed={hideDone}
+          aria-label="완료한 할 일 숨기기"
+          title="완료한 할 일 숨기기"
+          onClick={() => toggleHidden(HIDE_DONE)}
+          className={cn("press ml-1 grid size-9 place-items-center rounded-full transition-colors", hideDone ? "bg-accent-soft text-accent" : "text-ink-3 hover:bg-surface-2 hover:text-ink")}
+        >
+          {hideDone ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        </button>
       </div>
 
-      {error && <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+      {error && <p role="alert" className="rounded-2xl bg-danger-soft px-4 py-2.5 text-sm font-semibold text-danger">{error}</p>}
 
-      <div className={cn("grid gap-4", !isWeek && "lg:grid-cols-[minmax(0,1fr)_20rem]")}>
-        <div className="min-w-0 overflow-hidden rounded-2xl bg-surface ring-1 ring-line">
+      <div className={cn("grid gap-4", !isWeek && "lg:grid-cols-[minmax(0,1fr)_21rem]")}>
+        <div className="min-w-0 overflow-hidden rounded-3xl bg-surface shadow-sm">
           {/* 큰 화면: 월 격자(768px~) / 주간 시간표(1024px~, 칸이 좁으면 겹친 일정을 읽을 수 없다) */}
           <div className={cn("hidden", isWeek ? "lg:block" : "md:block")}>
             {isWeek ? (
@@ -204,29 +237,21 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
           {/* 작은 화면: 점이 찍힌 월 + 아래 목록. 주 보기는 하루씩 쌓은 목록 */}
           <div className={isWeek ? "lg:hidden" : "md:hidden"}>
             {isWeek ? (
-              <div className="divide-y divide-line px-4 py-2">
+              <div className="flex flex-col gap-6 p-4">
                 {weekDays(weekStart).map((day) => (
-                  <div key={day} className="py-3">
-                    <DayPanel day={day} today={today} entries={entries} toneOf={toneOf} layerLabel={layerLabel} spaces={spaces} pendingId={pendingId} showCreate={false} onOpenEntry={open} onToggle={toggle} onCreate={create} />
-                  </div>
+                  <DayPanel key={day} day={day} today={today} entries={entries} toneOf={toneOf} layerLabel={layerLabel} spaces={spaces} pendingId={pendingId} showCreate={false} onOpenEntry={open} onToggle={toggle} onCreate={create} />
                 ))}
               </div>
             ) : (
-              <div className="py-2">
+              <div className="pt-2">
                 <MobileMonth month={month} weeks={weeks} entries={entries} toneOf={toneOf} selectedDay={selectedDay} today={today} onSelectDay={setSelectedDay} />
               </div>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-line px-4 py-3 text-[13px] text-ink-2">
-            <span className="inline-flex items-center gap-1.5"><i aria-hidden="true" className="h-3.5 w-6 rounded bg-ink-2" />일정</span>
-            <span className="inline-flex items-center gap-1.5"><i aria-hidden="true" className="h-3.5 w-6 rounded border-[1.5px] border-ink-2" />할 일</span>
-            <span className="inline-flex items-center gap-1.5"><i aria-hidden="true" className="h-3.5 w-6 rounded border border-ink-2 bg-surface-2" />모임</span>
-            <span className="inline-flex items-center gap-1.5"><i aria-hidden="true" className="h-3.5 w-6 rounded border border-dashed border-ink-2 bg-[repeating-linear-gradient(135deg,var(--surface-2)_0_5px,var(--surface)_5px_9px)]" />투표 중인 후보 기간</span>
-          </div>
         </div>
 
         <aside className={cn("min-w-0", isWeek && "max-lg:hidden")}>
-          <div className={cn("rounded-2xl bg-surface p-4 ring-1 ring-line", !isWeek && "lg:sticky lg:top-4")}>{panel}</div>
+          <div className={cn("rounded-3xl bg-surface p-5 shadow-sm", !isWeek && "lg:sticky lg:top-4")}>{panel}</div>
         </aside>
       </div>
 
