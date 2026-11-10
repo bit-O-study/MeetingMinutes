@@ -52,11 +52,17 @@ async function open(width, url = "/dev/calendar") {
   check((await panel.locator("li").count()) >= 4, "'+N'을 누르면 그날 전체 목록이 패널에 열린다", `${await panel.locator("li").count()}개`);
 
   const before = await page.getByRole("button", { name: /치과/ }).count();
+  // 일정 고르기는 머리의 아이콘 하나로 접혀 있고, 누르면 목록이 열린다.
+  check((await page.getByRole("button", { name: "프론트엔드 스터디", exact: true }).count()) === 0, "일정 고르기 칩 줄은 평소에 보이지 않는다(아이콘 하나로 접힘)");
+  await page.locator('summary[aria-label="보여 줄 일정"]').click();
   await page.getByRole("button", { name: "프론트엔드 스터디", exact: true }).click();
   await page.getByRole("button", { name: "내 일정", exact: true }).click();
   const afterHide = await page.locator("[role=grid] a[aria-label], [role=grid] button[aria-label*=', ']").count();
   check(before >= 1 && afterHide < 40, "레이어 칩을 끄면 그 레이어의 일정이 사라진다", `치과 ${before}개 → 전체 칩 ${afterHide}개`);
+  await page.keyboard.press("Escape");
+  check((await page.locator("details[open]").count()) === 0, "Esc 를 누르면 열린 목록이 닫힌다");
   await page.reload({ waitUntil: "networkidle" });
+  await page.locator('summary[aria-label="보여 줄 일정"]').click();
   check((await page.getByRole("button", { name: "내 일정", exact: true }).getAttribute("aria-pressed")) === "false", "꺼 둔 레이어는 새로고침해도 기억된다");
   await page.getByRole("button", { name: "프론트엔드 스터디", exact: true }).click();
   await page.getByRole("button", { name: "내 일정", exact: true }).click();
