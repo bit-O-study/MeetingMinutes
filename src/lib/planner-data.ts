@@ -9,7 +9,8 @@ import { todayInSeoul } from "@/lib/utils";
 export function plannerItem(row: typeof items.$inferSelect): PlannerItem {
   const time = (value: Date | null) => value ? new Date(value.getTime() + 9 * 3600000).toISOString().slice(11, 16) : null;
   return { id: row.id, version: row.version, kind: row.kind, title: row.title, memo: row.memo, mode: row.mode,
-    startDate: row.startDate, endDate: row.endDate, date: row.scheduledDate, from: time(row.startsAt), to: time(row.endsAt), allDay: row.allDay, done: Boolean(row.doneAt) };
+    startDate: row.startDate, endDate: row.endDate, date: row.scheduledDate, from: time(row.startsAt), to: time(row.endsAt), allDay: row.allDay, done: Boolean(row.doneAt),
+    linkedItemId: row.linkedItemId, linkedMeetingId: row.linkedMeetingId };
 }
 export async function plannerSummary() {
   const user = await requireUser(); const today = todayInSeoul();

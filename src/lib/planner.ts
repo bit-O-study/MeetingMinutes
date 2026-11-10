@@ -10,11 +10,17 @@ export const plannerInput = z.object({
   memo: z.string().max(4000), mode: z.enum(["range", "fixed", "none"]),
   startDate: day.nullable(), endDate: day.nullable(), date: day.nullable(),
   from: time.nullable(), to: time.nullable(), allDay: z.boolean(),
+  /** 할 일이 딸린 개인 일정 / 스페이스 모임. 둘 중 하나만, 할 일에만 둔다. */
+  linkedItemId: z.string().uuid().nullish(), linkedMeetingId: z.string().uuid().nullish(),
 }).strict().superRefine((value, ctx) => {
   const issue = (message: string) => ctx.addIssue({ code: "custom", message });
-  if (value.kind === "event" && value.mode !== "fixed") issue("개인 일정의 날짜를 지정해 주세요.");
+  // 일정은 하루(fixed)이거나 여러 날(range, 시작·종료 모두 필요)이다. 날짜 없는 일정은 없다.
+  if (value.kind === "event" && value.mode === "none") issue("개인 일정의 날짜를 지정해 주세요.");
+  if (value.kind === "event" && value.mode === "range" && !value.startDate) issue("시작일을 선택해 주세요.");
+  if (value.kind === "event" && (value.linkedItemId || value.linkedMeetingId)) issue("연결은 할 일에만 둘 수 있어요.");
+  if (value.linkedItemId && value.linkedMeetingId) issue("일정과 모임 중 하나만 연결해 주세요.");
   if (value.mode === "range") {
-    if (!value.endDate) issue("마감일을 선택해 주세요.");
+    if (!value.endDate) issue(value.kind === "event" ? "종료일을 선택해 주세요." : "마감일을 선택해 주세요.");
     if (value.startDate && value.endDate && value.startDate > value.endDate) issue("마감일은 시작일보다 빠를 수 없어요.");
   }
   if (value.mode === "fixed") {
@@ -35,6 +41,8 @@ export function plannerFields(input: PlannerInput) {
     startsAt: input.mode === "fixed" && !input.allDay ? new Date(`${input.date}T${input.from}:00+09:00`) : null,
     endsAt: input.mode === "fixed" && !input.allDay ? new Date(`${input.date}T${input.to}:00+09:00`) : null,
     allDay: input.mode === "fixed" && input.allDay,
+    linkedItemId: input.kind === "task" ? input.linkedItemId ?? null : null,
+    linkedMeetingId: input.kind === "task" ? input.linkedMeetingId ?? null : null,
   };
 }
 export function occursOn(item: PlannerInput, date: string) {
