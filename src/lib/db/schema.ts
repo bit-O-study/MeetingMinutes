@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   customType,
@@ -369,6 +370,10 @@ export const personalPlannerItems = pgTable("personal_planner_items", {
   startsAt: timestamp("starts_at", { withTimezone: true }), endsAt: timestamp("ends_at", { withTimezone: true }),
   allDay: boolean("all_day").notNull().default(false),
   doneAt: timestamp("done_at", { withTimezone: true }),
+  /** 이 항목이 딸린 개인 일정(할 일 → 일정). 일정이 지워지면 연결만 끊긴다. */
+  linkedItemId: uuid("linked_item_id").references((): AnyPgColumn => personalPlannerItems.id, { onDelete: "set null" }),
+  /** 이 항목이 딸린 스페이스 모임(할 일 → 모임). */
+  linkedMeetingId: uuid("linked_meeting_id").references((): AnyPgColumn => meetings.id, { onDelete: "set null" }),
   version: integer("version").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -376,7 +381,10 @@ export const personalPlannerItems = pgTable("personal_planner_items", {
   index("personal_planner_owner_idx").on(t.ownerId, t.kind, t.doneAt),
   index("personal_planner_calendar_idx").on(t.ownerId, t.scheduledDate),
   index("personal_planner_range_idx").on(t.ownerId, t.endDate),
-  check("personal_planner_kind_check", sql`${t.kind} IN ('event','task') AND (${t.kind} = 'task' OR (${t.mode} = 'fixed' AND ${t.doneAt} IS NULL))`),
+  check("personal_planner_kind_check", sql`${t.kind} IN ('event','task') AND (${t.kind} = 'task' OR (${t.mode} IN ('fixed','range') AND ${t.doneAt} IS NULL AND (${t.mode} = 'fixed' OR ${t.startDate} IS NOT NULL)))`),
+  check("personal_planner_link_check", sql`${t.kind} = 'task' OR (${t.linkedItemId} IS NULL AND ${t.linkedMeetingId} IS NULL)`),
+  index("personal_planner_linked_meeting_idx").on(t.linkedMeetingId),
+  index("personal_planner_linked_item_idx").on(t.linkedItemId),
   check("personal_planner_title_check", sql`length(trim(${t.title})) BETWEEN 1 AND 160 AND length(${t.memo}) <= 4000 AND ${t.version} > 0`),
   check("personal_planner_schedule_check", sql`(
     (${t.mode} = 'none' AND ${t.startDate} IS NULL AND ${t.endDate} IS NULL AND ${t.scheduledDate} IS NULL AND ${t.startsAt} IS NULL AND ${t.endsAt} IS NULL AND NOT ${t.allDay}) OR
@@ -400,3 +408,63 @@ export const projectFiles = pgTable("project_files", {
   uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [index("project_files_space_created_idx").on(t.spaceId, t.createdAt), index("project_files_note_idx").on(t.noteId)]).enableRLS();
+
+/* ────────────────────────────────────────────────────────────
+   모임 일정 정하기 — 후보 기간 안의 날짜마다 멤버가 가능·조건부·불가를 칠한다
+   ──────────────────────────────────────────────────────────── */
+
+export type MeetingStatus = "polling" | "confirmed" | "cancelled";
+export type MeetingAnswer = "yes" | "maybe" | "no";
+
+/**
+ * 후보는 시각 슬롯이 아니라 **날짜**다. `window_start..window_end` 안의 모든 날이 후보이고,
+ * `span_days`가 1보다 크면 그만큼 이어지는 날짜 구간(1박2일, 2박3일)을 찾는다.
+ * 시각은 날짜가 정해진 뒤 `confirmed_from/to`로 한 번 더 정한다.
+ */
+export const meetings = pgTable("meetings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  spaceId: uuid("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  location: text("location").notNull().default(""),
+  memo: text("memo").notNull().default(""),
+  status: text("status").$type<MeetingStatus>().notNull().default("polling"),
+  spanDays: integer("span_days").notNull().default(1),
+  windowStart: date("window_start").notNull(),
+  windowEnd: date("window_end").notNull(),
+  /** 응답 마감. 지나도 확정 전에는 응답할 수 있다(소프트 마감). */
+  respondBy: timestamp("respond_by", { withTimezone: true }),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  confirmedStart: date("confirmed_start"),
+  confirmedEnd: date("confirmed_end"),
+  /** "HH:MM". 둘 다 있거나 둘 다 없다. */
+  confirmedFrom: text("confirmed_from"),
+  confirmedTo: text("confirmed_to"),
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  noteId: uuid("note_id").references(() => notes.id, { onDelete: "set null" }),
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("meetings_space_status_idx").on(t.spaceId, t.status, t.windowStart),
+  index("meetings_confirmed_idx").on(t.spaceId, t.confirmedStart),
+  check("meetings_title_check", sql`length(trim(${t.title})) BETWEEN 1 AND 120 AND length(${t.location}) <= 200 AND length(${t.memo}) <= 4000`),
+  check("meetings_status_check", sql`${t.status} IN ('polling','confirmed','cancelled')`),
+  check("meetings_span_check", sql`${t.spanDays} BETWEEN 1 AND 7`),
+  check("meetings_window_check", sql`${t.windowEnd} >= ${t.windowStart} AND ${t.windowEnd} - ${t.windowStart} <= 60 AND ${t.windowEnd} - ${t.windowStart} + 1 >= ${t.spanDays}`),
+  check("meetings_confirmed_check", sql`(${t.status} = 'confirmed') = (${t.confirmedStart} IS NOT NULL AND ${t.confirmedEnd} IS NOT NULL AND ${t.confirmedAt} IS NOT NULL)
+    AND (${t.confirmedStart} IS NULL OR ${t.confirmedEnd} >= ${t.confirmedStart})
+    AND ((${t.confirmedFrom} IS NULL AND ${t.confirmedTo} IS NULL) OR (${t.confirmedFrom} IS NOT NULL AND ${t.confirmedTo} IS NOT NULL AND ${t.confirmedFrom} < ${t.confirmedTo}))`),
+]);
+
+/** 한 사람이 한 날짜에 한 줄. 다른 사람과 같은 줄을 쓰지 않아 응답끼리 충돌하지 않는다. */
+export const meetingResponses = pgTable("meeting_responses", {
+  meetingId: uuid("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  answer: text("answer").$type<MeetingAnswer>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.meetingId, t.day, t.userId] }),
+  index("meeting_responses_user_idx").on(t.userId, t.meetingId),
+  check("meeting_responses_answer_check", sql`${t.answer} IN ('yes','maybe','no')`),
+]);

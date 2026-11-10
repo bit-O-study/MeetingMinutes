@@ -64,6 +64,13 @@
       "when": 1793021541616,
       "tag": "0010_personal_planner",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794272615681,
+      "tag": "0011_calendar_meetings",
+      "breakpoints": true
     }
   ]
 }
