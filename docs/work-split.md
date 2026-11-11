@@ -176,6 +176,11 @@ TEMPLATES · TEMPLATE_ORDER · defaultTemplateFor(spaceKind) · buildTemplateDoc
 
 ## 4. 요청 큐
 
+| 요청일 | 요청 | 요청자 | 상태 |
+| --- | --- | --- | --- |
+| 2026-11-11 | 개인 프로젝트 폴더 조회/생성/이름 변경/삭제/프로젝트 이동 액션 / S-01 홈 / 기기 간 분류 유지. 로그인 사용자 소유 폴더, 이동 프로젝트의 requireSpaceMember 검사, 폴더 삭제 시 프로젝트 보존, 동시 수정 충돌 처리 필요. 제안: listMyProjectFolders / createProjectFolder / renameProjectFolder / deleteProjectFolder / moveProjectToFolder(spaceId, folderId 또는 null) | Codex | 대기. HomeProjects의 TODO(CODEX)는 계정별 브라우저 저장소 사용 |
+
+
 Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체크한다.
 **직접 만들지 말 것** — 스키마와 액션이 갈라지면 분담 자체가 무의미해진다.
 
@@ -200,6 +205,12 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 ---
 
 ## 5. 변경 로그
+
+### 2026-11-11 홈 프로젝트 폴더
+
+- 홈 전용 폴더 생성·이름 변경·삭제, 450ms 길게 누르기 후 드래그 이동, 선택 메뉴 이동 구현. 프로젝트 권한·원본은 변경하지 않는다.
+- 현재 계정별 브라우저 저장소에 보관하며 화면에 저장 범위를 명시한다. 서버 동기화는 요청 큐로 추적한다.
+
 
 스키마·액션 시그니처가 바뀌면 여기 한 줄 남긴다. 상대가 깨진 이유를 알아야 한다.
 

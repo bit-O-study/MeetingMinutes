@@ -7,9 +7,8 @@ import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { ChevronRight, Plus } from "lucide-react";
 import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { NoteStatusBadge } from "@/components/ui/Badge";
-import { AvatarStack } from "@/components/ui/Avatar";
 import { ButtonLink } from "@/components/ui/Button";
-import { ProjectIcon } from "@/components/ui/ProjectIcon";
+import { HomeProjects } from "@/components/screens/HomeProjects";
 import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
 import { assignedIssues } from "@/components/screens/assigned-issues";
 import { PersonalPlannerHome } from "@/components/screens/PersonalPlannerHome";
@@ -114,38 +113,14 @@ export default async function HomePage() {
         <ul className="divide-y divide-line">{myIssues.slice(0, 5).map(row => <AssignedIssueRow key={row.issue.id} {...row} />)}</ul>
       </Card>}
 
-      <section aria-labelledby="home-spaces-heading" className="flex flex-col gap-3">
-        <div className="flex items-baseline gap-2 px-1">
-          <h2 id="home-spaces-heading" className="text-[15px] font-extrabold text-ink">내 프로젝트</h2>
-          <span className="text-sm text-ink-3">{spaceRows.length}</span>
-        </div>
-        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          {sortedSpaceRows.map(({ space }) => {
-            const people = members.filter((member) => member.spaceId === space.id);
-            return (
-              <li key={space.id} className="min-w-0">
-                <Link href={"/s/" + space.id}
-                  className="press flex h-full flex-col gap-3 rounded-2xl bg-surface p-4 transition-shadow hover:shadow-float focus-visible:outline-2 focus-visible:outline-accent">
-                  <div className="flex items-start justify-between gap-2">
-                    <ProjectIcon spaceId={space.id} name={space.name} />
-                    <span className="text-xs font-semibold text-ink-3">{kindLabels[space.kind]}</span>
-                  </div>
-                  <h3 className="truncate text-base font-extrabold text-ink">{space.name}</h3>
-                  <div className="mt-auto flex items-center justify-between gap-2">
-                    <AvatarStack people={people} />
-                    <span className="truncate text-xs text-ink-3">노트 {counts.get(space.id) ?? 0} · {relativeTime(space.lastActivityAt)}</span>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-          <li className="min-w-0">
-            <Link href="/spaces/new" className="press flex h-full min-h-32 flex-col items-center justify-center gap-1 rounded-2xl text-sm font-bold text-ink-3 border-2 border-dashed border-line hover:text-ink-2">
-              <Plus className="size-5" />새 프로젝트
-            </Link>
-          </li>
-        </ul>
-      </section>
+      <HomeProjects key={user.id} userId={user.id} projects={sortedSpaceRows.map(({ space }) => ({
+        id: space.id,
+        name: space.name,
+        kindLabel: kindLabels[space.kind],
+        noteCount: counts.get(space.id) ?? 0,
+        activityLabel: relativeTime(space.lastActivityAt),
+        people: members.filter(member => member.spaceId === space.id).map(({ id, name, image }) => ({ id, name, image })),
+      }))} />
 
       <section aria-labelledby="home-recent-heading" className="flex flex-col gap-3">
         <h2 id="home-recent-heading" className="px-1 text-[15px] font-extrabold text-ink">최근 노트</h2>
