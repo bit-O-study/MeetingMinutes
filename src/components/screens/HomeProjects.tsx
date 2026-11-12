@@ -97,7 +97,10 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
     const assignments = { ...data.assignments };
     if (folderId) assignments[id] = folderId;
     else delete assignments[id];
-    void run(() => moveProjectToFolder(id, folderId || null), () => setData(current => ({ ...current, assignments })), `${projects.find(project => project.id === id)?.name} 프로젝트를 ${data.folders.find(folder => folder.id === folderId)?.name ?? "전체 목록"}으로 옮겼어요.`);
+    void run(() => moveProjectToFolder(id, folderId || null), () => {
+      setData(current => ({ ...current, assignments }));
+      if (selected === UNGROUPED && projects.every(project => assignments[project.id])) setSelected("");
+    }, `${projects.find(project => project.id === id)?.name} 프로젝트를 ${data.folders.find(folder => folder.id === folderId)?.name ?? "전체 목록"}으로 옮겼어요.`);
   }
 
   function targetAt(x: number, y: number) {
@@ -128,8 +131,9 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         const result = await moveProjectToFolder(projectId, createdId);
         if (!result.ok) throw new Error(result.error);
       }
-      setData(await listMyProjectFolders());
-      setSelected(current => current === UNGROUPED ? current : created.data.id);
+      const updated = await listMyProjectFolders();
+      setData(updated);
+      setSelected(current => current === UNGROUPED ? projects.some(project => !updated.assignments[project.id]) ? UNGROUPED : "" : created.data.id);
       setMessage("두 프로젝트를 새 그룹으로 묶었어요. 그룹 이름은 연필 버튼으로 바꿀 수 있어요.");
     } catch (cause) {
       try { setData(await listMyProjectFolders()); } catch { /* 다음 새로고침에서 서버의 배정을 다시 읽는다. */ }
@@ -185,9 +189,9 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
   }
 
   const activeFolder = data.folders.find(folder => folder.id === selected);
-  const currentFolder = selected === UNGROUPED ? UNGROUPED : activeFolder?.id ?? "";
   // 목록과 개수를 같은 배정 상태에서 계산해 그룹 이동 직후 함께 갱신한다.
   const ungrouped = projects.filter(project => !data.assignments[project.id]);
+  const currentFolder = selected === UNGROUPED && ungrouped.length > 0 ? UNGROUPED : activeFolder?.id ?? "";
   const visible = currentFolder === UNGROUPED ? ungrouped : currentFolder ? projects.filter(project => data.assignments[project.id] === currentFolder) : projects;
 
   return (
@@ -195,13 +199,16 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
       <div className="flex items-center gap-2 px-1">
         <h2 id="home-spaces-heading" className="text-lg font-semibold tracking-tight text-ink">내 프로젝트</h2>
         <span className="text-sm text-ink-3">{projects.length}</span>
+        <button type="button" disabled={!ready} aria-label="폴더 추가" aria-expanded={editing === ""}
+          onClick={() => { setEditing(""); setName(""); setError(""); }}
+          className="ml-auto grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-surface text-ink-2 hover:bg-accent-soft hover:text-accent focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"><Plus className="size-5" /></button>
       </div>
       <p id="project-folder-help" className="px-1 text-xs leading-relaxed text-ink-2">이동 손잡이를 꾹 누른 뒤 끌어 보세요. 카드끼리 겹치면 그룹이 돼요.</p>
       {editing !== null && <form className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface p-3" onSubmit={async event => {
         event.preventDefault();
         const trimmed = name.trim();
-        if (!trimmed) return;
-        if (data.folders.some(folder => folder.id !== editing && folder.name === trimmed)) { setError("같은 이름의 그룹가 있어요."); return; }
+        if (!ready || !trimmed) return;
+        if (data.folders.some(folder => folder.id !== editing && folder.name === trimmed)) { setError("같은 이름의 폴더가 있어요."); return; }
         if (editing) {
           const target = data.folders.find(folder => folder.id === editing); if (!target) return;
           setReady(false); setError("");
@@ -218,15 +225,15 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
           const result = await createProjectFolder(crypto.randomUUID(), trimmed);
           if (!result.ok) { setError(result.error); return; }
           setData(current => ({ ...current, folders: [...current.folders, result.data] }));
-          setMessage("그룹를 만들었어요."); setEditing(null);
+          setMessage(`${trimmed} 폴더를 만들었어요. 프로젝트를 끌어 넣어 보세요.`); setEditing(null);
         } catch { setError("저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요."); } finally { setReady(true); }
       }}>
-        <label className="flex min-w-0 flex-1 items-center gap-2 text-sm text-ink">그룹 이름<input autoFocus required maxLength={40} value={name} onChange={event => setName(event.target.value)} className="min-w-0 w-full rounded-lg border border-line bg-ground px-3 py-2" /></label>
+        <label className="flex min-w-0 basis-full items-center gap-2 text-sm text-ink sm:basis-auto sm:flex-1"><span className="shrink-0">폴더 이름</span><input autoFocus required disabled={!ready} maxLength={40} placeholder="예: 업무, 스터디" value={name} onChange={event => setName(event.target.value)} className="min-w-0 w-full rounded-lg border border-line bg-ground px-3 py-2" /></label>
         <button disabled={!ready || !name.trim()} className={`${control} disabled:opacity-50`}>{editing ? "이름 변경" : "만들기"}</button>
-        <button type="button" className={control} onClick={() => setEditing(null)}>취소</button>
+        <button type="button" disabled={!ready} className={control} onClick={() => setEditing(null)}>취소</button>
       </form>}
       <div className="flex flex-wrap gap-2 py-2" aria-label="프로젝트 그룹">
-        {[{ id: "", name: "전체" }, { id: UNGROUPED, name: "미소속" }, ...data.folders].map(folder => <button key={folder.id} type="button" data-folder-target={folder.id === UNGROUPED ? "" : folder.id || undefined} aria-pressed={currentFolder === folder.id}
+        {[{ id: "", name: "전체" }, ...(ungrouped.length > 0 ? [{ id: UNGROUPED, name: "미소속" }] : []), ...data.folders].map(folder => <button key={folder.id} type="button" data-folder-target={folder.id === UNGROUPED ? "" : folder.id || undefined} aria-pressed={currentFolder === folder.id}
           onClick={() => setSelected(folder.id)}
           className={`flex min-w-0 max-w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent ${folder.id && drag?.target === (folder.id === UNGROUPED ? "" : folder.id) ? "border-accent bg-accent text-on-accent ring-2 ring-accent" : currentFolder === folder.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface text-ink-2"}`}>
           <Folder className="size-4 shrink-0" /><span className="truncate">{folder.name}</span><span>{folder.id === UNGROUPED ? ungrouped.length : folder.id ? projects.filter(project => data.assignments[project.id] === folder.id).length : projects.length}</span>
