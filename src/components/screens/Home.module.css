@@ -1,0 +1,43 @@
+.home {
+  letter-spacing: -0.015em;
+  line-height: 1.65;
+}
+.home :global(.page-title) {
+  font-size: clamp(24px, 2.5vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.5;
+}
+.home :global(.page-description) { margin-top: 8px; line-height: 1.7; }
+.home h2 { font-weight: 600; letter-spacing: -0.025em; }
+.home :global(.font-bold) { font-weight: 500; }
+.home [aria-label="프로젝트 그룹"] {
+  gap: 8px;
+  padding-block: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.home [aria-label="프로젝트 그룹"] button {
+  border-radius: 12px;
+  min-height: 44px;
+}
+.home [data-project-target] {
+  border-radius: 20px;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--ink) 3%, transparent);
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+.home [data-project-target] > a { padding: 18px 14px; gap: 18px; }
+.home [data-project-target] h3 { font-size: 15px; font-weight: 600; line-height: 1.6; }
+.home [data-project-target] > button:last-child:not(:first-child) {
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin-inline: 6px;
+  color: var(--ink-2);
+}
+.home [data-project-target] > button:last-child:not(:first-child):hover { background: var(--surface-2); }
+@media (hover: hover) {
+  .home [data-project-target]:hover { border-color: var(--line-2); box-shadow: var(--shadow-panel); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home [data-project-target] { transition: none; }
+}

@@ -137,7 +137,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
     } finally { grouping.current = false; setReady(true); }
   }
 
-  function start(event: ReactPointerEvent<HTMLElement>, id: string, immediate = false) {
+  function start(event: ReactPointerEvent<HTMLElement>, id: string) {
     if (!ready || event.button !== 0 || !event.isPrimary) return;
     if (gesture.current) clearTimeout(gesture.current.timer);
     suppressClick.current = false;
@@ -150,17 +150,9 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         element.setPointerCapture(current.pointerId);
         setDrag({ id, x: current.x, y: current.y, target: null });
         setMessage("프로젝트를 집었어요. 그룹 위에서 놓으면 이동해요. Esc 키로 취소할 수 있어요.");
-      }, immediate ? 0 : 450),
+      }, 550),
     };
     gesture.current = current;
-    if (immediate) {
-      clearTimeout(current.timer);
-      current.active = true;
-      suppressClick.current = true;
-      element.setPointerCapture(current.pointerId);
-      setDrag({ id, x: current.x, y: current.y, target: null });
-      setMessage("프로젝트를 집었어요. 그룹 위에 놓아 이동하세요.");
-    }
   }
 
   function moving(event: ReactPointerEvent<HTMLElement>) {
@@ -169,12 +161,8 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
     if (!current.active) {
       if (Math.hypot(event.clientX - current.x, event.clientY - current.y) > 10) {
         clearTimeout(current.timer);
-        if (event.pointerType === "mouse") {
-          current.active = true;
-          suppressClick.current = true;
-          event.currentTarget.setPointerCapture(current.pointerId);
-          setDrag({ id: current.id, x: event.clientX, y: event.clientY, target: targetAt(event.clientX, event.clientY) });
-        } else gesture.current = null;
+        // 길게 누르기 전에 움직이면 드래그 의도가 아닌 것으로 처리한다.
+        gesture.current = null;
       }
       return;
     }
@@ -208,7 +196,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         <h2 id="home-spaces-heading" className="text-lg font-semibold tracking-tight text-ink">내 프로젝트</h2>
         <span className="text-sm text-ink-3">{projects.length}</span>
       </div>
-      <p id="project-folder-help" className="px-1 text-xs text-ink-2">카드를 다른 카드 위에 놓으면 그룹이 만들어져요. 휴대폰에서는 이동 손잡이를 끌어 주세요.</p>
+      <p id="project-folder-help" className="px-1 text-xs leading-relaxed text-ink-2">이동 손잡이를 꾹 누른 뒤 끌어 보세요. 카드끼리 겹치면 그룹이 돼요.</p>
       {editing !== null && <form className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface p-3" onSubmit={async event => {
         event.preventDefault();
         const trimmed = name.trim();
@@ -260,7 +248,8 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
       <ul className="grid grid-cols-2 gap-3 xl:grid-cols-3">
         {visible.map(project => <li key={project.id} data-project-target={project.id} className={`relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : drag?.target === `project:${project.id}` ? "ring-2 ring-accent bg-accent-soft" : ""}`}>
           <button type="button" disabled={!ready} aria-label={project.name + " 이동 손잡이"}
-            onPointerDown={event => { event.preventDefault(); start(event, project.id, true); }} onPointerMove={moving}
+            onPointerDown={event => { event.preventDefault(); start(event, project.id); }} onPointerMove={moving}
+            onPointerLeave={event => { if (!gesture.current?.active) finish(event, true); }}
             onPointerUp={event => finish(event)} onPointerCancel={event => finish(event, true)} onLostPointerCapture={event => finish(event, true)}
             className="absolute right-2 top-2 z-[1] grid size-10 touch-none select-none place-items-center rounded-lg text-ink-3 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent"
             style={{ touchAction: "none" }}><GripVertical className="size-4" /></button>

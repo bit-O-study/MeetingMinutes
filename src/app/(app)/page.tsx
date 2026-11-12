@@ -9,6 +9,7 @@ import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { NoteStatusBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { HomeProjects } from "@/components/screens/HomeProjects";
+import styles from "@/components/screens/Home.module.css";
 import { listMyProjectFolders } from "@/lib/actions/project-folders";
 import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
 import { assignedIssues } from "@/components/screens/assigned-issues";
@@ -28,7 +29,7 @@ export default async function HomePage() {
 
   if (spaceIds.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-5 py-8">
+      <div className={`${styles.home} mx-auto w-full max-w-3xl px-5 py-8`}>
         <SectionHeading>홈</SectionHeading>
         <PersonalPlannerHome />
         <Card>
@@ -74,13 +75,13 @@ export default async function HomePage() {
 
   // 재디자인(2026-10-14): 오늘 할 일은 맨 위 강조 카드, 프로젝트는 색 타일, 최근 노트는 프로젝트 색 점이 붙은 카드.
   return (
-    <div className="workspace-page home-page">
+    <div className={`workspace-page home-page ${styles.home}`}>
       <div className="page-heading">
         <div className="min-w-0 flex-1"><p className="page-eyebrow">내 작업 공간</p>
         <h1 className="page-title">
-          {user.name ? `안녕하세요, ${user.name} 님` : "홈"}
+          함께 쌓아가는 기록
         </h1>
-        <p className="page-description">오늘의 할 일부터 팀의 기록까지, 한곳에서 이어가세요.</p></div>
+        <p className="page-description">프로젝트를 열고, 하던 이야기를 이어가세요.</p></div>
         <ButtonLink href="/spaces/new" size="sm" className="hidden sm:inline-flex"><Plus className="size-4" />새 프로젝트</ButtonLink>
       </div>
 

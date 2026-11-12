@@ -1,13 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Noto_Sans_KR } from "next/font/google";
+import { IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
 import "./globals.css";
 
-const notoSansKr = Noto_Sans_KR({
-  variable: "--font-noto-sans-kr",
-  subsets: ["latin"],
-  // 재디자인: 굵은 고딕 제목(800·900)을 쓰고, 명조는 더 받지 않는다.
-  weight: ["400", "500", "700", "800", "900"],
+const nanumRound = localFont({
+  variable: "--font-moa-sans",
+  // 화면 전체가 같은 한글 인상을 유지하도록 글꼴을 앱에서 직접 제공한다.
+  src: [
+    { path: "./fonts/NanumSquareRound.woff2", weight: "400 500", style: "normal" },
+    { path: "./fonts/NanumSquareRoundB.woff2", weight: "600 900", style: "normal" },
+  ],
   display: "swap",
 });
 
@@ -43,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${notoSansKr.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${nanumRound.variable} ${plexMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

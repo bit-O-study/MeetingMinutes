@@ -182,16 +182,16 @@
 
   --shadow-float: var(--shadow-float);
 
-  --font-sans: var(--font-noto-sans-kr);
+  --font-sans: var(--font-moa-sans);
   /* 명조 제목은 회의록 양식처럼 딱딱해 보여 고딕으로 통일한다(재디자인). 이름은 남겨 둔다. */
-  --font-serif: var(--font-noto-sans-kr);
+  --font-serif: var(--font-moa-sans);
   --font-mono: var(--font-plex-mono);
 }
 
 body {
   background: var(--ground);
   color: var(--ink);
-  font-family: var(--font-noto-sans-kr), "Malgun Gothic", system-ui, sans-serif;
+  font-family: var(--font-moa-sans), "Malgun Gothic", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
 
