@@ -173,7 +173,7 @@ export function MeetingVote({ detail, spaceId, preview = false }: Props) {
         <div className="flex items-start gap-3">
           <Link href={`/s/${spaceId}?tab=meetings`} aria-label="일정 목록으로" title="일정 목록" className="press mt-1 grid size-10 shrink-0 place-items-center rounded-full bg-surface shadow-sm hover:bg-surface-2"><ArrowLeft className="size-5" /></Link>
           <div className="min-w-0">
-            <h1 className="text-[1.65rem] font-black leading-tight tracking-tight [overflow-wrap:anywhere] md:text-3xl">{meeting.title}</h1>
+            <h1 className="font-display text-[1.65rem] font-extrabold leading-tight tracking-tight [overflow-wrap:anywhere] md:text-3xl">{meeting.title}</h1>
             <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-semibold text-ink-2">
               <span className="inline-flex items-center gap-1.5"><span className="sr-only">후보 </span>{dayRangeLabel(meeting.windowStart, meeting.windowEnd)}{meeting.spanDays > 1 && <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-black text-accent">{meeting.spanDays}일 연속</span>}</span>
               {meeting.location && <span className="inline-flex items-center gap-1.5 [overflow-wrap:anywhere]"><MapPin aria-hidden="true" className="size-4 shrink-0 text-ink-3" /><span className="sr-only">장소 </span>{meeting.location}</span>}

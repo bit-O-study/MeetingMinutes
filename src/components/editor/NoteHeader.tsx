@@ -92,14 +92,14 @@ export function NoteHeader({
               e.currentTarget.blur();
             }
           }}
-          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 text-xl font-semibold tracking-tight text-ink ring-2 ring-accent outline-none"
+          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 font-display text-2xl font-extrabold tracking-tight text-ink ring-2 ring-accent outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={() => setEditing(true)}
           title="클릭해서 제목 수정"
-          className="min-w-0 max-w-full truncate rounded-xl px-1 text-left text-xl font-semibold tracking-tight text-ink transition-colors hover:bg-surface-2"
+          className="min-w-0 max-w-full truncate rounded-xl px-1 text-left font-display text-2xl font-extrabold tracking-tight text-ink transition-colors hover:bg-surface-2"
         >
           {title}
         </button>

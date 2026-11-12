@@ -72,7 +72,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
         <div className="relative flex items-center gap-3">
           <ProjectIcon spaceId={spaceId} name={space.name} size="lg"  />
           <div className="min-w-0 flex-1">
-            <h1 className="break-words text-xl font-semibold tracking-tight md:text-2xl">{space.name}</h1>
+            <h1 className="font-display break-words text-2xl font-extrabold tracking-tight md:text-3xl">{space.name}</h1>
             <p className="mt-0.5 text-[13px] opacity-90">{kindLabels[space.kind]} · 멤버 {members.length}명</p>
           </div>
           <div className="hidden sm:block"><AvatarStack people={members} /></div>
