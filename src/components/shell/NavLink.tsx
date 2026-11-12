@@ -11,18 +11,20 @@ import { cn } from "@/lib/utils";
 export function NavLink({
   href,
   exact = false,
+  activePaths = [],
   className,
   activeClassName,
   children,
 }: {
   href: string;
   exact?: boolean;
+  activePaths?: string[];
   className?: string;
   activeClassName?: string;
   children: React.ReactNode;
 }) {
   const path = usePathname() ?? "";
-  const active = exact ? path === href : path === href || path.startsWith(`${href}/`);
+  const active = (exact ? path === href : path === href || path.startsWith(`${href}/`)) || activePaths.some(prefix => path === prefix || path.startsWith(`${prefix}/`));
   return (
     <Link href={href} aria-current={active ? "page" : undefined} className={cn(className, active && activeClassName)}>
       {children}

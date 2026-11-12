@@ -1,4 +1,4 @@
-import { CalendarDays, CheckSquare, Home, Plus, Search } from "lucide-react";
+import { CalendarDays, CheckSquare, FolderClosed, Home, Plus, Search } from "lucide-react";
 
 import type { Space } from "@/lib/db/schema";
 import { NavLink } from "@/components/shell/NavLink";
@@ -24,6 +24,9 @@ export function Sidebar({
       <p className="sidebar-label">내 작업 공간</p>
       <NavLink href="/" exact className={item} activeClassName={on}>
         <Home className="size-4" /> 홈
+      </NavLink>
+      <NavLink href="/projects" className={item} activeClassName={on}>
+        <FolderClosed className="size-4" /> 프로젝트
       </NavLink>
       <NavLink href="/calendar" className={item} activeClassName={on}>
         <CalendarDays className="size-4" /> 개인 일정

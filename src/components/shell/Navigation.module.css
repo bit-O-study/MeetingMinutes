@@ -1,0 +1,12 @@
+.bottom { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.bottom :global(.bottom-tab) { font-size:11px; gap:5px; }
+.bottom :global(.bottom-tab-active) { background:transparent; box-shadow:none; font-weight:700; }
+.bottom :global(.bottom-tab-active) svg { fill:var(--accent-soft); stroke-width:2; }
+.count { position:absolute; left:calc(50% + 9px); top:5px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:var(--accent-soft); color:var(--accent); font-size:9px; line-height:16px; }
+.account { display:grid; place-items:center; width:44px; height:44px; border-radius:50%; }
+.account:hover { background:var(--surface-2); }
+.dialog { position:fixed; inset:0; width:min(360px,calc(100vw - 32px)); max-height:calc(100dvh - 48px); margin:auto; padding:24px; border:1px solid var(--line); border-radius:24px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow-panel); }
+.dialog::backdrop { background:color-mix(in srgb,var(--ink) 35%,transparent); backdrop-filter:blur(4px); }
+.dialogHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:24px; }
+.dialogHeader h2 { font-size:18px; font-weight:700; }
+.close { display:grid; place-items:center; width:40px; height:40px; border-radius:12px; background:var(--surface-2); }

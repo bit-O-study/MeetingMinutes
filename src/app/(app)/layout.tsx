@@ -6,7 +6,7 @@ import { BottomNav } from "@/components/shell/BottomNav";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { listMySpaces } from "@/lib/access";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notes, spaceMembers, spaces, tasks } from "@/lib/db/schema";
 import { recordVisit } from "@/lib/visits";
@@ -49,12 +49,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <main id="main-content" tabIndex={-1} className="app-main">{children}</main>
       </div>
       <BottomNav
-        user={user}
         openTaskCount={(taskCount?.n ?? 0) + myIssues.length + personal.open}
-        signOutAction={async () => {
-          "use server";
-          await signOut({ redirectTo: "/login" });
-        }}
       />
     </div>
   );

@@ -3,11 +3,10 @@ import { Search } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 
 import { signOut } from "@/lib/auth";
-import { Avatar } from "@/components/ui/Avatar";
+import { AccountMenu } from "./AccountMenu";
 
 /**
- * 위쪽 막대. 넓은 화면에서는 검색·로그아웃을 두고, 휴대폰에서는 로고만 남긴다
- * (검색·계정은 아래 메뉴로 옮겼다 — 재디자인).
+ * 검색과 계정은 어느 화면에서도 같은 위치에서 찾을 수 있도록 상단에 둔다.
  */
 export function TopBar({
   user,
@@ -30,23 +29,13 @@ export function TopBar({
         <span className="truncate">기록 검색</span>
       </Link>
 
-      <span className="ml-auto text-xs text-ink-2 md:hidden">함께 쌓는 기록</span>
-      <form
-        className="ml-auto hidden items-center gap-2 md:flex"
-        action={async () => {
+      <div className="ml-auto flex items-center gap-1">
+        <Link href="/search" aria-label="기록 검색" className="grid size-11 place-items-center rounded-xl text-ink-2 hover:bg-surface-2 md:hidden"><Search size={21} strokeWidth={1.7} /></Link>
+        <AccountMenu user={user} signOutAction={async () => {
           "use server";
           await signOut({ redirectTo: "/login" });
-        }}
-      >
-        <span className="hidden max-w-40 truncate text-xs text-ink-2 lg:block">{user.name ?? "내 계정"}</span>
-        <Avatar name={user.name} image={user.image} seed={user.id} size={28} />
-        <button
-          type="submit"
-          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink-2"
-        >
-          로그아웃
-        </button>
-      </form>
+        }} />
+      </div>
     </header>
   );
 }

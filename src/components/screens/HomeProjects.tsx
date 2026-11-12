@@ -24,6 +24,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  const [organizing, setOrganizing] = useState(false);
   const [name, setName] = useState("");
   const [drag, setDrag] = useState<{ id: string; x: number; y: number; target: string | null } | null>(null);
   const root = useRef<HTMLElement>(null);
@@ -197,13 +198,14 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
   return (
     <section ref={root} aria-labelledby="home-spaces-heading" className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-1">
-        <h2 id="home-spaces-heading" className="text-lg font-semibold tracking-tight text-ink">내 프로젝트</h2>
-        <span className="text-sm text-ink-3">{projects.length}</span>
+        <h2 id="home-spaces-heading" className="sr-only">내 프로젝트</h2>
+        <span className="text-xs text-ink-2">{projects.length}개의 프로젝트</span>
+        <button type="button" aria-pressed={organizing} onClick={() => setOrganizing(value => !value)} className="ml-auto min-h-11 rounded-xl px-3 text-xs text-ink-2 hover:bg-surface-2">{organizing ? "정리 완료" : "정리"}</button>
         <button type="button" disabled={!ready} aria-label="폴더 추가" aria-expanded={editing === ""}
           onClick={() => { setEditing(""); setName(""); setError(""); }}
-          className="ml-auto grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-surface text-ink-2 hover:bg-accent-soft hover:text-accent focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"><Plus className="size-5" /></button>
+          className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-3 text-xs text-ink-2 hover:bg-accent-soft hover:text-accent focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-50"><Plus className="size-4" />폴더</button>
       </div>
-      <p id="project-folder-help" className="px-1 text-xs leading-relaxed text-ink-2">이동 손잡이를 꾹 누른 뒤 끌어 보세요. 카드끼리 겹치면 그룹이 돼요.</p>
+      <p id="project-folder-help" className={organizing ? "rounded-xl bg-accent-soft p-3 text-xs leading-relaxed text-accent" : "sr-only"}>이동 손잡이를 꾹 누른 뒤 끌어 보세요. 카드끼리 겹치면 그룹이 돼요.</p>
       {editing !== null && <form className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface p-3" onSubmit={async event => {
         event.preventDefault();
         const trimmed = name.trim();
@@ -232,15 +234,15 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         <button disabled={!ready || !name.trim()} className={`${control} disabled:opacity-50`}>{editing ? "이름 변경" : "만들기"}</button>
         <button type="button" disabled={!ready} className={control} onClick={() => setEditing(null)}>취소</button>
       </form>}
-      <div className="flex flex-wrap gap-2 py-2" aria-label="프로젝트 그룹">
-        {[{ id: "", name: "전체" }, ...(ungrouped.length > 0 ? [{ id: UNGROUPED, name: "미소속" }] : []), ...data.folders].map(folder => <button key={folder.id} type="button" data-folder-target={folder.id === UNGROUPED ? "" : folder.id || undefined} aria-pressed={currentFolder === folder.id}
+      <div className="flex flex-col gap-3" aria-label="프로젝트 그룹">
+        {[[{ id: "", name: "전체" }, ...(ungrouped.length > 0 ? [{ id: UNGROUPED, name: "미소속" }] : [])], data.folders].filter(group => group.length > 0).map((group, index) => <div key={index} className="flex flex-wrap gap-2" aria-label={index === 0 ? "프로젝트 보기" : "내 폴더"}>{group.map(folder => <button key={folder.id} type="button" data-folder-target={folder.id === UNGROUPED ? "" : folder.id || undefined} aria-pressed={currentFolder === folder.id}
           onClick={() => setSelected(folder.id)}
           className={`flex min-w-0 max-w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent ${folder.id && drag?.target === (folder.id === UNGROUPED ? "" : folder.id) ? "border-accent bg-accent text-on-accent ring-2 ring-accent" : currentFolder === folder.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface text-ink-2"}`}>
-          <Folder className="size-4 shrink-0" /><span className="truncate">{folder.name}</span><span>{folder.id === UNGROUPED ? ungrouped.length : folder.id ? projects.filter(project => data.assignments[project.id] === folder.id).length : projects.length}</span>
-        </button>)}
+          {index > 0 && <Folder className="size-4 shrink-0" />}<span className="truncate">{folder.name}</span><span className="text-xs opacity-70">{folder.id === UNGROUPED ? ungrouped.length : folder.id ? projects.filter(project => data.assignments[project.id] === folder.id).length : projects.length}</span>
+        </button>)}</div>)}
       </div>
       {drag && data.assignments[drag.id] && <div data-folder-target="" className="sticky top-[calc(var(--safe-top)+112px)] z-10 rounded-xl border-2 border-dashed border-accent bg-accent-soft p-4 text-center text-sm text-accent">여기에 놓아 그룹에서 꺼내기</div>}
-      {activeFolder && <div className="flex flex-wrap items-center gap-1">
+      {activeFolder && organizing && <div className="flex flex-wrap items-center gap-1">
         <h3 className="mr-auto min-w-0 truncate font-bold text-ink">{activeFolder.name}</h3>
         <button className={control} aria-label="그룹 이름 변경" onClick={() => { setEditing(activeFolder.id); setName(activeFolder.name); }}><Pencil className="size-4" /></button>
         <button className={control} disabled={!ready} aria-label="그룹 삭제" onClick={async () => {
@@ -250,7 +252,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         }}><Trash2 className="size-4" /></button>
       </div>}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-      <p role="status" className={message ? "text-xs text-ink-2" : "sr-only"}>{message}</p>
+      <p role="status" className={message && organizing ? "text-xs text-ink-2" : "sr-only"}>{message}</p>
       {visible.length === 0 && <p className="rounded-2xl border border-dashed border-line p-5 text-center text-sm text-ink-2">{currentFolder === UNGROUPED ? "미소속 프로젝트가 없어요." : activeFolder ? "빈 그룹이에요. 프로젝트를 이 그룹으로 옮겨 보세요." : "아직 프로젝트가 없어요."}</p>}
       <ul className="grid grid-cols-2 gap-3 xl:grid-cols-3">
         {visible.map(project => <li key={project.id} data-project-target={project.id} className={`relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : drag?.target === `project:${project.id}` ? "ring-2 ring-accent bg-accent-soft" : ""}`}>
@@ -273,9 +275,8 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
             <h3 className="line-clamp-2 [overflow-wrap:anywhere] text-sm sm:text-base font-semibold tracking-tight text-ink">{project.name}</h3>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-2"><AvatarStack people={project.people} /><span className="truncate text-xs text-ink-3">노트 {project.noteCount} · {project.activityLabel}</span></div>
           </Link>
-          {data.assignments[project.id] && <button type="button" disabled={!ready} onClick={() => move(project.id, "")} className="mx-4 mb-3 self-start text-xs text-ink-2 underline underline-offset-4">그룹에서 꺼내기</button>}
+          {organizing && data.assignments[project.id] && <button type="button" disabled={!ready} onClick={() => move(project.id, "")} className="mx-4 mb-3 self-start text-xs text-ink-2 underline underline-offset-4">그룹에서 꺼내기</button>}
         </li>)}
-        <li className="min-w-0"><Link href="/spaces/new" className="rounded-2xl border border-dashed border-line flex h-full min-h-32 flex-col items-center justify-center gap-2 text-sm font-medium text-ink-2 hover:text-accent"><Plus className="size-5" />새 프로젝트</Link></li>
       </ul>
       {drag && <div aria-hidden="true" style={{ left: Math.max(8, Math.min(drag.x + 12, window.innerWidth - 180)), top: Math.max(8, drag.y - 48) }} className="pointer-events-none fixed z-50 max-w-40 truncate rounded-xl bg-accent px-4 py-3 text-sm font-bold text-on-accent shadow-float">{projects.find(project => project.id === drag.id)?.name}</div>}
     </section>
