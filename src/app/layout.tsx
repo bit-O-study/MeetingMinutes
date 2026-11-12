@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono, Noto_Serif_KR } from "next/font/google";
 import localFont from "next/font/local";
 
 import "./globals.css";
@@ -12,6 +12,15 @@ const nanumRound = localFont({
     { path: "./fonts/NanumSquareRoundB.woff2", weight: "600 900", style: "normal" },
   ],
   display: "swap",
+});
+
+// 페이지·노트 제목용 명조. 본문은 위의 둥근 고딕을 그대로 쓴다. 용량이 커서 미리 불러오지 않는다.
+const display = Noto_Serif_KR({
+  variable: "--font-moa-display",
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  display: "swap",
+  preload: false,
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -32,8 +41,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2f4f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f131b" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f2ed" },
+    { media: "(prefers-color-scheme: dark)", color: "#141310" },
   ],
 };
 
@@ -46,7 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${nanumRound.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${nanumRound.variable} ${display.variable} ${plexMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

@@ -24,7 +24,7 @@ export function Badge({
     <span
       className={cn(
         // 10px 고정폭 글자는 너무 작고 딱딱했다 — 12px 굵은 알약(재디자인).
-        "inline-flex h-6 flex-none items-center gap-1 rounded-md px-2 text-xs font-medium whitespace-nowrap",
+        "inline-flex h-[26px] flex-none items-center gap-1 rounded-full px-2.5 text-xs font-bold whitespace-nowrap",
         TONES[tone],
         className,
       )}

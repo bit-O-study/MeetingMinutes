@@ -15,22 +15,22 @@ button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 .app-search { width: min(360px, 35vw); height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--ground); transition: border-color 160ms; }
 .app-search:hover { border-color: var(--line-2); }
 .app-sidebar { display: none; }
-.sidebar-label { padding: 0 12px; margin-bottom: 10px; font-size: 11px; font-weight: 500; letter-spacing: .04em; color: var(--ink-3); }
-.sidebar-link { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 9px 12px; border-radius: var(--radius-control); color: var(--ink-2); font-size: 13px; font-weight: 500; transition: background 160ms, color 160ms; }
+.sidebar-label { padding: 0 12px; margin-bottom: 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--ink-3); }
+.sidebar-link { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px 12px; border-radius: var(--radius-control); color: var(--ink-2); font-size: 14px; font-weight: 600; transition: background 160ms, color 160ms; }
 .sidebar-link > svg { flex-shrink: 0; stroke-width: 1.7; }
 .sidebar-link:hover { background: var(--surface-2); color: var(--ink); }
-.sidebar-link-active { color: var(--accent); background: var(--accent-soft); }
+.sidebar-link-active { color: var(--ink); background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 1px 2px color-mix(in srgb, var(--ink) 5%, transparent); }
 .app-bottomnav { position: fixed; inset: auto 0 0; z-index: 30; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); height: var(--bottom-nav-height); padding-bottom: var(--safe-bottom); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 96%, transparent); backdrop-filter: blur(16px); }
-.bottom-tab { display: flex; min-width: 0; align-items: center; justify-content: center; flex-direction: column; gap: 4px; padding: 8px 2px; color: var(--ink-3); font-size: 10px; font-weight: 500; }
+.bottom-tab { display: flex; min-width: 0; align-items: center; justify-content: center; flex-direction: column; gap: 4px; padding: 8px 2px; color: var(--ink-3); font-size: 11px; font-weight: 700; }
 .bottom-tab svg { stroke-width: 1.7; }
-.bottom-tab-active { color: var(--accent); background: linear-gradient(to bottom, var(--accent-soft), transparent); box-shadow: inset 0 2px var(--accent); }
+.bottom-tab-active { color: var(--accent); background: transparent; box-shadow: none; }
 .skip-link { position: fixed; left: 16px; top: -100px; z-index: 100; padding: 10px 18px; border-radius: var(--radius-control); background: var(--accent); color: var(--on-accent); }
 .skip-link:focus { top: calc(var(--safe-top) + 8px); }
 .workspace-page { width: 100%; max-width: 1160px; margin: 0 auto; padding: 40px clamp(20px, 4vw, 48px) 56px; display: flex; flex-direction: column; gap: 28px; }
 .page-heading { display: flex; align-items: center; gap: 20px; }
-.page-eyebrow { margin-bottom: 9px; color: var(--ink-3); font-size: 11px; font-weight: 500; letter-spacing: .06em; }
-.page-title { color: var(--ink); font-size: clamp(24px, 2.4vw, 32px); font-weight: 700; letter-spacing: -.045em; line-height: 1.35; overflow-wrap: anywhere; }
-.page-description { margin-top: 10px; color: var(--ink-2); font-size: 13px; line-height: 1.8; }
+.page-eyebrow { margin-bottom: 9px; color: var(--ink-3); font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+.page-title { color: var(--ink); font-family: var(--font-display); font-size: clamp(28px, 3.2vw, 42px); font-weight: 800; letter-spacing: -.03em; line-height: 1.25; overflow-wrap: anywhere; }
+.page-description { margin-top: 10px; color: var(--ink-2); font-size: 15px; line-height: 1.7; }
 .ui-card { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: var(--shadow-panel); }
 .ui-button { transition: background 160ms, box-shadow 160ms, transform 160ms; }
 .ui-button:hover { box-shadow: 0 3px 10px color-mix(in srgb, var(--ink) 10%, transparent); }
@@ -41,10 +41,12 @@ button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 .planner-overview-stat { display: flex; flex-direction: column; min-width: 90px; padding-left: 28px; border-left: 1px solid var(--line); color: var(--ink-2); font-size: 12px; }
 .planner-overview-stat strong { color: var(--ink); font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
 .planner-overview-stat:hover { color: var(--accent); }
-.home-tasks { background: var(--surface); border-left: 3px solid var(--accent); }
+.home-tasks { position: relative; overflow: hidden; background: var(--accent); color: var(--on-accent); border-color: transparent; border-radius: 24px; }
+.home-tasks a:hover { background: color-mix(in srgb, var(--on-accent) 12%, transparent); }
+.home-tasks [aria-hidden="true"] { border-color: color-mix(in srgb, var(--on-accent) 75%, transparent); }
 .folder-tabs { position: sticky; top: var(--header-height); z-index: 10; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0; background: color-mix(in srgb, var(--ground) 96%, transparent); backdrop-filter: blur(12px); }
 .project-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.project-card { display: flex; min-width: 0; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: var(--shadow-panel); transition: border-color 160ms, box-shadow 160ms; }
+.project-card { display: flex; min-width: 0; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: var(--shadow-panel); transition: border-color 160ms, box-shadow 160ms;  }
 .project-card:hover { border-color: var(--line-2); box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 7%, transparent); }
 .project-card-link { min-width: 0; border-radius: var(--radius-panel); }
 .project-create { border: 1px dashed var(--line-2); border-radius: var(--radius-panel); background: color-mix(in srgb, var(--surface) 50%, transparent); transition: border-color 160ms, background 160ms; }

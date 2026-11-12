@@ -2,12 +2,7 @@
   letter-spacing: -0.015em;
   line-height: 1.65;
 }
-.home :global(.page-title) {
-  font-size: clamp(24px, 2.5vw, 30px);
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1.5;
-}
+/* 홈 제목은 공통 .page-title(명조, 큼)을 그대로 쓴다. */
 .home :global(.page-description) { margin-top: 8px; line-height: 1.7; }
 .home h2 { font-weight: 600; letter-spacing: -0.025em; }
 .home :global(.font-bold) { font-weight: 500; }
