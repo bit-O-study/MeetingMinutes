@@ -6,7 +6,7 @@ import Link from "@/components/PendingLink";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { ProjectIcon } from "@/components/ui/ProjectIcon";
 import { readProjectFolders } from "./project-folders";
-import { createProjectFolder, deleteProjectFolder, moveProjectToFolder, renameProjectFolder, type ProjectFolderData } from "@/lib/actions/project-folders";
+import { createProjectFolder, deleteProjectFolder, listMyProjectFolders, moveProjectToFolder, renameProjectFolder, type ProjectFolderData } from "@/lib/actions/project-folders";
 
 type Project = {
   id: string; name: string; kindLabel: string; noteCount: number; activityLabel: string;
@@ -28,6 +28,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
   const root = useRef<HTMLElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const suppressClick = useRef(false);
+  const grouping = useRef(false);
   const storageKey = `moa:project-folders:v1:${userId}`;
 
   useEffect(() => {
@@ -99,8 +100,40 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
   }
 
   function targetAt(x: number, y: number) {
-    const target = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-folder-target]");
-    return target && root.current?.contains(target) ? target.dataset.folderTarget ?? null : null;
+    const target = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-folder-target], [data-project-target]");
+    if (!target || !root.current?.contains(target)) return null;
+    if (target.dataset.projectTarget) return target.dataset.projectTarget === gesture.current?.id ? null : `project:${target.dataset.projectTarget}`;
+    return target.dataset.folderTarget ?? null;
+  }
+
+  async function dropOnProject(sourceId: string, targetId: string) {
+    if (!ready || grouping.current || sourceId === targetId || !projects.some(project => project.id === targetId)) return;
+    const existing = data.assignments[targetId];
+    if (existing) {
+      if (data.assignments[sourceId] !== existing) move(sourceId, existing);
+      return;
+    }
+    grouping.current = true;
+    setReady(false); setError("");
+    let createdId: string | null = null;
+    try {
+      let label = "새 그룹";
+      for (let number = 2; data.folders.some(folder => folder.name === label); number++) label = `새 그룹 ${number}`;
+      const created = await createProjectFolder(crypto.randomUUID(), label);
+      if (!created.ok) throw new Error(created.error);
+      createdId = created.data.id;
+      // 기존 액션으로 순서대로 반영하고, 중간 실패도 서버 상태를 다시 읽어 화면과 실제 배정을 맞춘다.
+      for (const projectId of [targetId, sourceId]) {
+        const result = await moveProjectToFolder(projectId, createdId);
+        if (!result.ok) throw new Error(result.error);
+      }
+      setData(await listMyProjectFolders());
+      setSelected(createdId);
+      setMessage("두 프로젝트를 새 그룹으로 묶었어요. 그룹 이름은 연필 버튼으로 바꿀 수 있어요.");
+    } catch (cause) {
+      try { setData(await listMyProjectFolders()); } catch { /* 다음 새로고침에서 서버의 배정을 다시 읽는다. */ }
+      setError(`${cause instanceof Error ? cause.message : "그룹을 만들지 못했어요."}${createdId ? " 일부 배정이 반영됐을 수 있어요. 목록을 확인해 주세요." : ""}`);
+    } finally { grouping.current = false; setReady(true); }
   }
 
   function start(event: ReactPointerEvent<HTMLElement>, id: string, immediate = false) {
@@ -156,7 +189,8 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
     setDrag(null);
     if (current.active) {
       const target = cancelled ? null : targetAt(event.clientX, event.clientY);
-      if (target !== null) move(current.id, target);
+      if (target?.startsWith("project:")) void dropOnProject(current.id, target.slice(8));
+      else if (target !== null) move(current.id, target);
       else setMessage("이동을 취소했어요.");
     }
   }
@@ -171,7 +205,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         <h2 id="home-spaces-heading" className="text-lg font-semibold tracking-tight text-ink">내 프로젝트</h2>
         <span className="text-sm text-ink-3">{projects.length}</span>
       </div>
-      <p id="project-folder-help" className="px-1 text-xs text-ink-2">프로젝트를 끌어 그룹으로 옮기세요. 휴대폰에서는 이동 손잡이를 사용하세요.</p>
+      <p id="project-folder-help" className="px-1 text-xs text-ink-2">카드를 다른 카드 위에 놓으면 그룹이 만들어져요. 휴대폰에서는 이동 손잡이를 끌어 주세요.</p>
       {editing !== null && <form className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface p-3" onSubmit={async event => {
         event.preventDefault();
         const trimmed = name.trim();
@@ -200,7 +234,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         <button disabled={!ready || !name.trim()} className={`${control} disabled:opacity-50`}>{editing ? "이름 변경" : "만들기"}</button>
         <button type="button" className={control} onClick={() => setEditing(null)}>취소</button>
       </form>}
-      <div className="sticky top-[calc(var(--safe-top)+56px)] z-10 flex flex-wrap gap-2 bg-ground py-2" aria-label="프로젝트 그룹">
+      <div className="flex flex-wrap gap-2 py-2" aria-label="프로젝트 그룹">
         {[{ id: "", name: "전체" }, ...data.folders].map(folder => <button key={folder.id} type="button" data-folder-target={folder.id || undefined} aria-pressed={currentFolder === folder.id}
           onClick={() => setSelected(folder.id)}
           className={`flex min-w-0 max-w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent ${drag?.target === folder.id ? "border-accent bg-accent text-on-accent ring-2 ring-accent" : currentFolder === folder.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface text-ink-2"}`}>
@@ -220,8 +254,8 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <p role="status" className={message ? "text-xs text-ink-2" : "sr-only"}>{message}</p>
       {visible.length === 0 && <p className="rounded-2xl border border-dashed border-line p-5 text-center text-sm text-ink-2">{activeFolder ? "빈 그룹예요. 그룹 밖의 프로젝트를 이 그룹로 옮겨 보세요." : "전체 목록에 프로젝트가 없어요. 그룹를 열어 프로젝트를 확인하세요."}</p>}
-      <ul className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-3">
-        {visible.map(project => <li key={project.id} className={`relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : ""}`}>
+      <ul className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+        {visible.map(project => <li key={project.id} data-project-target={project.id} className={`relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : drag?.target === `project:${project.id}` ? "ring-2 ring-accent bg-accent-soft" : ""}`}>
           <button type="button" disabled={!ready} aria-label={project.name + " 이동 손잡이"}
             onPointerDown={event => { event.preventDefault(); start(event, project.id, true); }} onPointerMove={moving}
             onPointerUp={event => finish(event)} onPointerCancel={event => finish(event, true)} onLostPointerCapture={event => finish(event, true)}
@@ -235,9 +269,9 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
             onDragStart={event => event.preventDefault()}
             onClick={event => { if (event.detail !== 0 && suppressClick.current) { event.preventDefault(); suppressClick.current = false; } }}
             style={{ WebkitTouchCallout: "none" }}
-            className="rounded-2xl flex flex-1 touch-pan-y select-none flex-col gap-4 p-5 focus-visible:outline-2 focus-visible:outline-accent">
-            <div className="flex items-start justify-between gap-2 pr-8"><ProjectIcon spaceId={project.id} name={project.name} /><span className="text-xs font-semibold text-ink-3">{project.kindLabel}</span></div>
-            <h3 className="line-clamp-2 break-words text-base font-semibold tracking-tight text-ink">{project.name}</h3>
+            className="rounded-2xl flex min-w-0 flex-1 touch-pan-y select-none flex-col gap-3 p-3 sm:p-5 focus-visible:outline-2 focus-visible:outline-accent">
+            <div className="flex flex-wrap items-start gap-2 pr-8"><ProjectIcon spaceId={project.id} name={project.name} /><span className="text-xs font-semibold text-ink-3">{project.kindLabel}</span></div>
+            <h3 className="line-clamp-2 [overflow-wrap:anywhere] text-sm sm:text-base font-semibold tracking-tight text-ink">{project.name}</h3>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-2"><AvatarStack people={project.people} /><span className="truncate text-xs text-ink-3">노트 {project.noteCount} · {project.activityLabel}</span></div>
           </Link>
           {data.assignments[project.id] && <button type="button" disabled={!ready} onClick={() => move(project.id, "")} className="mx-4 mb-3 self-start text-xs text-ink-2 underline underline-offset-4">그룹에서 꺼내기</button>}
