@@ -9,6 +9,7 @@ import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
 import { NoteStatusBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { HomeProjects } from "@/components/screens/HomeProjects";
+import { listMyProjectFolders } from "@/lib/actions/project-folders";
 import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
 import { assignedIssues } from "@/components/screens/assigned-issues";
 import { PersonalPlannerHome } from "@/components/screens/PersonalPlannerHome";
@@ -42,6 +43,7 @@ export default async function HomePage() {
   const user = await requireUser();
   const today = todayInSeoul();
   const myIssues = await assignedIssues();
+  const folderData = await listMyProjectFolders();
   // 소속을 확인한 범위만 조회하고, 삭제한 노트의 내용과 할 일은 제외한다.
   const [recent, myTasks, noteCounts, members] = await Promise.all([
     db.select({ id: notes.id, title: notes.title, spaceId: notes.spaceId, status: notes.status, updatedAt: notes.updatedAt })
@@ -113,7 +115,7 @@ export default async function HomePage() {
         <ul className="divide-y divide-line">{myIssues.slice(0, 5).map(row => <AssignedIssueRow key={row.issue.id} {...row} />)}</ul>
       </Card>}
 
-      <HomeProjects key={user.id} userId={user.id} projects={sortedSpaceRows.map(({ space }) => ({
+      <HomeProjects key={user.id} userId={user.id} initial={folderData} projects={sortedSpaceRows.map(({ space }) => ({
         id: space.id,
         name: space.name,
         kindLabel: kindLabels[space.kind],

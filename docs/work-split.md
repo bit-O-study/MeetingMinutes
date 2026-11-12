@@ -178,7 +178,7 @@ TEMPLATES · TEMPLATE_ORDER · defaultTemplateFor(spaceKind) · buildTemplateDoc
 
 | 요청일 | 요청 | 요청자 | 상태 |
 | --- | --- | --- | --- |
-| 2026-11-11 | 개인 프로젝트 폴더 조회/생성/이름 변경/삭제/프로젝트 이동 액션 / S-01 홈 / 기기 간 분류 유지. 로그인 사용자 소유 폴더, 이동 프로젝트의 requireSpaceMember 검사, 폴더 삭제 시 프로젝트 보존, 동시 수정 충돌 처리 필요. 제안: listMyProjectFolders / createProjectFolder / renameProjectFolder / deleteProjectFolder / moveProjectToFolder(spaceId, folderId 또는 null) | Codex | 대기. HomeProjects의 TODO(CODEX)는 계정별 브라우저 저장소 사용 |
+| 2026-11-11 | 개인 프로젝트 폴더 조회/생성/이름 변경/삭제/프로젝트 이동 액션 / S-01 홈 / 기기 간 분류 유지. 로그인 사용자 소유 폴더, 이동 프로젝트의 requireSpaceMember 검사, 폴더 삭제 시 프로젝트 보존, 동시 수정 충돌 처리 필요. 제안: listMyProjectFolders / createProjectFolder / renameProjectFolder / deleteProjectFolder / moveProjectToFolder(spaceId, folderId 또는 null) | Codex | 완료(2026-11-12). `src/lib/actions/project-folders.ts`로 구현했고 HomeProjects를 서버 저장에 연결했다. 이 브라우저에만 있던 기존 분류는 서버가 비어 있을 때 한 번 옮긴다 |
 
 
 Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체크한다.
@@ -426,3 +426,9 @@ npm run dev:session 테스터
 ## 2026-10-27 통합 관리자 자료실 검수
 
 사용자가 모든 프로젝트 업로드 파일을 관리자에서 조회·다운로드·검수할 수 있도록 요청했다. 통합 관리자의 실제 Auth 세션을 공개 Auth 서버와 admins RLS로 매번 검증하는 별도 API를 추가한다. 관리자 DB 키나 모아 DB 비밀번호를 서로 공유하지 않는다. 검수 상태(대기/확인/보류)·메모·검수자·시각은 전용 file_reviews 테이블에 기록하며 원본 파일은 변경하지 않는다. 관리자 다운로드 권한은 2분 만료의 서명된 읽기 전용 티켓으로만 전달한다.
+
+### 2026-11-12 개인 프로젝트 폴더 서버 저장
+
+- 신규 테이블 `project_folders`(version 낙관적 잠금, 소유자별 이름 고유)와 `project_folder_assignments`(소유자+스페이스 기본키, 폴더 삭제 시 cascade). 마이그레이션 `0012_project_folders`.
+- 이 마이그레이션은 번호를 0011로 만들어 운영 DB에 먼저 적용했다가 원격의 `0011_calendar_meetings`와 겹쳐 0012로 옮겼다. SQL 내용과 해시, 저널의 `when`(1794454291320)을 그대로 두었으므로 이미 적용된 DB에서 다시 실행되지 않는다.
+- 액션 5종은 `src/lib/actions/project-folders.ts`. 이동은 `requireSpaceMember` 검사 후 내 폴더인지 확인한다.

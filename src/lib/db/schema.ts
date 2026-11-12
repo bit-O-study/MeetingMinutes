@@ -468,3 +468,33 @@ export const meetingResponses = pgTable("meeting_responses", {
   index("meeting_responses_user_idx").on(t.userId, t.meetingId),
   check("meeting_responses_answer_check", sql`${t.answer} IN ('yes','maybe','no')`),
 ]).enableRLS();
+
+/**
+ * 홈 화면 개인 프로젝트 폴더. 프로젝트의 권한·원본과 무관한 "내 분류"일 뿐이라
+ * 소유자(ownerId) 기준으로만 읽고 쓴다. 스페이스 권한 경계는 건드리지 않는다.
+ */
+export const projectFolders = pgTable("project_folders", {
+  id: uuid("id").primaryKey(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  // 두 기기에서 동시에 고칠 때 나중 저장이 앞선 저장을 조용히 덮지 않도록 낙관적 잠금을 둔다.
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("project_folders_owner_name_idx").on(t.ownerId, t.name),
+  check("project_folders_name_check", sql`length(trim(${t.name})) BETWEEN 1 AND 40 AND ${t.version} > 0`),
+]).enableRLS();
+
+/**
+ * 프로젝트 → 폴더 배정. 프로젝트당 한 폴더(기본키 owner+space)이고,
+ * 폴더가 지워지면 배정만 cascade로 사라져 프로젝트는 "폴더 밖"으로 돌아간다.
+ */
+export const projectFolderAssignments = pgTable("project_folder_assignments", {
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  spaceId: uuid("space_id").notNull().references(() => spaces.id, { onDelete: "cascade" }),
+  folderId: uuid("folder_id").notNull().references(() => projectFolders.id, { onDelete: "cascade" }),
+}, t => [
+  primaryKey({ columns: [t.ownerId, t.spaceId] }),
+  index("project_folder_assignments_folder_idx").on(t.folderId),
+]).enableRLS();
