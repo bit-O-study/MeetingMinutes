@@ -14,6 +14,7 @@ type Project = {
 };
 type Gesture = { id: string; pointerId: number; x: number; y: number; active: boolean; timer: ReturnType<typeof setTimeout> };
 const control = "rounded-xl px-3 py-2 text-sm font-bold text-ink-2 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent";
+const UNGROUPED = "ungrouped";
 
 export function HomeProjects({ userId, projects, initial }: { userId: string; projects: Project[]; initial: ProjectFolderData }) {
   const [data, setData] = useState<ProjectFolderData>(initial);
@@ -128,7 +129,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         if (!result.ok) throw new Error(result.error);
       }
       setData(await listMyProjectFolders());
-      setSelected(createdId);
+      setSelected(current => current === UNGROUPED ? current : created.data.id);
       setMessage("두 프로젝트를 새 그룹으로 묶었어요. 그룹 이름은 연필 버튼으로 바꿀 수 있어요.");
     } catch (cause) {
       try { setData(await listMyProjectFolders()); } catch { /* 다음 새로고침에서 서버의 배정을 다시 읽는다. */ }
@@ -196,8 +197,10 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
   }
 
   const activeFolder = data.folders.find(folder => folder.id === selected);
-  const currentFolder = activeFolder?.id ?? "";
-  const visible = currentFolder ? projects.filter(project => data.assignments[project.id] === currentFolder) : projects;
+  const currentFolder = selected === UNGROUPED ? UNGROUPED : activeFolder?.id ?? "";
+  // 목록과 개수를 같은 배정 상태에서 계산해 그룹 이동 직후 함께 갱신한다.
+  const ungrouped = projects.filter(project => !data.assignments[project.id]);
+  const visible = currentFolder === UNGROUPED ? ungrouped : currentFolder ? projects.filter(project => data.assignments[project.id] === currentFolder) : projects;
 
   return (
     <section ref={root} aria-labelledby="home-spaces-heading" className="flex flex-col gap-3">
@@ -235,10 +238,10 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
         <button type="button" className={control} onClick={() => setEditing(null)}>취소</button>
       </form>}
       <div className="flex flex-wrap gap-2 py-2" aria-label="프로젝트 그룹">
-        {[{ id: "", name: "전체" }, ...data.folders].map(folder => <button key={folder.id} type="button" data-folder-target={folder.id || undefined} aria-pressed={currentFolder === folder.id}
+        {[{ id: "", name: "전체" }, { id: UNGROUPED, name: "미소속" }, ...data.folders].map(folder => <button key={folder.id} type="button" data-folder-target={folder.id === UNGROUPED ? "" : folder.id || undefined} aria-pressed={currentFolder === folder.id}
           onClick={() => setSelected(folder.id)}
-          className={`flex min-w-0 max-w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent ${drag?.target === folder.id ? "border-accent bg-accent text-on-accent ring-2 ring-accent" : currentFolder === folder.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface text-ink-2"}`}>
-          <Folder className="size-4 shrink-0" /><span className="truncate">{folder.name}</span><span>{folder.id ? projects.filter(project => data.assignments[project.id] === folder.id).length : projects.length}</span>
+          className={`flex min-w-0 max-w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent ${folder.id && drag?.target === (folder.id === UNGROUPED ? "" : folder.id) ? "border-accent bg-accent text-on-accent ring-2 ring-accent" : currentFolder === folder.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-surface text-ink-2"}`}>
+          <Folder className="size-4 shrink-0" /><span className="truncate">{folder.name}</span><span>{folder.id === UNGROUPED ? ungrouped.length : folder.id ? projects.filter(project => data.assignments[project.id] === folder.id).length : projects.length}</span>
         </button>)}
       </div>
       {drag && data.assignments[drag.id] && <div data-folder-target="" className="sticky top-[calc(var(--safe-top)+112px)] z-10 rounded-xl border-2 border-dashed border-accent bg-accent-soft p-4 text-center text-sm text-accent">여기에 놓아 그룹에서 꺼내기</div>}
@@ -253,7 +256,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
       </div>}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <p role="status" className={message ? "text-xs text-ink-2" : "sr-only"}>{message}</p>
-      {visible.length === 0 && <p className="rounded-2xl border border-dashed border-line p-5 text-center text-sm text-ink-2">{activeFolder ? "빈 그룹예요. 그룹 밖의 프로젝트를 이 그룹로 옮겨 보세요." : "전체 목록에 프로젝트가 없어요. 그룹를 열어 프로젝트를 확인하세요."}</p>}
+      {visible.length === 0 && <p className="rounded-2xl border border-dashed border-line p-5 text-center text-sm text-ink-2">{currentFolder === UNGROUPED ? "미소속 프로젝트가 없어요." : activeFolder ? "빈 그룹이에요. 프로젝트를 이 그룹으로 옮겨 보세요." : "아직 프로젝트가 없어요."}</p>}
       <ul className="grid grid-cols-2 gap-3 xl:grid-cols-3">
         {visible.map(project => <li key={project.id} data-project-target={project.id} className={`relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : drag?.target === `project:${project.id}` ? "ring-2 ring-accent bg-accent-soft" : ""}`}>
           <button type="button" disabled={!ready} aria-label={project.name + " 이동 손잡이"}
