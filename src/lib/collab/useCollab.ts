@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
+import { resolveCaretColor } from "./caret-color";
+import { MSG_PERSISTED, matchesPersistenceProof, readPersistence } from "./persistence";
 
 /**
  * 공동 편집 연결.
@@ -35,10 +37,12 @@ type Snapshot = {
   status: ConnectionState;
   syncedAt: Date | null;
   peers: CollabPeer[];
+  persistedAt: Date | null;
+  pending: boolean;
 };
 
 /** 서버 렌더와 하이드레이션이 같은 값을 보게 하는 초기 스냅샷. */
-const INITIAL: Snapshot = { status: "connecting", syncedAt: null, peers: [] };
+const INITIAL: Snapshot = { status: "connecting", syncedAt: null, peers: [], persistedAt: null, pending: false };
 
 /**
  * 마지막 구독이 끊긴 뒤 방을 붙잡아 두는 시간.
@@ -97,7 +101,7 @@ function readPeers(provider: WebsocketProvider): CollabPeer[] {
 function samePeers(a: CollabPeer[], b: CollabPeer[]): boolean {
   return (
     a.length === b.length &&
-    a.every((p, i) => p.id === b[i].id && p.name === b[i].name && p.color === b[i].color)
+    a.every((p, i) => p.id === b[i].id && p.name === b[i].name && p.color === b[i].color && p.image === b[i].image)
   );
 }
 
@@ -120,21 +124,53 @@ function createRoom(noteId: string, me: CollabUser): Room {
   };
 
   const onStatus = ({ status }: { status: string }) => {
-    const next: ConnectionState = status === "connected" ? "connected" : "connecting";
+    const next: ConnectionState =
+      forbidden || !navigator.onLine ? "offline" : status === "connected" ? "connected" : "connecting";
     if (next !== snapshot.status) emit({ status: next });
   };
   const onSync = (isSynced: boolean) => {
-    if (isSynced) emit({ syncedAt: new Date() });
+    if (isSynced) {
+      if (!snapshot.syncedAt) emit({ syncedAt: new Date() });
+      // 새 서버에서만 저장 확인을 받는다. 구버전은 이 메시지를 무시한다.
+      provider.ws?.send(new Uint8Array([MSG_PERSISTED]));
+    }
   };
+  let proof: Uint8Array | null = null;
+  provider.messageHandlers[MSG_PERSISTED] = (_encoder, decoder) => {
+    const saved = readPersistence(decoder);
+    if (snapshot.persistedAt && saved.at < snapshot.persistedAt.getTime()) return;
+    proof = saved.proof;
+    emit({ persistedAt: new Date(saved.at), pending: !matchesPersistenceProof(doc, proof) });
+  };
+  const onDocUpdate = () => {
+    const pending = !proof || !matchesPersistenceProof(doc, proof);
+    if (pending !== snapshot.pending) emit({ pending });
+  };
+  doc.on("update", onDocUpdate);
   const onOffline = () => emit({ status: "offline" });
-  const onOnline = () => emit({ status: "connecting" });
+  const onOnline = () => {
+    if (forbidden) return;
+    // 네트워크가 복귀해도 살아 있는 소켓은 status 이벤트를 다시 보내지 않는다.
+    emit({ status: provider.wsconnected ? "connected" : "connecting" });
+  };
   const onAwareness = () => {
     const peers = readPeers(provider);
     if (!samePeers(peers, snapshot.peers)) emit({ peers });
   };
 
+  // 서버가 "멤버가 아님"(4403)으로 닫으면 다시 붙어도 거절된다. y-websocket은 44xx에서
+  // 재연결하지 않으므로 "연결 중"으로 두지 않고 끊김으로 보여 준다.
+  let forbidden = false;
+  const onClose = (event: CloseEvent | null) => {
+    if (event?.code !== 4403) return;
+    forbidden = true;
+    provider.shouldConnect = false;
+    emit({ status: "offline" });
+  };
+
   provider.on("status", onStatus);
   provider.on("sync", onSync);
+  provider.on("connection-close", onClose);
   provider.awareness.on("change", onAwareness);
   window.addEventListener("offline", onOffline);
   window.addEventListener("online", onOnline);
@@ -144,7 +180,8 @@ function createRoom(noteId: string, me: CollabUser): Room {
     provider.awareness.setLocalStateField("user", {
       id: user.id,
       name: user.name,
-      color: user.color,
+      // Tiptap은 #RRGGBB만 허용한다. CSS 변수를 보내면 transparent가 된다.
+      color: resolveCaretColor(user.color),
       image: user.image ?? null,
     });
   };
@@ -156,10 +193,12 @@ function createRoom(noteId: string, me: CollabUser): Room {
     rooms.delete(noteId);
     provider.off("status", onStatus);
     provider.off("sync", onSync);
+    provider.off("connection-close", onClose);
     provider.awareness.off("change", onAwareness);
     window.removeEventListener("offline", onOffline);
     window.removeEventListener("online", onOnline);
     provider.destroy();
+    doc.off("update", onDocUpdate);
     doc.destroy();
   };
 
@@ -228,11 +267,11 @@ export function useCollab(noteId: string, me: CollabUser) {
     room.setUser({ id, name, color, image });
   }, [room, id, name, color, image]);
 
-  const { status, syncedAt, peers } = useSyncExternalStore(
+  const { status, syncedAt, peers, persistedAt, pending } = useSyncExternalStore(
     room.subscribe,
     room.getSnapshot,
     () => INITIAL,
   );
 
-  return { doc: room.doc, provider: room.provider, status, syncedAt, peers };
+  return { doc: room.doc, provider: room.provider, status, syncedAt, peers, persistedAt, pending };
 }

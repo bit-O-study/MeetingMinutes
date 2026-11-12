@@ -135,3 +135,55 @@ export function assertNoteDoc(value: unknown): unknown {
   walk(value, 0);
   return value;
 }
+
+/* ────────────────────────────────────────────────────────────
+   링크 · 스페이스 · 노트
+   ──────────────────────────────────────────────────────────── */
+
+/**
+ * 초대·공유 링크 만료(일). null·생략은 "만료 없음"이다(화면에서 고를 수 있는 선택지).
+ * 숫자는 1~365로 제한한다 — 1e9일 같은 값은 Date를 깨뜨리거나 사실상 영구가 된다.
+ */
+export const linkExpiryInput = z.object({
+  expiresInDays: z.number().int().min(1).max(365).nullish(),
+});
+
+export const spaceKindInput = z.enum(["study", "handover", "general"]);
+export const spaceNameInput = z.string().trim().min(1, "이름을 입력하세요.").max(80);
+
+export const createSpaceInput = z.object({
+  name: spaceNameInput,
+  kind: spaceKindInput,
+});
+
+export const idInput = uuid;
+
+/**
+ * 노트 액션 입력. notes.ts(화면 담당 쪽)가 아직 쓰지 않는다 — 거기서 parse할 것.
+ *   createNote(input)          → createNoteInput.parse(input)
+ *   renameNote(noteId, title)  → idInput.parse(noteId), noteTitleInput.parse(title)
+ *   setNoteStatus(id, status)  → idInput.parse(noteId), noteStatusInput.parse(status)
+ */
+export const noteTitleInput = z.string().trim().max(200);
+export const noteStatusInput = z.enum(["draft", "tidied"]);
+export const createNoteInput = z.object({
+  spaceId: uuid,
+  template: z.enum(["study", "handover", "blank"]),
+  title: noteTitleInput.optional(),
+});
+
+/**
+ * syncNoteTasks(noteId, items)의 items. tasks.ts에서 `docTaskItemsInput.parse(items)`로 쓸 것.
+ *
+ * 본문 체크박스 목록이라 모양이 단순하다. 상한을 두는 것은 한 번에 수만 행을
+ * 넣거나 지우게 하지 않기 위해서다. 문구는 tasks-diff가 비교하는 값이라 trim하지 않는다.
+ */
+export const docTaskItemsInput = z
+  .array(
+    z.object({
+      blockId: z.string().min(1).max(64),
+      body: z.string().max(2000),
+      checked: z.boolean(),
+    }),
+  )
+  .max(500);

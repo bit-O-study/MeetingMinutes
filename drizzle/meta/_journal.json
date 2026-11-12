@@ -59,6 +59,20 @@
       "breakpoints": true
     },
     {
+      "idx": 8,
+      "version": "7",
+      "when": 1792763986819,
+      "tag": "0008_security_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792984228224,
+      "tag": "0009_project_files",
+      "breakpoints": true
+    },
+    {
       "idx": 10,
       "version": "7",
       "when": 1793021541616,

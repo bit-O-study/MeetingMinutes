@@ -43,7 +43,7 @@ export default async function SharedNotePage({ params }: PageProps<"/p/[token]">
       </header>
 
       <article>
-        <ReadOnlyNote content={note.content} />
+        <ReadOnlyNote content={note.content} shareToken={token} />
       </article>
 
       <footer className="border-t border-line pt-4 text-[11px] leading-relaxed text-ink-3">

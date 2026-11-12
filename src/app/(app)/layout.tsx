@@ -40,12 +40,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   ]);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="app-shell">
+      <a href="#main-content" className="skip-link">본문으로 이동</a>
       <TopBar user={user} />
-      <div className="flex flex-1">
+      <div className="app-body">
         <Sidebar spaces={spaceRows.map((r) => r.space)} openTaskCount={(taskCount?.n ?? 0) + myIssues.length + personal.open} />
         {/* 휴대폰에서는 아래 메뉴가 떠 있으므로 그만큼 아래를 비운다. */}
-        <main className="flex min-w-0 flex-1 flex-col pb-[calc(var(--safe-bottom)+64px)] md:pb-0">{children}</main>
+        <main id="main-content" tabIndex={-1} className="app-main">{children}</main>
       </div>
       <BottomNav
         user={user}

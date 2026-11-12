@@ -1,4 +1,13 @@
 @import "tailwindcss";
+@import "./workspace.css";
+
+/* 공통 규격은 한곳에서 정해 헤더와 하위 탭의 스크롤 기준이 어긋나지 않게 한다. */
+:root {
+  --radius-control: 10px;
+  --radius-panel: 16px;
+  --radius-dialog: 20px;
+  --shadow-panel: 0 2px 8px color-mix(in srgb, var(--ink) 3%, transparent), 0 12px 32px color-mix(in srgb, var(--ink) 3%, transparent);
+}
 
 /*
  * 휴대폰 안전 영역(노치·상태바·제스처 바). 브라우저에서는 휴대폰마다 실제 값만큼 비운다.
@@ -30,19 +39,19 @@
   옛 이름(ground·surface·accent…)은 그대로 두고 값만 바꿨다 — 아직 안 바꾼 화면도 새 색을 따라가게.
 */
 :root {
-  --ground: #f2f4f8;
-  --surface: #ffffff;
-  --surface-2: #eef1f6;
+  --ground: oklch(0.975 0.004 265);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.95 0.006 265);
 
-  --ink: #141925;
-  --ink-2: #4f586b;
-  --ink-3: #8a93a5;
+  --ink: oklch(0.26 0.025 270);
+  --ink-2: oklch(0.47 0.022 270);
+  --ink-3: oklch(0.54 0.018 270);
 
-  --line: #e3e7ee;
-  --line-2: #cfd5df;
+  --line: oklch(0.91 0.008 265);
+  --line-2: oklch(0.81 0.015 265);
 
-  --accent: #3b5bdb;
-  --accent-soft: #e8edfd;
+  --accent: oklch(0.48 0.12 278);
+  --accent-soft: oklch(0.95 0.021 278);
   --on-accent: #ffffff;
 
   --ok: #1f7a4f;
@@ -76,19 +85,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #0f131b;
-    --surface: #1a202c;
-    --surface-2: #232a38;
+    --ground: oklch(0.18 0.012 270);
+    --surface: oklch(0.225 0.014 270);
+    --surface-2: oklch(0.275 0.018 270);
 
-    --ink: #e9edf4;
-    --ink-2: #a8b1c2;
-    --ink-3: #737d90;
+    --ink: oklch(0.94 0.008 270);
+    --ink-2: oklch(0.77 0.015 270);
+    --ink-3: oklch(0.68 0.017 270);
 
-    --line: #2a3242;
-    --line-2: #3a4456;
+    --line: oklch(0.32 0.018 270);
+    --line-2: oklch(0.43 0.023 270);
 
-    --accent: #7b93ff;
-    --accent-soft: #1c2645;
+    --accent: oklch(0.79 0.09 278);
+    --accent-soft: oklch(0.29 0.04 278);
     --on-accent: #0b1020;
 
     --ok: #5fd29b;
@@ -132,7 +141,7 @@
 .project-pink { --pc: var(--p-pink); }
 .project-yellow { --pc: var(--p-yellow); }
 .project-slate { --pc: var(--p-slate); }
-[class*="project-"] {
+:is(.project-blue, .project-teal, .project-orange, .project-violet, .project-green, .project-pink, .project-yellow, .project-slate) {
   --accent: var(--pc);
   --accent-soft: color-mix(in srgb, var(--pc) 13%, var(--surface));
 }
@@ -308,6 +317,15 @@ body {
 
 /* ── 공동 편집 커서 ─────────────────────────────────────── */
 
+.tiptap .note-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border-radius: 0.75rem;
+}
+.tiptap .note-image.ProseMirror-selectednode { outline: 2px solid var(--accent); }
+
 .collaboration-carets__caret {
   border-left: 1px solid;
   border-right: 1px solid;
@@ -319,8 +337,8 @@ body {
 }
 
 /*
-  이름표는 입력을 멈추면 사라지고 커서 선만 남는다.
-  계속 떠 있으면 본문을 가린다.
+  편집 위치의 이름은 커서가 있는 동안 유지한다.
+  커서 장식은 이동 때 재생성되지 않으므로 fade를 쓰면 작업 중에도 사라진다.
 */
 .collaboration-carets__label {
   border-radius: 3px 3px 3px 0;
@@ -335,17 +353,7 @@ body {
   top: -1.15em;
   user-select: none;
   white-space: nowrap;
-  animation: caret-label-fade 2.4s ease-out forwards;
-}
-
-@keyframes caret-label-fade {
-  0%,
-  62% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  opacity: 1;
 }
 
 .collaboration-carets__selection {

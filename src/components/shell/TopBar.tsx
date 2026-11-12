@@ -16,20 +16,21 @@ export function TopBar({
 }) {
   return (
     <header
-      className="sticky top-0 z-20 flex flex-none items-center gap-3 border-b border-line bg-surface/90 px-4 pb-2 backdrop-blur"
-      style={{ paddingTop: "calc(var(--safe-top) + 8px)" }}
+      className="app-topbar"
     >
-      <Link href="/" aria-label="moa 홈" className="flex items-center">
+      <Link href="/" aria-label="moa 홈" className="app-brand flex items-center">
         <Logo />
       </Link>
 
       <Link
         href="/search"
-        className="ml-3 hidden max-w-sm min-w-0 flex-1 items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-3 transition-colors hover:text-ink-2 md:flex"
+        className="app-search hidden min-w-0 items-center gap-2 text-sm text-ink-2 md:flex"
       >
         <Search className="size-4 flex-none" />
-        <span className="truncate">노트·이슈 검색</span>
+        <span className="truncate">기록 검색</span>
       </Link>
+
+      <span className="ml-auto text-xs text-ink-2 md:hidden">함께 쌓는 기록</span>
       <form
         className="ml-auto hidden items-center gap-2 md:flex"
         action={async () => {
@@ -37,6 +38,7 @@ export function TopBar({
           await signOut({ redirectTo: "/login" });
         }}
       >
+        <span className="hidden max-w-40 truncate text-xs text-ink-2 lg:block">{user.name ?? "내 계정"}</span>
         <Avatar name={user.name} image={user.image} seed={user.id} size={28} />
         <button
           type="submit"

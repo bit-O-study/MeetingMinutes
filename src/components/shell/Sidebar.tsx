@@ -17,10 +17,11 @@ export function Sidebar({
   openTaskCount: number;
 }) {
   const item =
-    "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-sm font-semibold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink";
-  const on = "bg-accent-soft text-ink";
+    "sidebar-link";
+  const on = "sidebar-link-active";
   return (
-    <nav className="hidden w-60 flex-none flex-col gap-0.5 border-r border-line bg-surface px-3 py-4 md:flex">
+    <nav aria-label="주 메뉴" className="app-sidebar">
+      <p className="sidebar-label">내 작업 공간</p>
       <NavLink href="/" exact className={item} activeClassName={on}>
         <Home className="size-4" /> 홈
       </NavLink>
@@ -31,7 +32,7 @@ export function Sidebar({
         <CheckSquare className="size-4" />
         <span className="flex-1">내 할 일</span>
         {openTaskCount > 0 && (
-          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-danger px-1.5 text-[11px] font-bold text-white">
+          <span className="ml-auto rounded-md bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-ink-2">
             {openTaskCount}
           </span>
         )}
@@ -40,12 +41,12 @@ export function Sidebar({
         <Search className="size-4" /> 검색
       </NavLink>
 
-      <div className="mt-5 mb-1 px-2.5 text-xs font-bold text-ink-3">프로젝트</div>
+      <div className="sidebar-label mt-7">프로젝트</div>
 
       {spaces.map((space) => (
         <NavLink key={space.id} href={`/s/${space.id}`} className={item} activeClassName={on}>
           <ProjectIcon spaceId={space.id} name={space.name} size="sm" />
-          <span className="truncate">{space.name}</span>
+          <span className="min-w-0 truncate">{space.name}</span>
         </NavLink>
       ))}
 

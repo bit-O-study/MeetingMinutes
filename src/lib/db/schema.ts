@@ -44,21 +44,21 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { withTimezone: true }),
   image: text("image"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 // 비밀번호를 사용자 조회에 섞지 않고 정규화한 이메일의 중복 가입을 DB에서 막는다.
 export const passwordCredentials = pgTable("password_credentials", {
   email: text("email").primaryKey(),
   userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   passwordHash: text("password_hash").notNull(),
-});
+}).enableRLS();
 
 // 인스턴스가 달라도 같은 횟수를 보도록 로그인 시도 제한을 DB에 저장한다.
 export const authAttempts = pgTable("auth_attempts", {
   key: text("key").primaryKey(),
   count: integer("count").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-}, (t) => [index("auth_attempts_expires_idx").on(t.expiresAt)]);
+}, (t) => [index("auth_attempts_expires_idx").on(t.expiresAt)]).enableRLS();
 
 export const accounts = pgTable(
   "accounts",
@@ -78,15 +78,20 @@ export const accounts = pgTable(
     session_state: text("session_state"),
   },
   (t) => [primaryKey({ columns: [t.provider, t.providerAccountId] })],
-);
+).enableRLS();
 
 export const sessions = pgTable("sessions", {
+  /**
+   * 쿠키 값 그대로가 아니라 `sha256:<hex>`를 저장한다(lib/session-token.ts).
+   * DB를 읽을 수 있어도 쿠키를 만들어 낼 수 없게 하려는 것이다.
+   * 접두사가 없는 옛 행은 처음 조회될 때 해시로 바뀐다.
+   */
   sessionToken: text("session_token").primaryKey(),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   expires: timestamp("expires", { withTimezone: true }).notNull(),
-});
+}).enableRLS();
 
 export const verificationTokens = pgTable(
   "verification_tokens",
@@ -96,7 +101,7 @@ export const verificationTokens = pgTable(
     expires: timestamp("expires", { withTimezone: true }).notNull(),
   },
   (t) => [primaryKey({ columns: [t.identifier, t.token] })],
-);
+).enableRLS();
 
 /* ────────────────────────────────────────────────────────────
    스페이스 — 권한 경계. 속하면 안의 모든 노트를 읽고 쓴다.
@@ -116,7 +121,7 @@ export const spaces = pgTable("spaces", {
   /** 노트 목록 정렬과 사이드바 정렬에 쓰는 마지막 활동 시각 */
   lastActivityAt: timestamp("last_activity_at", { withTimezone: true }).defaultNow().notNull(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
-});
+}).enableRLS();
 
 /** 멤버끼리 권한 차등을 두지 않는다. 소유자만 초대·삭제 권한을 더 가진다. */
 export type MemberRole = "owner" | "member";
@@ -137,7 +142,7 @@ export const spaceMembers = pgTable(
     primaryKey({ columns: [t.spaceId, t.userId] }),
     index("space_members_user_idx").on(t.userId),
   ],
-);
+).enableRLS();
 
 /** 채팅 원문은 이슈 가공 후에도 그대로 남는다. */
 export const projectMessages = pgTable("project_messages", {
@@ -173,7 +178,14 @@ export const inviteLinks = pgTable(
     spaceId: uuid("space_id")
       .notNull()
       .references(() => spaces.id, { onDelete: "cascade" }),
+    /**
+     * 링크를 다시 보여 주기 위한 토큰 사본. 새 행은 AUTH_SECRET에서 파생한 키로
+     * 암호화해 둔다(`enc1:` 접두사, lib/link-token.ts). 조회에는 쓰지 않는다.
+     * 0008 이전 행은 평문이며 목록을 열 때 암호문으로 바뀐다.
+     */
     token: text("token").notNull(),
+    /** sha256(토큰). 링크로 들어온 토큰은 이것으로만 찾는다. */
+    tokenHash: text("token_hash").notNull(),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -181,8 +193,31 @@ export const inviteLinks = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
-  (t) => [uniqueIndex("invite_links_token_idx").on(t.token)],
-);
+  (t) => [uniqueIndex("invite_links_token_hash_idx").on(t.tokenHash)],
+).enableRLS();
+
+/**
+ * 스페이스에서 제외된 기록.
+ *
+ * 제외 시점 **이전에** 발급된 초대 링크로는 다시 들어오지 못한다. 제외당한 사람이
+ * 예전에 받아 둔 링크로 바로 돌아오던 문제를 막는다. 소유자가 제외 뒤에 새로 발급한
+ * 링크는 다시 받아들인다 — 다시 부르는 길을 따로 만들지 않기 위해서다.
+ * 다시 들어오면 이 행은 지운다.
+ */
+export const spaceRemovals = pgTable(
+  "space_removals",
+  {
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    removedBy: uuid("removed_by").references(() => users.id, { onDelete: "set null" }),
+    removedAt: timestamp("removed_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.spaceId, t.userId] })],
+).enableRLS();
 
 /* ────────────────────────────────────────────────────────────
    노트 — 회의록이든 메모든 같은 그릇
@@ -220,7 +255,7 @@ export const notes = pgTable(
     index("notes_space_idx").on(t.spaceId, t.updatedAt),
     index("notes_updated_idx").on(t.updatedAt),
   ],
-);
+).enableRLS();
 
 /**
  * 공동 편집 문서 상태.
@@ -233,7 +268,7 @@ export const noteDocs = pgTable("note_docs", {
   /** Y.encodeStateAsUpdate 결과 */
   state: bytea("state"),
   snapshotAt: timestamp("snapshot_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}).enableRLS();
 
 /* ────────────────────────────────────────────────────────────
    할 일 — 본문 체크박스와 같은 데이터. 두 벌로 관리하지 않는다.
@@ -267,7 +302,7 @@ export const tasks = pgTable(
     index("tasks_note_idx").on(t.noteId),
     uniqueIndex("tasks_block_idx").on(t.noteId, t.blockId),
   ],
-);
+).enableRLS();
 
 /* ────────────────────────────────────────────────────────────
    변경 이력 — 확정·버전 스냅샷을 대신한다
@@ -296,7 +331,7 @@ export const noteRevisions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("note_revisions_note_idx").on(t.noteId, t.createdAt)],
-);
+).enableRLS();
 
 /* ────────────────────────────────────────────────────────────
    공유 링크 — 노트 1건, 읽기 전용
@@ -309,7 +344,9 @@ export const shareLinks = pgTable(
     noteId: uuid("note_id")
       .notNull()
       .references(() => notes.id, { onDelete: "cascade" }),
+    /** 초대 링크와 같다 — 표시용 암호문(옛 행은 평문), 조회는 tokenHash로만. */
     token: text("token").notNull(),
+    tokenHash: text("token_hash").notNull(),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -319,10 +356,10 @@ export const shareLinks = pgTable(
     viewCount: integer("view_count").notNull().default(0),
   },
   (t) => [
-    uniqueIndex("share_links_token_idx").on(t.token),
+    uniqueIndex("share_links_token_hash_idx").on(t.tokenHash),
     index("share_links_note_idx").on(t.noteId),
   ],
-);
+).enableRLS();
 
 /* ──────────────────────────────────────────────────────────── */
 

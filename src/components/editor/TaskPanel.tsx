@@ -28,7 +28,8 @@ export function TaskPanel({
 }: {
   tasks: Task[];
   members: Member[];
-  onToggle: (task: Task) => Promise<void> | void;
+  /** next = 눌러서 만들 상태. 뒤집기가 아니라 목표 상태를 보낸다. */
+  onToggle: (task: Task, next: boolean) => Promise<void> | void;
   onUpdate: (taskId: string, patch: TaskPatch) => Promise<void> | void;
   onDelete: (taskId: string) => Promise<void> | void;
   onAdd: () => void;
@@ -49,11 +50,13 @@ export function TaskPanel({
       disabled={pending}
       expanded={openId === task.id}
       onExpand={() => setOpenId((id) => (id === task.id ? null : task.id))}
-      onToggle={() => startTransition(() => void onToggle(task))}
-      onUpdate={(patch) => startTransition(() => void onUpdate(task.id, patch))}
+      // 비동기 함수를 그대로 넘겨야 pending이 요청이 끝날 때까지 유지된다.
+      // `() => void promise`로 넘기면 바로 끝난 것으로 보여 중복 클릭 방지가 무효였다.
+      onToggle={() => startTransition(async () => { await onToggle(task, !task.doneAt); })}
+      onUpdate={(patch) => startTransition(async () => { await onUpdate(task.id, patch); })}
       onDelete={() => {
         setOpenId(null);
-        startTransition(() => void onDelete(task.id));
+        startTransition(async () => { await onDelete(task.id); });
       }}
     />
   );
@@ -119,7 +122,10 @@ function Row({
   onDelete: () => void;
 }) {
   const assignee = members.find((m) => m.id === task.assigneeId);
+  // 담당자가 프로젝트에서 나간 경우. "공용"으로 보이면 배정이 사라진 줄 알게 된다.
+  const departed = Boolean(task.assigneeId) && !assignee;
   const doneClass = task.doneAt ? "text-ink-3 line-through" : "text-ink";
+  const label = task.body || "내용 없음";
 
   return (
     <div className={`rounded ${expanded ? "bg-surface-2" : ""}`}>
@@ -129,7 +135,7 @@ function Row({
           checked={Boolean(task.doneAt)}
           disabled={disabled}
           onChange={onToggle}
-          aria-label={`${task.body} 완료`}
+          aria-label={`${label} ${task.doneAt ? "완료 취소" : "완료"}`}
           className="mt-1 size-3.5 flex-none accent-[var(--accent)]"
         />
 
@@ -139,7 +145,7 @@ function Row({
           aria-expanded={expanded}
           className="min-w-0 flex-1 text-left"
         >
-          <span className={`block text-[13px] leading-snug ${doneClass}`}>{task.body}</span>
+          <span className={`block text-[13px] leading-snug ${task.body ? doneClass : "text-ink-3 italic"}`}>{label}</span>
 
           <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
             {assignee ? (
@@ -147,6 +153,8 @@ function Row({
                 <Avatar name={assignee.name} image={assignee.image} seed={assignee.id} size={13} />
                 {assignee.name}
               </span>
+            ) : departed ? (
+              <span className="text-[10px] text-ink-3">탈퇴한 멤버</span>
             ) : (
               // 담당자 없음은 빠뜨린 게 아니라 "다 같이 한다"는 뜻이다.
               <span className="font-mono text-[10px] text-ink-3">공용</span>
@@ -173,6 +181,8 @@ function Row({
               className="rounded border border-line bg-surface px-2 py-1 text-xs text-ink outline-none focus:border-accent"
             >
               <option value="">공용 (전원)</option>
+              {/* 지금 값이 목록에 없으면 select가 첫 항목("공용")을 보여 줘 배정이 풀린 것처럼 보인다. */}
+              {departed && <option value={task.assigneeId!} disabled>탈퇴한 멤버</option>}
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name ?? "이름 없음"}

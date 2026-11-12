@@ -1,4 +1,5 @@
 import type { TemplateKind, SpaceKind } from "@/lib/db/schema";
+import { docText } from "@/lib/doc-text";
 
 /**
  * 템플릿이 이 시스템의 실질적 가치다. 빈 문서를 주면 아무도 안 쓴다.
@@ -149,15 +150,30 @@ export const TEMPLATES: Record<TemplateKind, TemplateMeta> = {
     kind: "blank",
     label: "빈 노트",
     blurb: "제목과 본문만",
+    // 서버(UTC)의 getDate()를 쓰면 한국 시간 오전 9시 전에 만든 노트가 어제 날짜로 붙었다.
     defaultTitle: ({ today }) =>
-      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
-        today.getDate(),
-      ).padStart(2, "0")} 메모`,
+      `${new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(today)} 메모`,
     usesSessionNo: false,
   },
 };
 
 export const TEMPLATE_ORDER: TemplateKind[] = ["study", "handover", "blank"];
+
+/**
+ * 노트를 만들 때 쓸 제목을 정한다.
+ *
+ * 새 노트 화면은 "3회차"를 미리 채워 보여 준다. 그 사이 다른 사람이 3회차를 먼저 만들면
+ * 실제 회차는 4가 되는데 제목만 "3회차"로 남아 제목과 본문 회차가 어긋났다.
+ * 제안 형식("N회차") 그대로면 확정된 번호로 다시 만든다. 사람이 고친 제목은 건드리지 않는다.
+ */
+export function resolveNoteTitle(kind: TemplateKind, requested: string, sessionNo: number, today: Date): string {
+  const meta = TEMPLATES[kind];
+  const title = requested.trim().slice(0, 200);
+  const fallback = meta.defaultTitle({ sessionNo, today });
+  if (!title) return fallback;
+  if (meta.usesSessionNo && /^\d+회차$/.test(title)) return fallback;
+  return title;
+}
 
 /** 스페이스 용도에 맞는 템플릿이 기본 선택되어 있어야 한다. */
 export function defaultTemplateFor(kind: SpaceKind): TemplateKind {
@@ -174,13 +190,7 @@ export function buildTemplateDoc(kind: TemplateKind, sessionNo = 1): Doc {
 
 /** 검색용 평문 추출. content 저장 시 plainText를 함께 갱신한다. */
 export function docToPlainText(doc: unknown): string {
-  const out: string[] = [];
-  const walk = (node: unknown) => {
-    if (!node || typeof node !== "object") return;
-    const n = node as { type?: string; text?: string; content?: unknown[] };
-    if (n.type === "text" && n.text) out.push(n.text);
-    n.content?.forEach(walk);
-  };
-  walk(doc);
-  return out.join(" ").replace(/\s+/g, " ").trim();
+  // 서식 경계("회의**록**")에서 단어를 쪼개지 않는다 — 블록 사이에만 공백(doc-text.ts).
+  // 규칙을 바꾸면 기존 노트의 plain_text는 scripts/backfill-plain-text.mts로 다시 계산한다.
+  return docText(doc).replace(/\s+/g, " ").trim();
 }

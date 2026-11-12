@@ -10,7 +10,7 @@ import {
   type ShareLinkView,
 } from "@/lib/actions/shares";
 import { Badge } from "@/components/ui/Badge";
-import { TIME_ZONE } from "@/lib/utils";
+import { shortDate } from "@/lib/utils";
 
 /** 스터디 회의록 한 번 보여 주기와 인수인계 기간 내내 열어 두기는 필요한 기간이 다르다. */
 const EXPIRY_CHOICES = [
@@ -29,10 +29,25 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
   const [expiry, setExpiry] = useState<number | null>(7);
   const [copied, setCopied] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // 실패를 삼키면 "불러오는 중…"이 영원히 남는다.
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    void listShareLinks(noteId).then(setLinks);
-  }, [noteId]);
+    let alive = true;
+    listShareLinks(noteId).then(
+      (rows) => { if (alive) { setLinks(rows); setError(""); } },
+      () => { if (alive) setError("공유 링크를 불러오지 못했습니다."); },
+    );
+    return () => { alive = false; };
+  }, [noteId, attempt]);
+
+  /** 만들기·회수가 실패하면 버튼이 아무 반응 없는 것처럼 보이지 않게 알린다. */
+  function run(action: () => Promise<void>, failure: string) {
+    startTransition(async () => {
+      try { await action(); setError(""); } catch { setError(failure); }
+    });
+  }
 
   const active = links?.filter((l) => l.active) ?? [];
   const dead = links?.filter((l) => !l.active) ?? [];
@@ -49,7 +64,7 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
   }
 
   return (
-    <aside className="flex h-[calc(100dvh-20rem-var(--safe-bottom))] min-h-60 w-full flex-col border-t border-line bg-surface lg:h-auto lg:min-h-0 lg:w-80 lg:flex-none lg:border-t-0 lg:border-l">
+    <aside className="flex min-h-0 w-full flex-1 flex-col border-t lg:flex-none border-line bg-surface lg:w-80 lg:border-t-0 lg:border-l">
       <header className="flex flex-none items-center gap-2 border-b border-line px-4 py-2">
         <h2 className="font-serif text-sm font-semibold text-ink">공유 링크</h2>
         <button
@@ -91,11 +106,11 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
             type="button"
             disabled={pending}
             onClick={() =>
-              startTransition(async () => {
+              run(async () => {
                 const created = await createShareLink(noteId, { expiresInDays: expiry });
                 setLinks((prev) => [...(prev ?? []), created]);
                 void copy(created.url, created.id);
-              })
+              }, "링크를 만들지 못했습니다. 다시 시도하세요.")
             }
             className="flex items-center justify-center gap-1.5 rounded bg-accent px-3 py-2 text-xs text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
           >
@@ -104,7 +119,16 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
           </button>
         </section>
 
-        {links === null && <p className="font-mono text-[10px] text-ink-3">불러오는 중…</p>}
+        {error && (
+          <p role="alert" className="flex flex-wrap items-center gap-2 rounded-xl bg-warn-soft px-3 py-2 text-xs font-semibold text-warn">
+            {error}
+            {links === null && (
+              <button type="button" onClick={() => { setError(""); setAttempt((n) => n + 1); }}
+                className="rounded-lg bg-surface px-2 py-0.5 font-bold text-accent">다시 시도</button>
+            )}
+          </p>
+        )}
+        {links === null && !error && <p className="font-mono text-[10px] text-ink-3">불러오는 중…</p>}
 
         {links !== null && links.length === 0 && (
           <p className="text-[11px] leading-relaxed text-ink-3">
@@ -145,7 +169,7 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
                     type="button"
                     disabled={pending}
                     onClick={() =>
-                      startTransition(async () => setLinks(await revokeShareLink(link.id)))
+                      run(async () => setLinks(await revokeShareLink(link.id)), "링크를 회수하지 못했습니다. 다시 시도하세요.")
                     }
                     className="ml-auto rounded border border-line px-2 py-0.5 font-mono text-[10px] text-accent transition-colors hover:bg-accent-soft disabled:opacity-40"
                   >
@@ -178,9 +202,6 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
 }
 
 function fmt(at: Date | string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: TIME_ZONE,
-    month: "2-digit",
-    day: "2-digit",
-  }).format(typeof at === "string" ? new Date(at) : at);
+  // 만료일은 해를 넘기기 쉽다(30일·없음). 연도가 다르면 연도까지 적는다.
+  return shortDate(typeof at === "string" ? new Date(at) : at);
 }

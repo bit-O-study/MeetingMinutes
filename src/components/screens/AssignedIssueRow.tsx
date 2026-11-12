@@ -1,5 +1,5 @@
 import Link from "@/components/PendingLink";
-import { ISSUE_STATUSES } from "@/lib/issue-input";
+import { ISSUE_STATUSES } from "@/lib/issue-labels";
 import type { issues } from "@/lib/db/schema";
 
 export function AssignedIssueRow({ issue, spaceName }: { issue: typeof issues.$inferSelect; spaceName: string }) {

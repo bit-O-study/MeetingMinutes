@@ -23,9 +23,9 @@ export function isOverdue(dueDate: string | null, doneAt: Date | null): boolean 
 }
 
 /** "2시간 전", "어제" 처럼 목록에서 쓰는 짧은 표기 */
-export function relativeTime(at: Date | string): string {
+export function relativeTime(at: Date | string, now: Date = new Date()): string {
   const d = typeof at === "string" ? new Date(at) : at;
-  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  const mins = Math.floor((now.getTime() - d.getTime()) / 60000);
   if (mins < 1) return "방금";
   if (mins < 60) return `${mins}분 전`;
   const hours = Math.floor(mins / 60);
@@ -33,18 +33,35 @@ export function relativeTime(at: Date | string): string {
   const days = Math.floor(hours / 24);
   if (days === 1) return "어제";
   if (days < 7) return `${days}일 전`;
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: TIME_ZONE,
-    month: "2-digit",
-    day: "2-digit",
-  }).format(d);
+  return shortDate(d, now);
 }
 
-/** 초대·공유 링크 토큰. 추측 불가능해야 한다. */
+/**
+ * "10. 23." 같은 짧은 날짜(서울 기준). 올해가 아니면 연도를 붙인다 —
+ * 예전에는 1년 넘은 노트도 "10. 23."으로만 나와 올해 것처럼 보였다.
+ */
+export function shortDate(at: Date, now: Date = new Date()): string {
+  const year = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric" }).format(d);
+  const sameYear = year(at) === year(now);
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: TIME_ZONE,
+    ...(sameYear ? {} : { year: "numeric" }),
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
+/**
+ * 초대·공유 링크 토큰. 추측 불가능해야 한다.
+ *
+ * 16바이트(128비트)를 base64url로 그대로 적는다(22자, [A-Za-z0-9_-]).
+ * 예전 방식은 바이트를 36진 두 자리로 적고 22자로 잘라 실제로는 약 88비트였다.
+ * 이 파일은 클라이언트에서도 불러가므로 node:crypto 대신 Web Crypto를 쓴다.
+ */
 export function linkToken(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 22);
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export function absoluteUrl(path: string): string {

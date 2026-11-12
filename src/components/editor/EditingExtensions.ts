@@ -4,7 +4,7 @@ import { Plugin } from "@tiptap/pm/state";
 /** 목록은 기본 Tab 동작을 쓰고 일반 문단·제목만 여백으로 들여쓴다. */
 export const ParagraphIndent = Extension.create({
   name: "paragraphIndent",
-  priority: 50,
+  priority: 1100,
   addGlobalAttributes() {
     return [{
       types: ["paragraph", "heading"],
@@ -21,15 +21,23 @@ export const ParagraphIndent = Extension.create({
   },
   addKeyboardShortcuts() {
     const changeIndent = (delta: number) => {
-      if (["listItem", "taskItem", "codeBlock"].some((name) => this.editor.isActive(name))) return false;
+      if (this.editor.view.composing) return true;
+      // 첫 항목은 들여쓸 수 없어도 Tab이 본문 밖으로 포커스를 보내지 않게 한다.
+      for (const name of ["taskItem", "listItem"]) {
+        if (!this.editor.isActive(name)) continue;
+        if (delta > 0) this.editor.commands.sinkListItem(name);
+        else this.editor.commands.liftListItem(name);
+        return true;
+      }
+      if (this.editor.isActive("codeBlock")) return false;
       const { state, view } = this.editor;
       const tr = state.tr;
       state.doc.nodesBetween(state.selection.from, state.selection.to, (node, pos) => {
+        if (["listItem", "taskItem", "codeBlock"].includes(node.type.name)) return false;
         if (!["paragraph", "heading"].includes(node.type.name)) return;
         tr.setNodeAttribute(pos, "indent", Math.max(0, Math.min(8, (Number(node.attrs.indent) || 0) + delta)));
       });
-      if (!tr.docChanged) return false;
-      view.dispatch(tr);
+      if (tr.docChanged) view.dispatch(tr.scrollIntoView());
       return true;
     };
     return { Tab: () => changeIndent(1), "Shift-Tab": () => changeIndent(-1) };

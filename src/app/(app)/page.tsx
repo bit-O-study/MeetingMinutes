@@ -74,29 +74,29 @@ export default async function HomePage() {
 
   // 재디자인(2026-10-14): 오늘 할 일은 맨 위 강조 카드, 프로젝트는 색 타일, 최근 노트는 프로젝트 색 점이 붙은 카드.
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-      <div className="flex items-center gap-3">
-        <h1 className="flex-1 text-2xl font-black tracking-tight text-ink">
+    <div className="workspace-page home-page">
+      <div className="page-heading">
+        <div className="min-w-0 flex-1"><p className="page-eyebrow">내 작업 공간</p>
+        <h1 className="page-title">
           {user.name ? `안녕하세요, ${user.name} 님` : "홈"}
         </h1>
+        <p className="page-description">오늘의 할 일부터 팀의 기록까지, 한곳에서 이어가세요.</p></div>
         <ButtonLink href="/spaces/new" size="sm" className="hidden sm:inline-flex"><Plus className="size-4" />새 프로젝트</ButtonLink>
       </div>
 
       <PersonalPlannerHome />
       {myTasks.length > 0 && (
-        <section className="relative overflow-hidden rounded-3xl bg-accent p-5 text-on-accent shadow-float">
-          {/* 장식 원 — 카드가 평평한 상자로 보이지 않게. 읽는 내용은 없다. */}
-          <div aria-hidden="true" className="pointer-events-none absolute -top-10 -right-10 size-36 rounded-full bg-white/10" />
+        <section className="home-tasks ui-card p-5">
           <div className="relative flex items-center gap-2">
-            <h2 className="text-lg font-extrabold">내 할 일 {myTasks.length}개</h2>
-            {overdueCount > 0 && <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold">{overdueCount}개 기한 지남</span>}
+            <h2 className="text-base font-semibold">내 할 일 {myTasks.length}개</h2>
+            {overdueCount > 0 && <span className="rounded-md bg-warn-soft px-2.5 py-1 text-xs font-medium text-warn">{overdueCount}개 기한 지남</span>}
             <Link href="/tasks" className="ml-auto inline-flex items-center text-sm font-bold opacity-90 hover:opacity-100">전체 <ChevronRight className="size-4" /></Link>
           </div>
           <ul className="relative mt-3 flex flex-col gap-1.5">
             {myTasks.map(({ task, noteTitle }) => (
               <li key={task.id}>
-                <Link href={`/s/${task.spaceId}/n/${task.noteId}`} className="flex items-center gap-2 rounded-xl bg-white/12 px-3 py-2 text-sm hover:bg-white/20">
-                  <span className="size-4 flex-none rounded-md ring-2 ring-white/70 ring-inset" aria-hidden="true" />
+                <Link href={`/s/${task.spaceId}/n/${task.noteId}`} className="flex items-center gap-2 rounded-lg px-2 py-3 text-sm hover:bg-surface-2">
+                  <span className="size-3 flex-none rounded border border-line-2" aria-hidden="true" />
                   <span className="min-w-0 flex-1 truncate font-semibold">{task.body}</span>
                   <span className="hidden max-w-[40%] truncate text-xs opacity-80 sm:inline">{spaceName.get(task.spaceId)} · {noteTitle}</span>
                   <span className="flex-none text-xs font-bold opacity-90">{dueText(task.dueDate, task.doneAt)}</span>
@@ -125,15 +125,15 @@ export default async function HomePage() {
       }))} />
 
       <section aria-labelledby="home-recent-heading" className="flex flex-col gap-3">
-        <h2 id="home-recent-heading" className="px-1 text-[15px] font-extrabold text-ink">최근 노트</h2>
+        <h2 id="home-recent-heading" className="px-1 text-lg font-semibold tracking-tight text-ink">최근 노트</h2>
         {recent.length === 0 ? (
           <Card><EmptyState title="아직 노트가 없어요" hint="프로젝트에서 첫 노트를 만들어 보세요." /></Card>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="recent-notes">
             {recent.map((note) => (
               <li key={note.id}>
                 <Link href={"/s/" + note.spaceId + "/n/" + note.id}
-                  className="press flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 transition-shadow hover:shadow-float focus-visible:outline-2 focus-visible:outline-accent">
+                  className="recent-note flex items-center gap-3 px-4 py-4 focus-visible:outline-2 focus-visible:outline-accent">
                   <span aria-hidden="true" className={`size-2.5 flex-none rounded ${PROJECT_BG_CLASS[projectColor(note.spaceId)]}`} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-bold text-ink">{note.title}</span>

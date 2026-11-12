@@ -18,7 +18,7 @@ export function ProjectIcon({
     <span
       aria-hidden="true"
       className={cn(
-        "grid flex-none place-items-center font-black text-white",
+        "grid flex-none place-items-center project-monogram font-semibold text-on-accent",
         PROJECT_BG_CLASS[color],
         size === "sm" && "size-6 rounded-lg text-[11px]",
         size === "md" && "size-9 rounded-xl text-[15px]",

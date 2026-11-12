@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const ISSUE_STATUSES = { raw: "미가공 이슈", open: "열림", in_progress: "진행 중", closed: "해결됨" } as const;
-export const ISSUE_PRIORITIES = { low: "낮음", normal: "보통", high: "높음" } as const;
+// 라벨은 클라이언트도 쓰므로 zod 없는 파일에 둔다. 서버 쪽 기존 import를 위해 다시 내보낸다.
+export { ISSUE_PRIORITIES, ISSUE_STATUSES, type IssueState } from "@/lib/issue-labels";
 export const issueInput = z.object({
   spaceId: z.uuid(),
   id: z.uuid().optional(),
@@ -13,7 +13,6 @@ export const issueInput = z.object({
   assigneeId: z.uuid().nullable(),
 }).refine((value) => !value.id || !!value.version, { message: "이슈를 새로고침 후 다시 수정하세요." });
 
-export type IssueState = { ok: boolean; message: string };
 
 export const chatMessageInput = z.object({
   spaceId: z.uuid(),

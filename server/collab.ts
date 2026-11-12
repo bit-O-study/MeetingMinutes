@@ -17,6 +17,7 @@ import http from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 
 import { sql } from "../src/lib/db";
+import { MAX_MESSAGE_BYTES } from "../src/lib/collab/protocol-guard";
 import { flushRooms, joinRoom, roomCount } from "../src/lib/collab/room";
 
 const PORT = Number(process.env.COLLAB_PORT ?? 1234);
@@ -31,7 +32,8 @@ const server = http.createServer((req, res) => {
   res.end();
 });
 
-const wss = new WebSocketServer({ server });
+// 배포 라우트와 같은 프레임 상한. 넘으면 ws가 그 연결만 닫는다.
+const wss = new WebSocketServer({ server, maxPayload: MAX_MESSAGE_BYTES });
 
 wss.on("connection", (conn: WebSocket, req) => {
   // y-websocket 클라이언트는 /<roomname> 으로 붙는다.

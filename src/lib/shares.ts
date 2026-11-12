@@ -1,7 +1,8 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { notes, shareLinks, spaces } from "@/lib/db/schema";
+import { notes, shareLinks, spaceMembers, spaces } from "@/lib/db/schema";
+import { hashLinkToken } from "@/lib/token-store";
 
 /**
  * 공유 링크로 들어온 사람이 노트를 읽는 경로.
@@ -26,6 +27,9 @@ export type SharedNote = {
  * 그게 더 당황스럽다.
  */
 export async function readSharedNote(token: string): Promise<SharedNote | null> {
+  if (typeof token !== "string" || token.length === 0 || token.length > 128) return null;
+  // 토큰은 해시로만 찾는다. 만든 사람이 아직 그 스페이스 멤버여야 열린다 —
+  // 제외·탈퇴 때 회수하지만, 그 전에 떠난 사람의 링크까지 여기서 막는다.
   const [row] = await db
     .select({
       shareId: shareLinks.id,
@@ -39,7 +43,11 @@ export async function readSharedNote(token: string): Promise<SharedNote | null> 
     .from(shareLinks)
     .innerJoin(notes, eq(notes.id, shareLinks.noteId))
     .innerJoin(spaces, eq(spaces.id, notes.spaceId))
-    .where(and(eq(shareLinks.token, token), isNull(notes.deletedAt), isNull(spaces.deletedAt)))
+    .innerJoin(
+      spaceMembers,
+      and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.userId, shareLinks.createdBy)),
+    )
+    .where(and(eq(shareLinks.tokenHash, hashLinkToken(token)), isNull(notes.deletedAt), isNull(spaces.deletedAt)))
     .limit(1);
 
   if (!row) return null;

@@ -101,3 +101,33 @@ test("본문의 깊이와 노드 수에 상한이 있다", () => {
   };
   assert.throws(() => assertNoteDoc(wide), InvalidDocError);
 });
+
+test("링크 만료는 1~365일 정수 또는 만료 없음만 받는다", async () => {
+  const { linkExpiryInput } = await import("./action-input.js");
+  for (const ok of [{}, { expiresInDays: null }, { expiresInDays: 1 }, { expiresInDays: 30 }, { expiresInDays: 365 }]) {
+    assert.ok(linkExpiryInput.safeParse(ok).success, JSON.stringify(ok));
+  }
+  for (const bad of [{ expiresInDays: 0 }, { expiresInDays: -1 }, { expiresInDays: 366 }, { expiresInDays: 1e9 }, { expiresInDays: 1.5 }, { expiresInDays: "7" }]) {
+    assert.ok(!linkExpiryInput.safeParse(bad).success, JSON.stringify(bad));
+  }
+});
+
+test("스페이스 생성 입력은 이름 길이와 용도를 확인한다", async () => {
+  const { createSpaceInput } = await import("./action-input.js");
+  assert.deepEqual(createSpaceInput.parse({ name: "  스터디  ", kind: "study", ownerId: OTHER }), { name: "스터디", kind: "study" });
+  assert.ok(!createSpaceInput.safeParse({ name: "   ", kind: "study" }).success);
+  assert.ok(!createSpaceInput.safeParse({ name: "x".repeat(81), kind: "study" }).success);
+  assert.ok(!createSpaceInput.safeParse({ name: "a", kind: "admin" }).success);
+});
+
+test("본문 체크박스 목록은 모양과 개수를 확인한다", async () => {
+  const { docTaskItemsInput, createNoteInput, noteStatusInput } = await import("./action-input.js");
+  assert.deepEqual(docTaskItemsInput.parse([{ blockId: "b1", body: " 읽기 ", checked: false, extra: 1 }]), [{ blockId: "b1", body: " 읽기 ", checked: false }]);
+  assert.ok(!docTaskItemsInput.safeParse("not-array").success);
+  assert.ok(!docTaskItemsInput.safeParse([{ blockId: "", body: "x", checked: false }]).success);
+  assert.ok(!docTaskItemsInput.safeParse([{ blockId: "b", body: "x", checked: "yes" }]).success);
+  assert.ok(!docTaskItemsInput.safeParse(Array.from({ length: 501 }, (_, i) => ({ blockId: `b${i}`, body: "", checked: false }))).success);
+  assert.ok(createNoteInput.safeParse({ spaceId: UUID, template: "study" }).success);
+  assert.ok(!createNoteInput.safeParse({ spaceId: "x", template: "study" }).success);
+  assert.ok(!noteStatusInput.safeParse("approved").success);
+});

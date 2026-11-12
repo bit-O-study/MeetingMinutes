@@ -1,6 +1,8 @@
 import { Fragment } from "react";
 import { noteImageUrl } from "@/lib/note-image";
 
+import { safeLinkHref } from "@/lib/safe-href";
+
 /**
  * 노트 본문을 읽기 전용으로 그린다.
  *
@@ -20,20 +22,24 @@ type Node = {
   content?: Node[];
 };
 
-export function ReadOnlyNote({ content }: { content: unknown }) {
+export function ReadOnlyNote({ content, shareToken }: { content: unknown; shareToken?: string }) {
   const doc = content as Node | null;
   if (!doc?.content?.length) {
     return <p className="text-sm text-ink-3">내용이 없습니다.</p>;
   }
 
-  return <div className="tiptap">{doc.content.map(render)}</div>;
+  return <div className="tiptap">{doc.content.map((node, index) => render(node, index, shareToken))}</div>;
 }
 
-function render(node: Node, index: number): React.ReactNode {
+function render(node: Node, index: number, shareToken?: string): React.ReactNode {
   const key = index;
-  const kids = () => node.content?.map(render);
+  const kids = () => node.content?.map((child, i) => render(child, i, shareToken));
 
   switch (node.type) {
+    case "image": {
+      const src = noteImageUrl(node.attrs?.src, shareToken);
+      return src ? <img key={key} src={src} alt={typeof node.attrs?.alt === "string" ? node.attrs.alt : "첨부 사진"} className="note-image" loading="lazy" /> : null;
+    }
     case "text":
       return <Fragment key={key}>{applyMarks(node)}</Fragment>;
 
@@ -130,7 +136,8 @@ function applyMarks(node: Node): React.ReactNode {
         out = <code>{out}</code>;
         break;
       case "link": {
-        const href = String(mark.attrs?.href ?? "");
+        // http·https·mailto만 링크로 만든다. javascript: 같은 값은 글자로만 남긴다.
+        const href = safeLinkHref(mark.attrs?.href);
         // 외부로 나가는 링크다. 원본 탭을 조작하지 못하게 막는다.
         out = href ? (
           <a href={href} target="_blank" rel="noopener noreferrer nofollow">

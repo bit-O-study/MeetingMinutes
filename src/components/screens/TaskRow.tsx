@@ -29,7 +29,8 @@ export function TaskRow({ task, today }: { task: TaskRowData; today: string }) {
     setError(false);
     startTransition(async () => {
       try {
-        await toggleTask(task.id);
+        // 목표 상태를 보낸다. 새로고침 전 화면 기준으로 두 번 눌려도 같은 결과가 된다.
+        await toggleTask(task.id, !task.done);
         // 홈과 스페이스에서도 같은 레코드를 다시 읽어 완료 항목을 맞춘다.
         router.refresh();
       } catch {
@@ -42,12 +43,12 @@ export function TaskRow({ task, today }: { task: TaskRowData; today: string }) {
     <li className="flex items-start gap-2 px-3 py-2" aria-busy={pending}>
       <label className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
         <input type="checkbox" checked={task.done} disabled={pending} onChange={toggle}
-          aria-label={task.body + (task.done ? " 완료 취소" : " 완료")}
+          aria-label={(task.body || "내용 없음") + (task.done ? " 완료 취소" : " 완료")}
           aria-describedby={error ? errorId : undefined}
           className="size-4 accent-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent disabled:cursor-wait" />
       </label>
       <div className="min-w-0 flex-1 py-2">
-        <p className={cn("break-words text-sm text-ink", task.done && "text-ink-3 line-through")}>{task.body}</p>
+        <p className={cn("break-words text-sm text-ink", task.done && "text-ink-3 line-through", !task.body && "italic text-ink-3")}>{task.body || "내용 없음"}</p>
         <Link href={"/s/" + task.spaceId + "/n/" + task.noteId}
           className="mt-1 block break-words text-xs text-ink-3 hover:text-accent focus-visible:outline-2 focus-visible:outline-accent">
           {task.spaceName && task.spaceName + " · "}{task.noteTitle}

@@ -32,7 +32,8 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
   // 길게 누르기 메뉴(재디자인) — 앱(WebView)에서 길게 누르면 글자 선택이 먼저 떠서, 메뉴에 '복사'를 꼭 둔다.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const endRef = useRef<HTMLLIElement>(null);
+  const messageList = useRef<HTMLOListElement>(null);
+  const followLatest = useRef(true);
   function startPress(row: Message) {
     if (pressTimer.current) clearTimeout(pressTimer.current);
     pressTimer.current = setTimeout(() => setMenuFor(row), 450);
@@ -41,9 +42,10 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
     if (pressTimer.current) clearTimeout(pressTimer.current);
     pressTimer.current = null;
   }
-  // 첫 화면(최근 대화)에서는 가장 아래(최신)부터 보이게.
+  // 대화 목록만 스크롤한다. scrollIntoView는 페이지까지 끌어올려 상단 메뉴를 가렸다.
   useEffect(() => {
-    if (page === 1) endRef.current?.scrollIntoView({ block: "end" });
+    const list = messageList.current;
+    if (page === 1 && list && followLatest.current) list.scrollTop = list.scrollHeight;
   }, [page, rows.length]);
   const captureLock = useRef(false);
   useEffect(() => {
@@ -72,14 +74,14 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
       const result = await sendProjectMessage({ ...request.current, spaceId });
       setMessage(result.message);
       setFailed(!result.ok);
-      if (result.ok) { setBody(""); request.current = null; router.replace(`/s/${spaceId}?tab=chat`); router.refresh(); }
+      if (result.ok) { followLatest.current = true; setBody(""); request.current = null; router.replace(`/s/${spaceId}?tab=chat`); router.refresh(); }
     } catch {
       setFailed(true);
       setMessage("전송하지 못했습니다. 입력 내용은 그대로 남아 있습니다. 다시 전송해 주세요.");
     } finally {
       sending.current = false;
       setPending(false);
-      input.current?.focus();
+      input.current?.focus({ preventScroll: true });
     }
   }
 
@@ -92,18 +94,18 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
   // 내 말풍선은 프로젝트 색, 남의 말풍선은 흰 면. 이슈로 담기는 넓은 화면에선 말풍선 옆 버튼, 휴대폰에선 길게 누르기.
   return <section aria-label="프로젝트 대화" className="flex flex-col gap-3">
     {page * 30 < total && <Link className="self-center rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink-2" href={`/s/${spaceId}?tab=chat&page=${page + 1}`}>이전 대화 보기</Link>}
-    <ol aria-label="프로젝트 메시지" className="flex min-h-[calc(100dvh-26rem)] flex-col justify-end gap-1.5 md:min-h-[calc(100dvh-24rem)]">
+    <ol ref={messageList} tabIndex={0} aria-label="프로젝트 메시지" className="chat-messages" onScroll={event => { const list = event.currentTarget; followLatest.current = list.scrollHeight - list.scrollTop - list.clientHeight < 80; }}>
       {sorted.map((row, index) => {
         const mine = row.createdBy === userId;
         const showName = !mine && (index === 0 || sorted[index - 1].createdBy !== row.createdBy);
-        return <li key={row.id} className={`group flex max-w-[85%] flex-col gap-1 ${mine ? "self-end items-end" : "self-start items-start"}`}>
+        return <li key={row.id} className={`group flex min-w-0 max-w-[92%] flex-col gap-1 ${mine ? "self-end items-end" : "self-start items-start"}`}>
           {showName && <span className="mt-2 px-1 text-xs font-semibold text-ink-3">{nameOf(row.createdBy)}</span>}
           <div className="flex items-end gap-1.5">
             {mine && <span className="pb-1 text-[11px] text-ink-3">{when(row.createdAt)}</span>}
             <p
               onPointerDown={() => startPress(row)} onPointerUp={cancelPress} onPointerLeave={cancelPress} onPointerCancel={cancelPress}
               onContextMenu={(event) => { event.preventDefault(); setMenuFor(row); }}
-              className={`whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed select-none md:select-text ${mine ? "rounded-br-md bg-accent text-on-accent" : "rounded-bl-md bg-surface text-ink"}`}>
+              className={`min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed select-none md:select-text ${mine ? "rounded-br-md bg-accent text-on-accent" : "rounded-bl-md bg-surface text-ink"}`}>
               {row.body}
             </p>
             {!mine && <span className="pb-1 text-[11px] text-ink-3">{when(row.createdAt)}</span>}
@@ -124,14 +126,13 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
         </li>;
       })}
       {!rows.length && <li className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-ink-3">첫 메시지를 남겨 보세요.<br />정리하지 않아도 괜찮아요. 필요한 말은 나중에 이슈로 담을 수 있어요.</li>}
-      <li ref={endRef} aria-hidden="true" />
     </ol>
     {page > 1 && <Link className="self-center rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink-2" href={`/s/${spaceId}?tab=chat&page=${page - 1}`}>최근 대화로</Link>}
 
     {(message || pending || capturing || body.trim()) && <p data-testid="chat-feedback" role={failed ? "alert" : "status"} className={`px-3 text-xs leading-relaxed ${failed ? "text-danger" : "text-ink-3"}`}>{pending ? "보내는 중…" : capturing ? "이슈에 담는 중…" : message || "작성 중…"}</p>}
 
     <form onSubmit={event => { event.preventDefault(); void send(); }}
-      className="sticky bottom-[calc(var(--safe-bottom)+68px)] z-10 flex items-end gap-2 rounded-3xl bg-surface p-2 shadow-float md:bottom-4">
+      className="chat-composer flex items-end gap-2 p-2">
       <label htmlFor="project-message" className="sr-only">메시지</label>
       <textarea ref={input} id="project-message" value={body} readOnly={pending} maxLength={10000} rows={1}
         onChange={event => { setBody(event.target.value); if (!failed) setMessage(""); }}
@@ -140,7 +141,7 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
           if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing && event.keyCode !== 229 && !composing.current) { event.preventDefault(); void send(); }
         }}
         placeholder="메시지 보내기"
-        className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-base text-ink placeholder:text-ink-3 focus:outline-none [field-sizing:content]" />
+        className="max-h-40 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-base text-ink placeholder:text-ink-3 focus:outline-none [field-sizing:content]" />
       <button disabled={pending || !body.trim()} aria-label={pending ? "전송 중" : "전송"}
         className="press grid size-10 flex-none place-items-center rounded-2xl bg-accent text-on-accent disabled:opacity-40">
         <ArrowUp className="size-5" />

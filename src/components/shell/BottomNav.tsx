@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarDays, CheckSquare, Home, Search, UserRound } from "lucide-react";
 
 import { NavLink } from "@/components/shell/NavLink";
@@ -22,23 +22,19 @@ export function BottomNav({
   signOutAction: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
+  const accountDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // 기본 dialog가 배경 포커스를 차단하고 닫힌 뒤 원래 버튼으로 돌려준다.
+    if (open) accountDialog.current?.showModal();
   }, [open]);
 
-  const tab = "flex min-h-12 flex-col items-center justify-center gap-0.5 py-1 text-[11px] font-bold text-ink-3";
-  const on = "text-accent";
+  const tab = "bottom-tab";
+  const on = "bottom-tab-active";
   return (
     <>
       <nav
         aria-label="아래 메뉴"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-surface pt-0.5 md:hidden"
-        style={{ paddingBottom: "calc(var(--safe-bottom) + 2px)" }}
+        className="app-bottomnav"
       >
         <NavLink href="/" exact className={tab} activeClassName={on}>
           <Home className="size-5" />홈
@@ -63,10 +59,10 @@ export function BottomNav({
       </nav>
 
       {open && (
-        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="내 계정">
+        <dialog ref={accountDialog} onClose={() => setOpen(false)} onCancel={() => setOpen(false)} className="account-dialog" aria-label="내 계정">
           <button type="button" aria-label="닫기" className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
           <div
-            className="absolute inset-x-0 bottom-0 flex flex-col gap-3 rounded-t-3xl bg-surface px-5 pt-3 shadow-float"
+            className="absolute inset-x-0 bottom-0 flex flex-col gap-3 account-sheet rounded-t-2xl bg-surface px-5 pt-3 shadow-float"
             style={{ paddingBottom: "calc(var(--safe-bottom) + 20px)" }}
           >
             <div className="mx-auto h-1 w-10 rounded-full bg-line" />
@@ -83,7 +79,7 @@ export function BottomNav({
               </button>
             </form>
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

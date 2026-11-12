@@ -1,18 +1,15 @@
-import { createHash } from "node:crypto";
-import { eq, lt, sql } from "drizzle-orm";
+import { eq, inArray, lt, sql } from "drizzle-orm";
+import { AUTH_ATTEMPT_WINDOW_MS, authAttemptBuckets, authAttemptKeysToClear } from "@/lib/auth-attempt-buckets";
 import { db } from "@/lib/db";
 import { authAttempts, passwordCredentials, users } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
-function attemptKey(scope: "email" | "address", value: string) {
-  return createHash("sha256").update(`${scope}:${value}`).digest("hex");
-}
-
+/** 버킷 구성과 이유는 auth-attempt-buckets.ts 참고 */
 export async function allowAuthAttempt(email: string, address: string) {
   await db.delete(authAttempts).where(lt(authAttempts.expiresAt, new Date()));
-  for (const [scope, value, limit] of [["email", email, 10], ["address", address, 60]] as const) {
+  for (const { key, limit } of authAttemptBuckets(email, address)) {
     const [attempt] = await db.insert(authAttempts).values({
-      key: attemptKey(scope, value), count: 1, expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      key, count: 1, expiresAt: new Date(Date.now() + AUTH_ATTEMPT_WINDOW_MS),
     }).onConflictDoUpdate({
       target: authAttempts.key, set: { count: sql`${authAttempts.count} + 1` },
     }).returning({ count: authAttempts.count });
@@ -29,8 +26,8 @@ export async function allowAuthAttempt(email: string, address: string) {
  * 화면에는 "시도가 너무 많습니다"만 뜬다. 주소 버킷은 손대지 않는다 —
  * 한 주소에서 여러 계정을 훑는 것은 성공했더라도 눌러 두는 편이 맞다.
  */
-export async function clearAuthAttempts(email: string) {
-  await db.delete(authAttempts).where(eq(authAttempts.key, attemptKey("email", email)));
+export async function clearAuthAttempts(email: string, address: string) {
+  await db.delete(authAttempts).where(inArray(authAttempts.key, authAttemptKeysToClear(email, address)));
 }
 
 export async function registerPasswordUser(input: { email: string; name: string; password: string }) {

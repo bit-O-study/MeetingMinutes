@@ -36,6 +36,7 @@ export function Avatar({
       <img
         src={image}
         alt={name ?? ""}
+        title={name ?? undefined}
         width={size}
         height={size}
         className={cn("flex-none rounded-full object-cover", className)}
@@ -47,6 +48,7 @@ export function Avatar({
   return (
     <span
       aria-label={name ?? undefined}
+      title={name ?? undefined}
       className={cn(
         "flex flex-none items-center justify-center rounded-full font-medium text-white",
         className,

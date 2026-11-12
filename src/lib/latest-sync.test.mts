@@ -16,3 +16,8 @@ test("실패한 상태는 다음 요청에서 재시도한다", async () => {
  const sync=createLatestSync<number>(async () => { if (++calls===1) throw Error("offline"); }, () => { errors++; });
  await sync(1); await sync(1); await sync(1); assert.equal(calls,2); assert.equal(errors,1);
 });
+test("DB 쪽 변경 후 reset하면 예전과 같은 상태도 다시 보낸다", async () => {
+ // 회귀: 패널에서 체크(DB만 바뀜) → 본문에서 체크 해제(직전 전송과 같은 상태)가 전송되지 않았다.
+ const sent: number[] = []; const sync = createLatestSync<number>(async value => { sent.push(value); }, () => {});
+ await sync(0); sync.reset(); await sync(0); assert.deepEqual(sent, [0, 0]);
+});

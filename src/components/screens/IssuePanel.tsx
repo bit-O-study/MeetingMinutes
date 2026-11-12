@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import type { issues } from "@/lib/db/schema";
 import { resolveRawIssue, saveIssue } from "@/lib/actions/issues";
-import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@/lib/issue-input";
+import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@/lib/issue-labels";
 
 type Issue = typeof issues.$inferSelect;
 // 색 띠·칩 — 클래스 이름은 Tailwind 가 찾을 수 있게 글자 그대로 적는다.

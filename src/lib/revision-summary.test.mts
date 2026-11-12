@@ -111,3 +111,23 @@ test("추가와 수정이 함께 일어나면 둘 다 적는다", () => {
   const after = sectionsFromDoc(doc(h("배운 것"), p("고침"), h("다음 회차"), p("6장")));
   assert.equal(summarizeChange(before, after), "다음 회차 추가 · 배운 것 수정");
 });
+
+test("같은 제목 구획이 둘이어도 앞 구획 수정을 놓치지 않는다", () => {
+  // 회귀: 제목으로만 구분해서 뒤 구획이 앞 구획을 덮었고, 앞을 고쳐도 이력이 남지 않았다.
+  const before = sectionsFromDoc(doc(h("결정 사항"), p("A안"), h("결정 사항"), p("B안")));
+  const after = sectionsFromDoc(doc(h("결정 사항"), p("A안 수정"), h("결정 사항"), p("B안")));
+  assert.equal(summarizeChange(before, after), "결정 사항 수정");
+});
+
+test("같은 제목 구획 하나가 사라지면 삭제로 잡는다", () => {
+  const before = sectionsFromDoc(doc(h("메모"), p("1"), h("메모"), p("2")));
+  const after = sectionsFromDoc(doc(h("메모"), p("1")));
+  assert.equal(summarizeChange(before, after), "메모 삭제");
+});
+
+test("서식 경계에서 단어를 쪼개지 않는다", () => {
+  const s = sectionsFromDoc(doc(h("배운 것"), { type: "paragraph", content: [
+    { type: "text", text: "회의" }, { type: "text", marks: [{ type: "bold" }], text: "록" },
+  ] }));
+  assert.equal(s[0].text, "회의록");
+});

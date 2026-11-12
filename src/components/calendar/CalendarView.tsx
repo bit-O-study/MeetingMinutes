@@ -112,7 +112,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
             const result = await completePlannerItem({ id: entry.source.id, version: entry.source.version }, done);
             if (!result.ok) setError(result.error);
           } else if (entry.source.type === "task") {
-            await toggleTask(entry.source.id);
+            await toggleTask(entry.source.id, done);
           }
           router.refresh();
         } catch {

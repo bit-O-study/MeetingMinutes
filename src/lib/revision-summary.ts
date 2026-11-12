@@ -8,6 +8,8 @@
  * 어느 구획의 내용이 달라졌는지 비교한다.
  */
 
+import { docText } from "@/lib/doc-text";
+
 export type Section = { heading: string; text: string; images?: string[] };
 
 /** 같은 제목의 구획도 서로 덮어쓰지 않도록 발생 순서를 포함한다. */
@@ -64,15 +66,13 @@ function imageSources(node: JsonNode): string[] {
 }
 
 function plainText(node: JsonNode): string {
-  if (node.type === "text") return node.text ?? "";
-  if (node.type === "image") return `[사진${node.attrs?.alt ? `: ${String(node.attrs.alt)}` : ""}]`;
-
-  const inner = (node.content ?? []).map(plainText).join(" ");
-  // 체크 상태가 바뀐 것도 변경으로 잡아야 한다. 글자만 보면 놓친다.
-  if (node.type === "taskItem") {
-    return `${node.attrs?.checked ? "[x]" : "[ ]"} ${inner}`;
-  }
-  return inner;
+  // 서식 경계에서 단어가 쪼개지지 않게 인라인은 붙여 쓴다(doc-text.ts).
+  return docText(node, (n, inner) => {
+    if (n.type === "image") return `[사진${n.attrs?.alt ? `: ${String(n.attrs.alt)}` : ""}]`;
+    // 체크 상태가 바뀐 것도 변경으로 잡아야 한다. 글자만 보면 놓친다.
+    if (n.type === "taskItem") return `${n.attrs?.checked ? "[x]" : "[ ]"} ${inner}`;
+    return inner;
+  });
 }
 
 /**

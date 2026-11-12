@@ -432,3 +432,11 @@ npm run dev:session 테스터
 - 신규 테이블 `project_folders`(version 낙관적 잠금, 소유자별 이름 고유)와 `project_folder_assignments`(소유자+스페이스 기본키, 폴더 삭제 시 cascade). 마이그레이션 `0012_project_folders`.
 - 이 마이그레이션은 번호를 0011로 만들어 운영 DB에 먼저 적용했다가 원격의 `0011_calendar_meetings`와 겹쳐 0012로 옮겼다. SQL 내용과 해시, 저널의 `when`(1794454291320)을 그대로 두었으므로 이미 적용된 DB에서 다시 실행되지 않는다.
 - 액션 5종은 `src/lib/actions/project-folders.ts`. 이동은 `requireSpaceMember` 검사 후 내 폴더인지 확인한다.
+
+### 2026-11-12 로컬 미커밋 작업 병합 (보안 강화 · 편집기 · 리디자인)
+
+- 0008 보안 강화(링크 토큰 해시 `token_hash`, `space_removals`, 로그인 시도 버킷, 토큰 저장소 등)는 DB에만 적용되고 코드가 원격에 없어서, 원격 코드로는 초대·공유 링크 생성이 `token_hash` NOT NULL 위반(23502)으로 실패하는 상태였다. 이 병합으로 코드가 DB와 맞는다.
+- 마이그레이션 저널에 0008·0009 항목을 되살리고, 스냅샷 체인(0010이 0007에서 갈라져 있던 것)을 0009 뒤로 이어 붙였다. 최신 스냅샷(0012)은 전체 스키마를 담는다. SQL은 바꾸지 않았다. `drizzle-kit generate`는 "No schema changes".
+- 편집기: 체크박스 기준본 비교 동기화(`syncNoteTasks(noteId, items, previous)`, `toggleTask(id, done)`), 템플릿 시드, 코드블록 Tab, 이력·공유 패널 지연 로딩과 모바일 시트, 공동 편집 신원을 세션으로 고정(room/route), 프로토콜 가드·영속화.
+- 리디자인 CSS(`workspace.css`)와 셸·노트 헤더 클래스. 플래너·캘린더·자료실·이력 패널·사진 업로드는 원격 최신 버전을 유지했다.
+- 이미 적용이 끝난 일회성 스크립트(apply-*, inspect-*)와 점검 문서는 버렸다.

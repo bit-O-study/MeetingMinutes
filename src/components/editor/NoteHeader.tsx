@@ -32,14 +32,23 @@ export function NoteHeader({
   const [status, setStatus] = useState(initialStatus);
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
   const menuRef = useRef<HTMLDetailsElement>(null);
 
+  /**
+   * 화면을 먼저 바꾸고 저장한다. 실패하면 되돌리고 알린다 —
+   * 예전에는 실패를 삼켜서, 바뀐 줄 알았던 제목·상태가 새로고침하면 돌아와 있었다.
+   */
   function commitTitle(next: string) {
     const trimmed = next.trim();
     setEditing(false);
     if (!trimmed || trimmed === title) return;
+    const previous = title;
     setTitle(trimmed);
-    startTransition(() => void renameNote(noteId, trimmed));
+    startTransition(async () => {
+      try { await renameNote(noteId, trimmed); setError(""); }
+      catch { setTitle(previous); setError("제목을 바꾸지 못했습니다. 다시 시도하세요."); }
+    });
   }
 
   /**
@@ -48,13 +57,17 @@ export function NoteHeader({
    * 확인을 묻지 않는다.
    */
   function toggleStatus() {
+    const previous = status;
     const next: NoteStatus = status === "tidied" ? "draft" : "tidied";
     setStatus(next);
-    startTransition(() => void setNoteStatus(noteId, next));
+    startTransition(async () => {
+      try { await setNoteStatus(noteId, next); setError(""); }
+      catch { setStatus(previous); setError("상태를 바꾸지 못했습니다. 다시 시도하세요."); }
+    });
   }
 
   return (
-    <header className="grid flex-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 border-b border-line bg-surface px-4 py-3 md:px-6">
+    <header className="note-heading flex min-w-0 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-4 py-3 md:px-6">
       <Link
         href={`/s/${spaceId}`}
         className="min-w-0 truncate text-xs font-semibold text-ink-3 transition-colors hover:text-accent"
@@ -79,14 +92,14 @@ export function NoteHeader({
               e.currentTarget.blur();
             }
           }}
-          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 text-lg font-bold tracking-tight text-ink ring-2 ring-accent outline-none"
+          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 text-xl font-semibold tracking-tight text-ink ring-2 ring-accent outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={() => setEditing(true)}
           title="클릭해서 제목 수정"
-          className="min-w-0 max-w-full truncate rounded-xl text-left text-lg font-bold tracking-tight text-ink transition-colors hover:bg-surface-2"
+          className="min-w-0 max-w-full truncate rounded-xl px-1 text-left text-xl font-semibold tracking-tight text-ink transition-colors hover:bg-surface-2"
         >
           {title}
         </button>
@@ -112,12 +125,16 @@ export function NoteHeader({
           <TrashAction noteId={noteId} taskCount={taskCount} pending={pending} />
         </div>
       </details>
+      {error && <p role="alert" className="w-full text-xs font-semibold text-warn">{error}</p>}
     </header>
   );
 }
 
 /**
- * 휴지통으로 보내기.
+ * 노트 삭제.
+ *
+ * 휴지통 화면·복원·30일 뒤 정리가 아직 없다. "휴지통"이라고 쓰면 되살릴 수 있다고 믿게 되므로
+ * 복구할 수 없다고 그대로 알린다(복원 화면을 만들면 문구를 되돌린다).
  *
  * 두 단계로 나눈다. 이 노트의 할 일이 목록에서 같이 사라지기 때문에
  * 한 번에 지워지면 곤란하다. 몇 개가 딸려 가는지 숫자로 알려 준다.
@@ -142,7 +159,7 @@ function TrashAction({
         className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-ink-2 transition-colors hover:bg-accent-soft hover:text-accent"
       >
         <Trash2 className="size-3.5" />
-        휴지통으로 보내기
+        노트 삭제
       </button>
     );
   }
@@ -150,7 +167,7 @@ function TrashAction({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-xs leading-relaxed text-ink-2">
-        이 노트를 휴지통으로 보냅니다.
+        이 노트를 삭제합니다. <b className="text-ink">복구할 수 없습니다.</b>
         {taskCount > 0 && (
           <>
             {" "}
@@ -169,10 +186,10 @@ function TrashAction({
         <button
           type="button"
           disabled={pending || busy}
-          onClick={() => startTransition(() => void trashNote(noteId))}
+          onClick={() => startTransition(async () => { await trashNote(noteId); })}
           className="flex-1 rounded bg-accent px-2 py-1 text-xs text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
         >
-          보내기
+          삭제(복구 불가)
         </button>
       </div>
     </div>

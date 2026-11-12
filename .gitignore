@@ -58,3 +58,6 @@ next-env.d.ts
 /android/local.properties
 /android/**/build/
 /android/*.jks
+
+# 영구 업로드·검증 파일은 소스에 포함하지 않는다.
+/.data/

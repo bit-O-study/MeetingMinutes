@@ -3,7 +3,7 @@ import { ProjectChat } from "@/components/screens/ProjectChat";
 import { IssuePanel } from "@/components/screens/IssuePanel";
 import { listProjectMessages } from "@/lib/actions/project-chat";
 import { listIssues } from "@/lib/actions/issues";
-import { ISSUE_STATUSES } from "@/lib/issue-input";
+import { ISSUE_STATUSES } from "@/lib/issue-labels";
 /**
  * S-02 스페이스 · CODEX
  * 스페이스 권한을 먼저 확인하고 선택한 탭만 조회한다.
@@ -67,34 +67,34 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   // 재디자인(2026-10-14): 프로젝트 색 머리글 + 붙어 있는 밑줄 탭. 화면 전체를 project-* 로 감싸
   // 버튼·탭·내 말풍선·체크가 그 프로젝트 색을 따른다. 설정은 머리글이 아니라 멤버·설정 탭으로 옮겼다.
   return (
-    <div className={cn("mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-5 md:px-6 md:py-7", PROJECT_SCOPE_CLASS[color])}>
-      <header className="relative overflow-hidden rounded-3xl bg-accent p-5 text-on-accent shadow-float">
-        <div aria-hidden="true" className="pointer-events-none absolute -top-12 -right-10 size-40 rounded-full bg-white/10" />
+    <div className={cn("workspace-page project-page", PROJECT_SCOPE_CLASS[color])}>
+      <header className="project-heading">
         <div className="relative flex items-center gap-3">
-          <ProjectIcon spaceId={spaceId} name={space.name} size="lg" className="bg-white/20" />
+          <ProjectIcon spaceId={spaceId} name={space.name} size="lg"  />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-black tracking-tight md:text-2xl">{space.name}</h1>
+            <h1 className="break-words text-xl font-semibold tracking-tight md:text-2xl">{space.name}</h1>
             <p className="mt-0.5 text-[13px] opacity-90">{kindLabels[space.kind]} · 멤버 {members.length}명</p>
           </div>
           <div className="hidden sm:block"><AvatarStack people={members} /></div>
         </div>
         <div className="relative mt-4 flex flex-wrap gap-2">
-          <Link href={"/s/" + spaceId + "/new"} className="press inline-flex h-10 items-center gap-1.5 rounded-2xl bg-white px-4 text-sm font-extrabold text-accent">
+          <Link href={"/s/" + spaceId + "/new"} className="press inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-medium text-on-accent">
             <Plus className="size-4" />새 노트
           </Link>
+          <Link href={"/s/" + spaceId + "/files"} className="press inline-flex h-10 items-center rounded-xl border border-line bg-surface px-4 text-sm font-medium text-ink-2">배포 파일</Link>
           {role === "owner" && (
-            <Link href={"/s/" + spaceId + "?tab=members"} className="press inline-flex h-10 items-center gap-1.5 rounded-2xl bg-white/15 px-4 text-sm font-bold">
+            <Link href={"/s/" + spaceId + "?tab=members"} className="press inline-flex h-10 items-center gap-1.5 rounded-xl border border-line bg-surface px-4 text-sm font-medium text-ink-2">
               <Settings className="size-4" />멤버 초대·설정
             </Link>
           )}
         </div>
       </header>
 
-      <nav aria-label="프로젝트 메뉴" className="sticky top-[calc(var(--safe-top)+45px)] z-10 -mx-4 flex gap-1 overflow-x-auto border-b border-line bg-ground/95 px-4 backdrop-blur md:-mx-6 md:px-6">
+      <nav aria-label="프로젝트 메뉴" className="section-tabs">
         {tabs.map((item) => (
           <Link key={item.value} href={"/s/" + spaceId + "?tab=" + item.value}
             aria-current={tab === item.value ? "page" : undefined}
-            className={cn("relative px-3 py-3 text-sm font-extrabold whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent",
+            className={cn("relative px-3 py-3 text-sm font-medium whitespace-nowrap focus-visible:outline-2 focus-visible:outline-accent",
               tab === item.value ? "text-ink after:absolute after:inset-x-2 after:-bottom-px after:h-[3px] after:rounded-full after:bg-accent" : "text-ink-3 hover:text-ink-2")}>{item.label}</Link>
         ))}
       </nav>
@@ -109,7 +109,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
           <ul className="flex flex-col gap-2">
             {noteRows.slice(0, 30).map((note) => (
               <li key={note.id}>
-                <Link href={"/s/" + spaceId + "/n/" + note.id} className="press flex flex-col gap-1.5 rounded-2xl bg-surface px-4 py-3.5 transition-shadow hover:shadow-float focus-visible:outline-2 focus-visible:outline-accent">
+                <Link href={"/s/" + spaceId + "/n/" + note.id} className="ui-card flex flex-col gap-1.5 px-4 py-4 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent">
                   <span className="flex items-center gap-2">
                     <span className="min-w-0 flex-1 truncate text-[15px] font-extrabold text-ink">{note.title}</span>
                     {questionCounts[note.id] > 0 && <Badge tone="warn">질문 {questionCounts[note.id]}</Badge>}

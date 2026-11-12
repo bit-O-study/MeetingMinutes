@@ -1,11 +1,13 @@
 "use client";
 import NextLink, { useLinkStatus } from "next/link";
 import type { ComponentProps } from "react";
+import { LogoMark } from "./ui/Logo";
 import styles from "./PendingLink.module.css";
 function Progress() {
   const { pending } = useLinkStatus();
   if (!pending) return null;
-  return <span role="status" className={`${styles.delayed} fixed inset-x-0 top-0 z-[100] flex justify-center bg-indigo-600 px-3 py-2 text-sm font-bold text-white shadow-lg`}><span aria-hidden="true" className="mr-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white motion-reduce:animate-none" />불러오는 중…</span>;
+  // 문구 대신 로고. 화면 리더에는 aria-label 로만 알린다.
+  return <span role="status" aria-label="불러오는 중" className={`${styles.delayed} pointer-events-none fixed inset-0 z-[100] flex items-center justify-center`}><LogoMark size={56} className="animate-pulse drop-shadow-lg motion-reduce:animate-none" /></span>;
 }
 export default function PendingLink({ children, ...props }: ComponentProps<typeof NextLink>) {
   return <NextLink {...props}>{children}<Progress /></NextLink>;
