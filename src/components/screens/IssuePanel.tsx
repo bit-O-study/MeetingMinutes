@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import type { issues } from "@/lib/db/schema";
 import { resolveRawIssue, saveIssue } from "@/lib/actions/issues";
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@/lib/issue-labels";
@@ -35,6 +35,14 @@ function IssueForm({ spaceId, members, issue }: { spaceId: string; members: Memb
 export function IssuePanel({ spaceId, members, rows }: { spaceId: string; members: Member[]; rows: Issue[] }) {
   const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  // 좁은 화면의 패널은 목록 위에 있으므로 선택한 뒤 실제 편집 위치로 이동한다.
+  useEffect(() => {
+    if ((selectedId || creating) && window.matchMedia("(max-width: 767px)").matches) {
+      panelRef.current?.scrollIntoView({ block: "start" });
+      panelRef.current?.focus({ preventScroll: true });
+    }
+  }, [selectedId, creating]);
   useEffect(() => {
     const selectLinked = () => {
       const id = new URLSearchParams(window.location.search).get("issue") ?? window.location.hash.replace(/^#issue-/, "");
@@ -50,6 +58,7 @@ export function IssuePanel({ spaceId, members, rows }: { spaceId: string; member
     <ul className={styles.list}>{rows.map(issue => <li key={issue.id} id={`issue-${issue.id}`} className={`${styles.row} ${STRIPE[issue.status === "raw" ? "raw" : issue.priority]}`}>
       <button type="button" aria-pressed={selectedId === issue.id} aria-controls="issue-detail" className={selectedId === issue.id ? styles.selected : ""} onClick={() => { setCreating(false); setSelectedId(issue.id); }}>
         <span className={styles.title}>{issue.title}</span>
+        {issue.body && <span className="mt-2 block line-clamp-2 whitespace-pre-wrap break-words text-xs leading-6 text-ink-2">{issue.body}</span>}
         <span className={styles.meta}>
           <span className={`rounded-full px-2 py-1 ${STATUS_CHIP[issue.status]}`}>{ISSUE_STATUSES[issue.status]}</span>
           {issue.status !== "raw" && <span className={`rounded-full px-2 py-1 ${PRIORITY_CHIP[issue.priority]}`}>우선순위 {ISSUE_PRIORITIES[issue.priority]}</span>}
@@ -57,7 +66,7 @@ export function IssuePanel({ spaceId, members, rows }: { spaceId: string; member
         </span>
       </button>
     </li>)}{!rows.length && <li className={styles.empty}>표시할 이슈가 없어요.</li>}</ul>
-    <aside id="issue-detail" className={styles.panel} aria-label="이슈 편집 · 원문 보기">
+    <aside ref={panelRef} tabIndex={-1} id="issue-detail" className={styles.panel} aria-label="이슈 편집 · 원문 보기">
       <div className={styles.panelHead}><h2>{creating ? "새 이슈" : "이슈 편집 · 원문 보기"}</h2>{(selected || creating) && <button type="button" onClick={() => { setSelectedId(null); setCreating(false); }}>닫기</button>}</div>
       {creating ? <IssueForm spaceId={spaceId} members={members} /> : selected ? <>
         <section className={styles.source}><h3>채팅 원문</h3><p>{selected.originalBody ?? (selected.status === "raw" ? selected.body : "연결된 채팅 원문이 없습니다.")}</p></section>

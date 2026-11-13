@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useSyncExternalStore } from "react";
-import { X } from "lucide-react";
+import { useId, useRef, useSyncExternalStore } from "react";
+import { FolderClosed, X } from "lucide-react";
+import Link from "@/components/PendingLink";
 import { Avatar } from "@/components/ui/Avatar";
 import styles from "./Navigation.module.css";
 
@@ -21,6 +22,7 @@ export function AccountMenu({ user, signOutAction, showName = false }: {
   showName?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "system");
   function changeTheme(value: string) {
     document.documentElement.setAttribute("data-theme", value);
@@ -29,9 +31,10 @@ export function AccountMenu({ user, signOutAction, showName = false }: {
   }
   return <>
     <button type="button" aria-label="내 계정" aria-haspopup="dialog" className={styles.account} onClick={() => dialog.current?.showModal()}><Avatar name={user.name} image={user.image} seed={user.id} size={30} />{showName && <span className="min-w-0 truncate text-xs font-semibold">{user.name ?? "나"}</span>}</button>
-    <dialog ref={dialog} className={styles.dialog} aria-labelledby="account-title" onClick={event => { if (event.target === event.currentTarget) { const rect=event.currentTarget.getBoundingClientRect(); if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom) dialog.current?.close(); } }}>
-      <div className={styles.dialogHeader}><h2 id="account-title">내 계정</h2><button type="button" className={styles.close} aria-label="닫기" onClick={() => dialog.current?.close()}><X size={18} /></button></div>
+    <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId} onClick={event => { if (event.target === event.currentTarget) { const rect=event.currentTarget.getBoundingClientRect(); if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom) dialog.current?.close(); } }}>
+      <div className={styles.dialogHeader}><h2 id={titleId}>내 계정</h2><button type="button" className={styles.close} aria-label="닫기" onClick={() => dialog.current?.close()}><X size={18} /></button></div>
       <div className="flex items-center gap-3"><Avatar name={user.name} image={user.image} seed={user.id} size={40} /><div className="min-w-0"><p className="truncate text-base font-semibold">{user.name ?? "나"}</p><p className="mt-1 text-xs text-ink-2">나의 작업 공간</p></div></div>
+      <Link href="/projects" onClick={() => dialog.current?.close()} className="mt-5 flex min-h-11 items-center gap-2 rounded-xl border border-line px-3 text-sm text-ink"><FolderClosed size={18} />프로젝트 모아보기</Link>
       <fieldset className="mt-6"><legend className="mb-2 text-xs text-ink-2">화면 모드</legend><div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-2 p-1">{([["system", "시스템"], ["light", "라이트"], ["dark", "다크"]] as const).map(([value, label]) => <button type="button" key={value} aria-pressed={theme === value} onClick={() => changeTheme(value)} className={`min-h-10 rounded-lg text-xs ${theme === value ? "bg-surface text-ink shadow-sm" : "text-ink-2"}`}>{label}</button>)}</div></fieldset>
       <form action={signOutAction}><button type="submit" className="mt-6 min-h-11 w-full rounded-xl bg-surface-2 text-sm text-ink">로그아웃</button></form>
     </dialog>
