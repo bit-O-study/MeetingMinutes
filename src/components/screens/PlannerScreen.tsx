@@ -10,12 +10,20 @@ import { PlannerEditor } from "./PlannerEditor";
 import s from "./Planner.module.css";
 
 type Props = { view: "calendar" | "tasks"; items: PlannerItem[]; summary: PlannerSummary; today: string; month: string; status?: "open" | "done" | "all"; page?: number; total?: number; projectTasks?: ReactNode; linkTargets?: LinkTarget[]; /** 할 일이 딸린 일정·모임의 제목(id → 제목) */ linkTitles?: Record<string, string> };
-export function PlannerScreen({ view, items, summary, today, month, status = "open", page = 1, total = 0, projectTasks, linkTargets = [], linkTitles = {} }: Props) {
+export function PlannerScreen({ view, items: serverItems, summary: serverSummary, today, month, status = "open", page = 1, total: serverTotal = 0, projectTasks, linkTargets = [], linkTitles = {} }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState(today.startsWith(month) ? today : month + "-01");
   const [editor, setEditor] = useState<{ item: PlannerItem | null; kind: "event" | "task" } | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [confirmed, setConfirmed] = useState<Record<string, PlannerItem>>({});
+  // 서버가 확정한 완료 결과는 재조회가 늦어도 즉시 표시하고, 더 최신 버전은 서버 값을 따른다.
+  const resolved = serverItems.map(item => confirmed[item.id]?.version > item.version ? confirmed[item.id] : item);
+  const items = resolved.filter(item => view !== "tasks" || status === "all" || item.done === (status === "done"));
+  const total = serverTotal + items.length - serverItems.length;
+  const doneDelta = resolved.reduce((sum, item, index) => sum + Number(item.done) - Number(serverItems[index].done), 0);
+  const summary = { ...serverSummary, open: serverSummary.open - doneDelta, done: serverSummary.done + doneDelta,
+    today: serverSummary.today + resolved.reduce((sum, item, index) => sum + (occursOn(item, today) ? Number(serverItems[index].done) - Number(item.done) : 0), 0) };
   const close = useCallback(() => setEditor(null), []);
   const date = selected;
   const range = monthWindow(month);
@@ -27,7 +35,7 @@ export function PlannerScreen({ view, items, summary, today, month, status = "op
   const tone = (item: PlannerItem) => `${item.kind === "event" ? s.personal : item.mode === "range" ? s.range : ""} ${item.done ? s.done : ""}`;
   function complete(item: PlannerItem, done: boolean) {
     setError(""); startTransition(async () => {
-      try { const result = await completePlannerItem({ id: item.id, version: item.version }, done); if (!result.ok) setError(result.error); else router.refresh(); }
+      try { const result = await completePlannerItem({ id: item.id, version: item.version }, done); if (!result.ok) setError(result.error); else { if (result.item) { const updated = result.item; setConfirmed(current => ({ ...current, [updated.id]: updated })); } router.refresh(); } }
       catch { setError("반영하지 못했습니다. 연결을 확인하고 다시 시도해 주세요."); }
     });
   }

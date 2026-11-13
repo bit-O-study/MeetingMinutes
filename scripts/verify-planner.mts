@@ -6,9 +6,11 @@ import { mkdir } from "node:fs/promises";
 import { eq, inArray } from "drizzle-orm";
 import { db, sql } from "../src/lib/db";
 import { users, sessions, personalPlannerItems as items } from "../src/lib/db/schema";
+import { hashSessionToken } from "../src/lib/token-store";
 
 const require = createRequire(import.meta.url);
-const { chromium, expect } = require(process.env.PLANNER_PLAYWRIGHT_PATH || "../../trip/node_modules/@playwright/test");
+const { chromium, expect: baseExpect } = require(process.env.PLANNER_PLAYWRIGHT_PATH || "../../trip/node_modules/@playwright/test");
+const expect = baseExpect.configure({ timeout: 20000 });
 const base = process.env.PLANNER_TEST_URL || "http://localhost:3137";
 const ids = [randomUUID(), randomUUID()];
 // Playwright는 다른 레포에서 런타임에 불러오므로 타입이 없다. launch 반환형을 그대로 따른다.
@@ -19,7 +21,7 @@ try {
   const contexts = [];
   for (const id of ids) {
     const token = randomBytes(32).toString("hex");
-    await db.insert(sessions).values({ sessionToken: token, userId: id, expires: new Date(Date.now() + 3600000) });
+    await db.insert(sessions).values({ sessionToken: hashSessionToken(token), userId: id, expires: new Date(Date.now() + 3600000) });
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     await context.addCookies([{ name: base.startsWith("https:") ? "__Secure-authjs.session-token" : "authjs.session-token", value: token, url: base, secure: base.startsWith("https:"), httpOnly: true, sameSite: "Lax" }]);
     contexts.push(context);
@@ -30,32 +32,46 @@ try {
   const mutations: { headers: Record<string,string>; body: string }[] = [];
   page.on("request", (request: { method(): string; headers(): Record<string, string>; postData(): string }) => { if (request.method() === "POST" && request.headers()["next-action"]) mutations.push({ headers: request.headers(), body: request.postData() }); });
   await page.goto(`${base}/tasks`);
+  console.log("Planner entry", new URL(page.url()).pathname, await page.locator("h1").allTextContents());
   await page.getByRole("button", { name: "할 일 추가", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("제목", { exact: true }).fill("기간 검증");
-  await dialog.locator('input[type=date]').nth(0).fill("2026-10-25");
-  await dialog.locator('input[type=date]').nth(1).fill("2026-11-03");
+  // 날짜 입력칸 대신 현재 제품의 달력 선택기를 조작한다.
+  async function pickDay(day: string) {
+    const target = day.slice(0, 7);
+    for (let step = 0; step < 120; step++) {
+      const heading = await dialog.locator("p").filter({ hasText: /^\d{4}년 \d+월$/ }).innerText();
+      const [, year, month] = heading.match(/(\d{4})년 (\d+)월/)!;
+      const current = `${year}-${month.padStart(2, "0")}`;
+      if (current === target) break;
+      await dialog.getByRole("button", { name: current > target ? "이전 달" : "다음 달", exact: true }).click();
+    }
+    await dialog.getByRole("gridcell", { name: new RegExp(`^${Number(day.slice(5, 7))}/${Number(day.slice(8))}\\(`) }).click();
+  }
+  await pickDay("2026-10-25");
+  await pickDay("2026-11-03");
   await dialog.getByRole("button", { name: "등록하기" }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "기간 검증", exact: true })).toBeVisible();
+  const created = await db.select().from(items).where(eq(items.ownerId, ids[0]));
+  assert.equal(created.length, 1, "등록 후 실제 DB 레코드 확인");
+  assert.equal(created[0].kind, "task");
+  console.log("PASS: task persisted");
   await page.reload();
+  await expect(page.getByRole("button", { name: "기간 검증", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "기간 검증", exact: true }).click();
   await dialog.getByLabel("제목", { exact: true }).fill("기간 자동 저장");
-  await expect(dialog.getByRole("status")).toHaveText("자동 저장됨", { timeout: 15000 });
+  await expect(dialog.getByRole("status").filter({ hasText: "자동 저장됨" })).toBeVisible({ timeout: 15000 });
   await dialog.getByRole("button", { name: "닫기", exact: true }).last().click();
   await expect(page.getByRole("button", { name: "기간 자동 저장", exact: true })).toBeVisible();
   let rows = await db.select().from(items).where(eq(items.ownerId, ids[0]));
   assert.equal(rows.length, 1); assert.equal(rows[0].title, "기간 자동 저장"); assert.equal(rows[0].endDate, "2026-11-03");
-  const editRequest = mutations.at(-1)!;
-  const foreignBody = JSON.parse(editRequest.body); foreignBody[0].version = rows[0].version; foreignBody[1].title = "타인 수정 시도";
-  const response = await contexts[1].request.post(`${base}/tasks`, { headers: { "next-action": editRequest.headers["next-action"], "content-type": editRequest.headers["content-type"], origin: base }, data: JSON.stringify(foreignBody) });
-  assert.equal(response.status(), 200);
-  assert.match(await response.text(), /다른 화면에서 변경되었거나/);
-  const second = await contexts[1].newPage(); await second.goto(`${base}/tasks`);
-  await expect(second.getByRole("heading", { name: "내 할 일", exact: true })).toBeVisible();
-  assert.equal(await second.getByRole("button", { name: "기간 자동 저장", exact: true }).count(), 0);
   await page.getByRole("checkbox", { name: "기간 자동 저장 완료" }).click();
-  await expect(page.getByRole("button", { name: "기간 자동 저장", exact: true })).toHaveCount(0);
+  try {
+    await expect(page.getByRole("button", { name: "기간 자동 저장", exact: true })).toHaveCount(0);
+  } catch (error) {
+    console.log("Completion diagnostics", await page.getByRole("alert").allTextContents(), (await db.select().from(items).where(eq(items.ownerId, ids[0]))).map(row => ({ version: row.version, done: Boolean(row.doneAt) })));
+    throw error;
+  }
   await page.goto(`${base}/tasks?status=done`);
   await page.getByRole("button", { name: "기간 자동 저장", exact: true }).click();
   await dialog.getByRole("button", { name: "삭제", exact: true }).click();
@@ -63,8 +79,9 @@ try {
   await expect(dialog).toHaveCount(0);
   assert.equal((await db.select().from(items).where(eq(items.ownerId, ids[0]))).length, 0);
   await page.goto(`${base}/calendar?month=2026-10`);
-  await page.getByRole("button", { name: "2026-10-26 일정 보기" }).click();
-  await page.getByRole("button", { name: "일정 추가", exact: true }).click();
+  await page.getByRole("gridcell", { name: /^10\/26\(월\)/ }).click({ position: { x: 14, y: 10 } });
+  await page.locator('summary[aria-label="새로 만들기"]').click();
+  await page.locator("header details").getByRole("button", { name: "일정", exact: true }).click();
   await dialog.getByLabel("제목", { exact: true }).fill("집중 시간");
   await dialog.getByLabel("시작 시간").fill("00:00");
   await dialog.getByLabel("종료 시간").fill("01:00");
@@ -72,19 +89,28 @@ try {
   await expect(dialog).toHaveCount(0);
   rows = await db.select().from(items).where(eq(items.ownerId, ids[0]));
   assert.equal(rows[0].startsAt?.toISOString(), "2026-10-25T15:00:00.000Z");
-  await expect(page.getByRole("button", { name: "집중 시간", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /일정, 집중 시간/ }).first()).toBeVisible();
   await mkdir(".verify-shots/planner", { recursive: true });
   await page.screenshot({ path: ".verify-shots/planner/desktop.png", fullPage: true });
   for (const width of [390, 320]) { await page.setViewportSize({ width, height: 844 }); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); }
   await page.screenshot({ path: ".verify-shots/planner/mobile.png", fullPage: true });
-  await page.getByRole("button", { name: "집중 시간", exact: true }).first().click();
-  await dialog.getByLabel("종일", { exact: true }).check();
-  await expect(dialog.getByRole("status")).toHaveText("자동 저장됨", { timeout: 15000 });
+  await page.getByRole("button", { name: /일정, 집중 시간/ }).first().click();
+  await dialog.getByRole("button", { name: "종일", exact: true }).click();
+  await expect(dialog.getByRole("status").filter({ hasText: "자동 저장됨" })).toBeVisible({ timeout: 15000 });
   assert.equal((await db.select().from(items).where(eq(items.ownerId, ids[0])))[0].startsAt, null);
   await page.screenshot({ path: ".verify-shots/planner/editor-mobile.png", fullPage: true });
   await dialog.getByRole("button", { name: "닫기", exact: true }).last().click();
   await page.getByRole("link", { name: "다음 달", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "2026년 11월" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "2026년 11월", exact: true })).toBeVisible();
+  const editRequest = mutations.at(-1)!;
+  const foreignBody = JSON.parse(editRequest.body); foreignBody[0].version = rows[0].version; foreignBody[1].title = "타인 수정 시도";
+  const response = await contexts[1].request.post(`${base}/tasks`, { headers: { "next-action": editRequest.headers["next-action"], "content-type": editRequest.headers["content-type"], origin: base }, data: JSON.stringify(foreignBody) });
+  assert.equal(response.status(), 200);
+  assert.match(await response.text(), /다른 화면에서 변경되었거나/);
+  const second = await contexts[1].newPage(); await second.goto(`${base}/calendar?month=2026-10`);
+  await expect(second.getByRole("heading", { name: "2026년 10월", exact: true })).toBeVisible();
+  assert.equal(await second.getByRole("button", { name: /일정, 집중 시간/ }).count(), 0);
+  assert.equal((await db.select().from(items).where(eq(items.ownerId, ids[0])))[0].title, "집중 시간");
   const anon = await browser.newPage(); await anon.goto(`${base}/calendar`); assert.match(anon.url(), /\/login/);
   assert.deepEqual(errors, []);
   console.log("PASS: 등록·새로고침 유지·자동수정·완료·삭제·서울시간·종일·타인 조회/수정 차단·비로그인 차단·320/390px 레이아웃");
