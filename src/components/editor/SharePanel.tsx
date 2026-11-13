@@ -84,14 +84,14 @@ export function SharePanel({ noteId, onClose }: { noteId: string; onClose: () =>
             할 일 체크와 변경 이력은 보이지 않습니다.
           </p>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-mono text-[10px] text-ink-3">만료</span>
             {EXPIRY_CHOICES.map((choice) => (
               <button
                 key={choice.label}
                 type="button"
                 onClick={() => setExpiry(choice.days)}
-                className={`rounded border px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                className={`shrink-0 whitespace-nowrap rounded border px-2 py-0.5 font-mono text-[10px] transition-colors ${
                   expiry === choice.days
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line text-ink-2 hover:bg-surface-2"

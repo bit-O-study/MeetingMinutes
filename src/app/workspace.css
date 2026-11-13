@@ -4,7 +4,10 @@ html { scroll-padding-top: calc(var(--header-height) + 64px); scrollbar-gutter: 
 body { margin: 0; min-width: 280px; line-height: 1.6; }
 button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 :where(button, a, input, textarea, select, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-:where(button, input, textarea, select) { font: inherit; }
+/* 기본 글꼴만 상속하고 화면별 크기·굵기 유틸리티가 우선하도록 한다. */
+@layer base {
+  :where(button, input, textarea, select) { font: inherit; }
+}
 :where(button:not(:disabled), select:not(:disabled)) { cursor: pointer; }
 .app-shell { min-height: 100dvh; display: flex; flex-direction: column; }
 .app-body { display: flex; flex: 1; min-width: 0; align-items: stretch; }

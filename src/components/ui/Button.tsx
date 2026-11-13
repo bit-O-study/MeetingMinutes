@@ -20,7 +20,7 @@ export type ButtonVariant = keyof typeof VARIANTS;
 
 export function buttonClass(variant: ButtonVariant = "primary", size: keyof typeof SIZES = "md", className?: string) {
   return cn(
-    "ui-button inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap",
+    "ui-button inline-flex shrink-0 items-center justify-center gap-2 font-medium whitespace-nowrap [&>svg]:shrink-0",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45",
     VARIANTS[variant],
     SIZES[size],

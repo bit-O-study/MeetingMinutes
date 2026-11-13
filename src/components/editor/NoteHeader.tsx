@@ -113,7 +113,7 @@ export function NoteHeader({
       </div>
 
       {/* details를 쓰면 바깥 클릭으로 닫히는 동작과 키보드 접근을 브라우저가 처리한다. */}
-      <details ref={menuRef} className="relative justify-self-end">
+      <details ref={menuRef} className="relative shrink-0 justify-self-end">
         <summary
           aria-label="노트 메뉴"
           className="flex size-9 cursor-pointer list-none items-center justify-center rounded-xl text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink [&::-webkit-details-marker]:hidden"
@@ -121,7 +121,7 @@ export function NoteHeader({
           <MoreHorizontal className="size-4" />
         </summary>
 
-        <div className="absolute right-0 top-full z-10 mt-1 w-64 rounded-2xl bg-surface p-3 shadow-float">
+        <div className="absolute right-0 top-full z-10 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-surface p-3 shadow-float">
           <TrashAction noteId={noteId} taskCount={taskCount} pending={pending} />
         </div>
       </details>
@@ -179,7 +179,7 @@ function TrashAction({
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="flex-1 rounded border border-line px-2 py-1 text-xs text-ink-2 transition-colors hover:bg-surface-2"
+          className="min-h-9 shrink-0 whitespace-nowrap rounded border border-line px-3 py-1 text-xs text-ink-2 transition-colors hover:bg-surface-2"
         >
           취소
         </button>
@@ -187,7 +187,7 @@ function TrashAction({
           type="button"
           disabled={pending || busy}
           onClick={() => startTransition(async () => { await trashNote(noteId); })}
-          className="flex-1 rounded bg-accent px-2 py-1 text-xs text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="min-h-9 flex-1 whitespace-nowrap rounded bg-accent px-3 py-1 text-xs text-on-accent transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           삭제(복구 불가)
         </button>
