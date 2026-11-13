@@ -4,7 +4,7 @@
  */
 import Link from "@/components/PendingLink";
 import { and, asc, eq, inArray, isNull, isNotNull } from "drizzle-orm";
-import { Card, CardTitle, EmptyState, SectionHeading } from "@/components/ui/Panels";
+import { Card, CardTitle, EmptyState } from "@/components/ui/Panels";
 import { TaskRow } from "@/components/screens/TaskRow";
 import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
 import { assignedIssues } from "@/components/screens/assigned-issues";
@@ -55,7 +55,7 @@ export async function ProjectAssignments({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:px-6 md:py-8">
-      <SectionHeading>프로젝트에서 맡은 일</SectionHeading>
+      <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink">프로젝트에서 맡은 일</h2>
       <p className="text-sm text-ink-2">참여 중인 프로젝트에서 나에게 배정된 할 일과 이슈입니다. 공용 항목은 프로젝트에서 확인하세요.</p>
       <nav aria-label="할 일 상태" className="flex flex-wrap gap-2">
         {filters.map((filter) => (
