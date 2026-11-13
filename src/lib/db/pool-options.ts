@@ -9,7 +9,10 @@
  *   - `keep_alive` 를 짧게 잡아 죽은 소켓을 빨리 알아채며,
  *   - `connect_timeout` 으로 새 연결이 매달리지 않게 한다.
  */
-export function poolOptions(env: { NODE_ENV?: string; DATABASE_POOL_MAX?: string }) {
+export function poolOptions(env: { NODE_ENV?: string; DATABASE_POOL_MAX?: string; DATABASE_URL?: string }) {
+  // 서버 내부 PostgreSQL과 SSH 터널은 루프백으로만 접속한다. 외부 DB의 TLS 요구는 유지한다.
+  const host = env.DATABASE_URL ? new URL(env.DATABASE_URL).hostname : "";
+  const loopback = ["127.0.0.1", "localhost", "[::1]"].includes(host);
   return {
     max: env.NODE_ENV === "production" ? Number(env.DATABASE_POOL_MAX ?? 3) : 1,
     // 세션 모드의 슬롯을 오래 쥐고 있지 않도록 노는 연결은 돌려준다. 초 단위.
@@ -22,6 +25,6 @@ export function poolOptions(env: { NODE_ENV?: string; DATABASE_POOL_MAX?: string
     connect_timeout: 10,
     // Supavisor 풀러를 거치므로 prepared statement를 쓰지 않는다.
     prepare: false,
-    ssl: "require" as const,
+    ssl: loopback ? false as const : "require" as const,
   };
 }

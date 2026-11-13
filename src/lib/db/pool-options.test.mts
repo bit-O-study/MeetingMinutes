@@ -23,3 +23,12 @@ test("풀러 전제(prepared statement 끔·SSL 필수)는 그대로", () => {
   assert.equal(options.prepare, false);
   assert.equal(options.ssl, "require");
 });
+
+test("내부 DB와 SSH 터널의 루프백 접속만 TLS 없이 허용한다", () => {
+  for (const host of ["127.0.0.1", "localhost", "[::1]"]) {
+    assert.equal(poolOptions({ DATABASE_URL: `postgres://user:pass@${host}:5433/moa` }).ssl, false);
+  }
+  for (const host of ["db.example.com", "192.168.1.1", "localhost.example.com"]) {
+    assert.equal(poolOptions({ DATABASE_URL: `postgres://user:pass@${host}:5433/moa` }).ssl, "require");
+  }
+});

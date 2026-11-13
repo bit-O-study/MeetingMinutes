@@ -11,6 +11,11 @@ const incoming = parseEnv(process.env.MOA_RUNTIME_ENV || '');
 if (!incoming.DATABASE_URL || !incoming.AUTH_SECRET || incoming.MOA_STORAGE_WORKER !== '1') throw Error('Missing storage runtime secret');
 const previous = fs.existsSync(config) ? parseEnv(fs.readFileSync(config, 'utf8')) : {};
 const values = { ...previous, ...incoming };
+// 내부 DB 전환 후 오래된 배포 secret이 외부 풀러 주소를 다시 덮어쓰지 않게 한다.
+if (previous.DATABASE_TARGET === 'internal') {
+  values.DATABASE_URL = previous.DATABASE_URL;
+  values.DATABASE_TARGET = 'internal';
+}
 function serialize(values) {
   return Object.entries(values).map(([key, value]) => {
     const quote = ["'", '"', '`'].find(q => !value.includes(q));

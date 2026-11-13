@@ -6,7 +6,8 @@ const postgres=require('postgres');
 const root='C:/services/Bit-O/MeetingMinutes';
 if(process.env.GITHUB_REPOSITORY!=='bit-O-study/MeetingMinutes'||process.env.GITHUB_REF!=='refs/heads/main')throw Error('Only main can publish APK');
 const env=parseEnv(fs.readFileSync(path.join(root,'config/runtime.env'),'utf8'));
-const db=postgres(env.DATABASE_URL,{ssl:'require',prepare:false,max:1,connect_timeout:15});
+const loopback=['127.0.0.1','localhost','[::1]'].includes(new URL(env.DATABASE_URL).hostname);
+const db=postgres(env.DATABASE_URL,{ssl:loopback?false:'require',prepare:false,max:1,connect_timeout:15});
 (async()=>{
  const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'apk.json'),'utf8'));
  if(manifest.sha!==process.env.GITHUB_SHA||!/^moa-[\w.-]+\.apk$/.test(manifest.name))throw Error('APK release identity mismatch');
