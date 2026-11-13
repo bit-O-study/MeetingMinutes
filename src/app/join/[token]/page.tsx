@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/components/ui/Avatar";
-import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
+import { Card, EmptyState } from "@/components/ui/Panels";
+import { Logo } from "@/components/ui/Logo";
+import styles from "@/components/screens/Entry.module.css";
 import { ActionSubmit } from "@/components/screens/ActionSubmit";
 import { peekInvite, joinByInviteToken } from "@/lib/actions/spaces";
 import { auth } from "@/lib/auth";
@@ -30,9 +32,11 @@ export default async function JoinPage({ params, searchParams }: {
     await joinByInviteToken(token);
   }
 
-  return <main className="mx-auto w-full max-w-lg px-5 py-12">
-    <SectionHeading>스페이스 초대</SectionHeading>
-    <Card className="space-y-5 p-5">
+  return <main className={`${styles.invite} project-pink`}>
+    <Logo />
+    <div className={styles.orbits} aria-hidden="true"><i /><i /><i /></div>
+    <Card className={`${styles.inviteCard} space-y-5`}>
+      <p className="text-xs text-ink-2">함께 기록하는 공간에 초대받았어요</p>
       <h2 className="break-words text-2xl font-black tracking-tight text-ink">{invite.spaceName}</h2>
       <section aria-label="함께할 멤버" className="space-y-3">
         <h3 className="text-sm font-medium text-ink-2">함께할 멤버</h3>

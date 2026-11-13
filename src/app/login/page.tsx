@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LogoMark } from "@/components/ui/Logo";
+import { Logo } from "@/components/ui/Logo";
+import styles from "@/components/screens/Entry.module.css";
 
 import { auth } from "@/lib/auth";
 import { passwordSignIn, passwordSignUp } from "@/lib/actions/password-auth";
@@ -27,12 +28,16 @@ export default async function LoginPage({ searchParams }: {
   const switchUrl = `/login?${new URLSearchParams({ mode: registering ? "login" : "register", returnTo })}`;
   const inputClass = "w-full rounded-2xl ring-1 ring-inset ring-line bg-ground px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent";
 
-  return <main className="flex flex-1 items-center justify-center px-5 py-12">
-    <section className="flex w-full max-w-sm flex-col gap-5 rounded-3xl bg-surface px-7 py-9 shadow-float">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <LogoMark size={52} />
-        <h1 className="text-[28px] leading-none font-black tracking-[-0.04em] text-ink">moa</h1>
-        <p className="text-sm leading-relaxed text-ink-2">{registering ? "가입하고 팀의 대화·노트·이슈를 모아 보세요." : <>팀의 대화·노트·이슈를<br />한곳에 모아 같이 정리해요.</>}</p>
+  return <main className={styles.login}>
+    <section className={styles.story} aria-label="모아 소개">
+      <Logo />
+      <div className={styles.storyCopy}><h2>함께 쓰면,<br />회의가<br />기록이 됩니다.</h2><p>스터디 회의록과 인수인계 메모를 여럿이 동시에 쓰고,<br />할 일까지 한곳에서 챙겨요. 저장 버튼은 없어요.</p></div>
+      <div className={styles.orbits} aria-hidden="true"><i /><i /><i /></div>
+    </section>
+    <div className={styles.formSide}><section className={styles.form}>
+      <div className="space-y-3">
+        <h1>{registering ? "함께 기록을 시작해요" : "다시 만나서 반가워요"}</h1>
+        <p className="text-sm leading-relaxed text-ink-2">{registering ? "계정을 만들고 팀의 기록을 모아 보세요." : "계정으로 로그인하세요."}</p>
       </div>
       {returnTo !== "/" && <p className="text-sm text-ink-2">로그인 후 초대받은 스페이스 참여를 이어갑니다.</p>}
       {message && <p role="alert" className="rounded-2xl ring-1 ring-inset ring-line bg-ground px-3 py-2 text-sm text-warn">{message}</p>}
@@ -62,6 +67,6 @@ export default async function LoginPage({ searchParams }: {
         {registering ? "이미 계정이 있나요? " : "처음 방문하셨나요? "}
         <Link href={switchUrl} className="text-accent underline">{registering ? "로그인" : "회원가입"}</Link>
       </p>
-    </section>
+    </section></div>
   </main>;
 }

@@ -67,16 +67,16 @@ export function NoteHeader({
   }
 
   return (
-    <header className="note-heading flex min-w-0 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-4 py-3 md:px-6">
+    <header className="note-heading flex min-w-0 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-ground px-4 py-3 md:px-8">
       <Link
         href={`/s/${spaceId}`}
         className="min-w-0 truncate text-xs font-semibold text-ink-3 transition-colors hover:text-accent"
       >
         ‹ {spaceName}
       </Link>
-      <div data-testid="note-connection" className="justify-self-end">{connection}</div>
+      <div data-testid="note-connection" className="ml-auto">{connection}</div>
 
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <div className="order-2 flex w-full min-w-0 flex-wrap items-center gap-3 pb-3 pt-5">
       {editing ? (
         <input
           autoFocus
@@ -99,7 +99,7 @@ export function NoteHeader({
           type="button"
           onClick={() => setEditing(true)}
           title="클릭해서 제목 수정"
-          className="min-w-0 max-w-full truncate rounded-xl px-1 text-left text-xl font-semibold tracking-tight text-ink transition-colors hover:bg-surface-2"
+          className="min-w-0 max-w-full break-words rounded-xl px-1 text-left font-serif text-2xl font-bold tracking-tight text-ink transition-colors hover:bg-surface-2 md:text-3xl"
         >
           {title}
         </button>

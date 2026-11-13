@@ -1,5 +1,6 @@
 import { MeetingsTab } from "@/components/meetings/MeetingsTab";
 import { ProjectChat } from "@/components/screens/ProjectChat";
+import { ChatOverview } from "@/components/screens/ChatOverview";
 import { IssuePanel } from "@/components/screens/IssuePanel";
 import { listProjectMessages } from "@/lib/actions/project-chat";
 import { listIssues } from "@/lib/actions/issues";
@@ -100,7 +101,7 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
       </nav>
 
       {tab === "meetings" && <MeetingsTab spaceId={spaceId} query={query} />}
-      {tab === "chat" && chatList && <ProjectChat spaceId={spaceId} userId={userId} members={members} rows={chatList.rows} total={chatList.total} page={chatList.page} />}
+      {tab === "chat" && chatList && <div className="project-conversation"><ProjectChat spaceId={spaceId} userId={userId} members={members} rows={chatList.rows} total={chatList.total} page={chatList.page} /><ChatOverview spaceId={spaceId} /></div>}
 
       {tab === "notes" && (
         noteRows.length === 0 ? (

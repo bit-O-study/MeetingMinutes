@@ -168,7 +168,7 @@ export function MeetingVote({ detail, spaceId, preview = false }: Props) {
   const [confirming, setConfirming] = useState<RankedWindow | null>(null);
 
   return (
-    <div className="mx-auto flex w-full max-w-[84rem] flex-col gap-5 px-3 py-4 md:px-6 md:py-7">
+    <div className="meeting-vote mx-auto flex w-full max-w-[84rem] flex-col gap-5 px-3 py-4 md:px-6 md:py-7">
       <header className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
           <Link href={`/s/${spaceId}?tab=meetings`} aria-label="일정 목록으로" title="일정 목록" className="press mt-1 grid size-10 shrink-0 place-items-center rounded-full bg-surface shadow-sm hover:bg-surface-2"><ArrowLeft className="size-5" /></Link>

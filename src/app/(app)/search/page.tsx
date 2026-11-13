@@ -3,7 +3,7 @@
  * 소속 스페이스로 검색 범위를 먼저 확정하고 URL에 필터를 유지한다.
  */
 import Link from "@/components/PendingLink";
-import { Card, EmptyState, SectionHeading } from "@/components/ui/Panels";
+import { Card, EmptyState } from "@/components/ui/Panels";
 import { listMySpaces, mySpaceIds } from "@/lib/access";
 import { searchNotes } from "@/lib/actions/search";
 import { Badge, NoteStatusBadge } from "@/components/ui/Badge";
@@ -40,8 +40,8 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
     : { total: 0, hits: [] };
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-5 py-8">
-      <SectionHeading>검색</SectionHeading>
+    <div className="search-page mx-auto flex w-full max-w-3xl flex-col gap-6 px-5 py-10">
+      <h1 className="page-title">무엇을 찾으세요?</h1>
       <form key={formKey} action="/search" method="get" className="space-y-4">
         <div>
           <label htmlFor="search-q" className="mb-2 block text-sm font-medium text-ink">검색어</label>
@@ -51,7 +51,9 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
             <button type="submit" className="shrink-0 press inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45">검색</button>
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <details open={Boolean(selectedSpace || status || from || to)} className="rounded-xl border border-line p-3">
+          <summary className="cursor-pointer text-xs text-ink-2">프로젝트·기간·상태로 좁혀 찾기</summary>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="search-space" className="mb-1 block text-xs text-ink-2">스페이스</label>
             <select id="search-space" name="space" defaultValue={selectedSpace} className={inputClass}>
@@ -74,6 +76,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
             <input id="search-to" name="to" type="date" defaultValue={validDate(to) ? to : ""} className={inputClass} aria-invalid={invalidDates || undefined} aria-describedby={invalidDates ? "search-error" : undefined} />
           </div>
         </div>
+        </details>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-3">
           <p>검색 범위: 내 스페이스 {spaceIds.length}개 · 날짜는 한국 시간 기준</p>
           <Link href="/search" className="text-ink-2 hover:text-accent">검색 조건 초기화</Link>

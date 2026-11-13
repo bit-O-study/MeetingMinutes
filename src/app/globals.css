@@ -6,7 +6,7 @@
   --radius-control: 10px;
   --radius-panel: 16px;
   --radius-dialog: 20px;
-  --shadow-panel: 0 2px 8px color-mix(in srgb, var(--ink) 3%, transparent), 0 12px 32px color-mix(in srgb, var(--ink) 3%, transparent);
+  --shadow-panel: 0 2px 6px color-mix(in srgb, var(--ink) 2%, transparent);
 }
 
 /*
@@ -25,10 +25,12 @@
 
 /* 브랜드(로고) 색 — 앱 아이콘과 같은 값. 라이트·다크 공통이라 한 번만 정의한다. */
 :root {
-  --brand-1: #ff8a5b;
-  --brand-2: #f0457e;
-  --brand-3: #7b3ff2;
-  --brand-spark: #ffe066;
+  --brand-1: rgb(73 50 242);
+  --brand-2: rgb(255 190 55);
+  --brand-3: rgb(0 163 139);
+  --brand-spark: rgb(73 166 237);
+  --brand-ground: rgb(29 23 112);
+  --brand-paper: rgb(255 255 255);
 }
 
 
@@ -39,19 +41,19 @@
   옛 이름(ground·surface·accent…)은 그대로 두고 값만 바꿨다 — 아직 안 바꾼 화면도 새 색을 따라가게.
 */
 :root {
-  --ground: oklch(0.975 0.004 265);
+  --ground: rgb(244 242 237);
   --surface: oklch(1 0 0);
-  --surface-2: oklch(0.95 0.006 265);
+  --surface-2: rgb(236 233 227);
 
-  --ink: oklch(0.26 0.025 270);
-  --ink-2: oklch(0.47 0.022 270);
-  --ink-3: oklch(0.54 0.018 270);
+  --ink: rgb(22 24 29);
+  --ink-2: rgb(98 103 119);
+  --ink-3: rgb(112 115 128);
 
-  --line: oklch(0.91 0.008 265);
-  --line-2: oklch(0.81 0.015 265);
+  --line: rgb(229 226 219);
+  --line-2: rgb(207 202 192);
 
-  --accent: oklch(0.48 0.12 278);
-  --accent-soft: oklch(0.95 0.021 278);
+  --accent: rgb(73 50 242);
+  --accent-soft: rgb(237 234 255);
   --on-accent: #ffffff;
 
   --ok: #1f7a4f;
@@ -65,11 +67,11 @@
 
   /* 프로젝트 색 8가지 — 흰 글자를 올려도 4.5:1 이상 나오는 진하기. */
   --p-blue: #3b5bdb;
-  --p-teal: #08707c;
+  --p-teal: rgb(8 125 103);
   --p-orange: #c2510c;
-  --p-violet: #7048e8;
+  --p-violet: rgb(73 50 242);
   --p-green: #237a35;
-  --p-pink: #c92a63;
+  --p-pink: rgb(190 49 158);
   --p-yellow: #8a6800;
   --p-slate: #4f5d75;
 
@@ -84,7 +86,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --ground: oklch(0.18 0.012 270);
     --surface: oklch(0.225 0.014 270);
     --surface-2: oklch(0.275 0.018 270);
@@ -127,6 +129,50 @@
 
     --shadow-float: 0 10px 30px rgb(0 0 0 / 0.45);
   }
+}
+
+:root[data-theme="dark"] {
+--ground: oklch(0.18 0.012 270);
+    --surface: oklch(0.225 0.014 270);
+    --surface-2: oklch(0.275 0.018 270);
+
+    --ink: oklch(0.94 0.008 270);
+    --ink-2: oklch(0.77 0.015 270);
+    --ink-3: oklch(0.68 0.017 270);
+
+    --line: oklch(0.32 0.018 270);
+    --line-2: oklch(0.43 0.023 270);
+
+    --accent: oklch(0.79 0.09 278);
+    --accent-soft: oklch(0.29 0.04 278);
+    --on-accent: #0b1020;
+
+    --ok: #5fd29b;
+    --ok-soft: #12392a;
+    --warn: #f2a54a;
+    --warn-soft: #3a2a13;
+    --info: #7fb2f0;
+    --info-soft: #16263b;
+    --danger: #ff7b72;
+    --danger-soft: #3c1d1b;
+
+    /* 어두운 바탕에서는 프로젝트 색을 한 단계 밝힌다(글자·테두리로 쓸 때 읽히게). */
+    --p-blue: #6d87ff;
+    --p-teal: #2fb3c2;
+    --p-orange: #f0843d;
+    --p-violet: #9a7bff;
+    --p-green: #4cc36b;
+    --p-pink: #f06595;
+    --p-yellow: #e0b52b;
+    --p-slate: #8a9ab8;
+
+    --user-1: #6d87ff;
+    --user-2: #f0843d;
+    --user-3: #4cc36b;
+    --user-4: #9a7bff;
+    --user-5: #f06595;
+
+    --shadow-float: 0 10px 30px rgb(0 0 0 / 0.45);
 }
 
 /*
@@ -182,16 +228,16 @@
 
   --shadow-float: var(--shadow-float);
 
-  --font-sans: var(--font-moa-sans);
-  /* 명조 제목은 회의록 양식처럼 딱딱해 보여 고딕으로 통일한다(재디자인). 이름은 남겨 둔다. */
-  --font-serif: var(--font-moa-sans);
+  --font-sans: var(--font-ui-sans);
+  /* 기록 제목은 명조로 구분하고 조작부는 고딕을 유지한다. */
+  --font-serif: var(--font-ui-serif);
   --font-mono: var(--font-plex-mono);
 }
 
 body {
   background: var(--ground);
   color: var(--ink);
-  font-family: var(--font-moa-sans), "Malgun Gothic", system-ui, sans-serif;
+  font-family: var(--font-ui-sans), "Malgun Gothic", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
 

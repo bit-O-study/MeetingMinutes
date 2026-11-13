@@ -44,11 +44,12 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <a href="#main-content" className="skip-link">본문으로 이동</a>
       <TopBar user={user} />
       <div className="app-body">
-        <Sidebar spaces={spaceRows.map((r) => r.space)} openTaskCount={(taskCount?.n ?? 0) + myIssues.length + personal.open} />
+        <Sidebar user={user} spaces={spaceRows.map((r) => r.space)} openTaskCount={(taskCount?.n ?? 0) + myIssues.length + personal.open} />
         {/* 휴대폰에서는 아래 메뉴가 떠 있으므로 그만큼 아래를 비운다. */}
         <main id="main-content" tabIndex={-1} className="app-main">{children}</main>
       </div>
       <BottomNav
+        user={user}
         openTaskCount={(taskCount?.n ?? 0) + myIssues.length + personal.open}
       />
     </div>

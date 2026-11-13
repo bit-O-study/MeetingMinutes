@@ -166,7 +166,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-[84rem] flex-col gap-3 px-3 py-3 md:px-6 md:py-5">
+    <div className="calendar-page mx-auto flex w-full max-w-[84rem] flex-col gap-3 px-3 py-3 md:px-6 md:py-5">
       <header className="flex flex-wrap items-center gap-x-2 gap-y-2">
         <div className="flex items-center">
           <Link href={prevHref} aria-label={isWeek ? "이전 주" : "이전 달"} className={GHOST}><ChevronLeft className="size-[1.15rem]" /></Link>

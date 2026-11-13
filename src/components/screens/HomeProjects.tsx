@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { Folder, GripVertical, Plus, Pencil, Trash2 } from "lucide-react";
 import Link from "@/components/PendingLink";
 import { AvatarStack } from "@/components/ui/Avatar";
-import { ProjectIcon } from "@/components/ui/ProjectIcon";
+import { PROJECT_SCOPE_CLASS, projectColor } from "@/components/ui/projectColor";
 import { readProjectFolders } from "./project-folders";
 import { createProjectFolder, deleteProjectFolder, listMyProjectFolders, moveProjectToFolder, renameProjectFolder, type ProjectFolderData } from "@/lib/actions/project-folders";
 
@@ -255,7 +255,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
       <p role="status" className={message && organizing ? "text-xs text-ink-2" : "sr-only"}>{message}</p>
       {visible.length === 0 && <p className="rounded-2xl border border-dashed border-line p-5 text-center text-sm text-ink-2">{currentFolder === UNGROUPED ? "미소속 프로젝트가 없어요." : activeFolder ? "빈 그룹이에요. 프로젝트를 이 그룹으로 옮겨 보세요." : "아직 프로젝트가 없어요."}</p>}
       <ul className="grid grid-cols-2 gap-3 xl:grid-cols-3">
-        {visible.map(project => <li key={project.id} data-project-target={project.id} className={`relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : drag?.target === `project:${project.id}` ? "ring-2 ring-accent bg-accent-soft" : ""}`}>
+        {visible.map(project => <li key={project.id} data-project-target={project.id} className={`project-card ${PROJECT_SCOPE_CLASS[projectColor(project.id)]} relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : drag?.target === `project:${project.id}` ? "ring-2 ring-accent bg-accent-soft" : ""}`}>
           <button type="button" disabled={!ready} aria-label={project.name + " 이동 손잡이"}
             onPointerDown={event => { event.preventDefault(); start(event, project.id); }} onPointerMove={moving}
             onPointerLeave={event => { if (!gesture.current?.active) finish(event, true); }}
@@ -271,7 +271,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
             onClick={event => { if (event.detail !== 0 && suppressClick.current) { event.preventDefault(); suppressClick.current = false; } }}
             style={{ WebkitTouchCallout: "none" }}
             className="rounded-2xl flex min-w-0 flex-1 touch-pan-y select-none flex-col gap-3 p-3 sm:p-5 focus-visible:outline-2 focus-visible:outline-accent">
-            <div className="flex flex-wrap items-start gap-2 pr-8"><ProjectIcon spaceId={project.id} name={project.name} /><span className="text-xs font-semibold text-ink-3">{project.kindLabel}</span></div>
+            <div className="flex flex-wrap items-start gap-2 pr-8"><span className="text-xs font-semibold text-ink-3">{project.kindLabel}</span></div>
             <h3 className="line-clamp-2 [overflow-wrap:anywhere] text-sm sm:text-base font-semibold tracking-tight text-ink">{project.name}</h3>
             <div className="mt-auto flex flex-wrap items-center justify-between gap-2"><AvatarStack people={project.people} /><span className="truncate text-xs text-ink-3">노트 {project.noteCount} · {project.activityLabel}</span></div>
           </Link>

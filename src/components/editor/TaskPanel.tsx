@@ -62,10 +62,10 @@ export function TaskPanel({
   );
 
   return (
-    <aside className="flex w-full flex-none flex-col gap-3 border-t border-line bg-surface px-4 py-4 lg:w-72 lg:border-t-0 lg:border-l">
-      <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-accent">
-        할 일 {tasks.length}
-      </h2>
+    <aside className="flex w-full flex-none flex-col gap-4 border-t border-line bg-ground px-5 py-6 lg:w-72 lg:border-t-0 lg:border-l">
+      <h2 className="flex justify-between text-sm font-semibold text-ink">이 노트의 할 일<span className="text-xs text-accent">{done.length} / {tasks.length}</span></h2>
+      <progress aria-label="노트 할 일 완료율" value={done.length} max={tasks.length || 1} className="note-progress h-1.5 w-full" />
+      <p className="text-xs leading-6 text-ink-2">본문의 체크박스와 같은 항목이에요. 어디서 눌러도 함께 바뀝니다.</p>
 
       <Group label={`미완료 ${open.length}`}>
         {open.map(row)}

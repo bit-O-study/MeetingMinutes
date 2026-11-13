@@ -2,7 +2,11 @@ import { CalendarDays, CheckSquare, FolderClosed, Home, Plus, Search } from "luc
 
 import type { Space } from "@/lib/db/schema";
 import { NavLink } from "@/components/shell/NavLink";
-import { ProjectIcon } from "@/components/ui/ProjectIcon";
+import Link from "@/components/PendingLink";
+import { Logo } from "@/components/ui/Logo";
+import { PROJECT_SCOPE_CLASS, projectColor } from "@/components/ui/projectColor";
+import { AccountMenu } from "./AccountMenu";
+import { signOut } from "@/lib/auth";
 
 /**
  * 좌측 네비게이션이 곧 내가 접근 가능한 범위 전부다.
@@ -12,16 +16,18 @@ import { ProjectIcon } from "@/components/ui/ProjectIcon";
 export function Sidebar({
   spaces,
   openTaskCount,
+  user,
 }: {
   spaces: Space[];
   openTaskCount: number;
+  user: { id: string; name?: string | null; image?: string | null };
 }) {
   const item =
     "sidebar-link";
   const on = "sidebar-link-active";
   return (
     <nav aria-label="주 메뉴" className="app-sidebar">
-      <p className="sidebar-label">내 작업 공간</p>
+      <Link href="/" className="sidebar-brand" aria-label="모아 홈"><Logo /></Link>
       <NavLink href="/" exact className={item} activeClassName={on}>
         <Home className="size-4" /> 홈
       </NavLink>
@@ -48,7 +54,7 @@ export function Sidebar({
 
       {spaces.map((space) => (
         <NavLink key={space.id} href={`/s/${space.id}`} className={item} activeClassName={on}>
-          <ProjectIcon spaceId={space.id} name={space.name} size="sm" />
+          <span aria-hidden="true" className={`sidebar-project-dot ${PROJECT_SCOPE_CLASS[projectColor(space.id)]}`} />
           <span className="min-w-0 truncate">{space.name}</span>
         </NavLink>
       ))}
@@ -63,6 +69,10 @@ export function Sidebar({
         </span>
         새 프로젝트
       </NavLink>
+      <div className="sidebar-account"><AccountMenu user={user} showName signOutAction={async () => {
+        "use server";
+        await signOut({ redirectTo: "/login" });
+      }} /></div>
     </nav>
   );
 }
