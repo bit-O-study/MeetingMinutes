@@ -18,7 +18,7 @@ jobs:
     env:
       DATABASE_URL: postgres://ci:ci@127.0.0.1:1/ci_only
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_APP_URL: https://meeting-minutes-orcin.vercel.app
+      NEXT_PUBLIC_APP_URL: https://memo.helthssu.co.kr
     steps:
       - uses: actions/checkout@v4
         with:

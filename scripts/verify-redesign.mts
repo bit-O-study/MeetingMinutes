@@ -1,7 +1,6 @@
 import "./load-env.mjs";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { createRequire } from "node:module";
 import { mkdir } from "node:fs/promises";
 import { eq, inArray } from "drizzle-orm";
 import { db, sql } from "../src/lib/db";
@@ -9,14 +8,13 @@ import { users, sessions, spaces, spaceMembers, notes, tasks, projectMessages } 
 import { hashSessionToken } from "../src/lib/token-store";
 
 // 실제 라우트에서 임시 데이터만 사용하고 정리한다. 앱의 권한·서버 액션은 그대로 거친다.
-const require = createRequire(import.meta.url);
-const { chromium, expect } = require("../../trip/node_modules/@playwright/test");
+import { chromium, expect, type Browser } from "@playwright/test";
 const base = process.env.REDESIGN_TEST_URL || "http://127.0.0.1:3292";
 const userId = randomUUID();
 const spaceIds = Array.from({ length: 6 }, () => randomUUID());
 const noteIds = spaceIds.map(() => randomUUID());
 const output = ".verify-shots/redesign";
-let browser: any;
+let browser: Browser | undefined;
 try {
   await mkdir(output, { recursive: true });
   await db.insert(users).values({ id: userId, name: "디자인 검증", email: `redesign-${userId}@example.invalid` });

@@ -19,7 +19,14 @@ public final class MainActivity extends Activity {
     private WebView web;
     private ValueCallback<Uri[]> filePicker;
     private static final int PICK_FILE = 1001;
-    private static final String origin = "https://meeting-minutes-orcin.vercel.app";
+    private static final String origin = "https://memo.helthssu.co.kr";
+    private static final String legacyHost = "meeting-minutes-orcin.vercel.app";
+    private static boolean isLegacy(Uri uri) {
+        return "https".equals(uri.getScheme()) && legacyHost.equals(uri.getHost()) && uri.getPort() == -1;
+    }
+    private static String currentUrl(Uri uri) {
+        return uri.buildUpon().authority(Uri.parse(origin).getAuthority()).build().toString();
+    }
     private LinearLayout root;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -65,6 +72,8 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 Uri home = Uri.parse(origin);
+                // 옛 앱의 복원 이력·링크도 앱 안에서 새 서버로 이어서 연다.
+                if (request.isForMainFrame() && isLegacy(uri)) { view.loadUrl(currentUrl(uri)); return true; }
                 if ("https".equals(uri.getScheme()) && home.getHost().equals(uri.getHost()) && home.getPort() == uri.getPort()) return false;
                 if (request.isForMainFrame() && ("https".equals(uri.getScheme()) || "mailto".equals(uri.getScheme()) || "tel".equals(uri.getScheme()))) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (android.content.ActivityNotFoundException ignored) { }
@@ -76,6 +85,7 @@ public final class MainActivity extends Activity {
             }
         });
         if (state == null || web.restoreState(state) == null) web.loadUrl(origin);
+        else if (web.getUrl() != null && isLegacy(Uri.parse(web.getUrl()))) web.loadUrl(currentUrl(Uri.parse(web.getUrl())));
     }
     @Override protected void onSaveInstanceState(Bundle state) { if (web != null) web.saveState(state); super.onSaveInstanceState(state); }
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {

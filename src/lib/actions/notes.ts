@@ -7,6 +7,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { requireNoteAccess, requireSpaceMember } from "@/lib/access";
 import { assertNoteDoc } from "@/lib/action-input";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { noteDocs, notes, spaces } from "@/lib/db/schema";
 import type { NoteStatus, TemplateKind } from "@/lib/db/schema";
 import { TEMPLATES, buildTemplateDoc, docToPlainText, resolveNoteTitle } from "@/lib/templates";
@@ -44,6 +45,9 @@ export async function createNote(input: {
   title?: string;
 }) {
   assertTemplate(input.template);
+  // 열린 작성 화면에서 세션이 만료돼도 서버 오류 대신 로그인 후 생성을 이어 간다.
+  const session = await auth();
+  if (!session?.user?.id) redirect(`/login?${new URLSearchParams({ returnTo: `/s/${input.spaceId}/new`, error: "session" })}`);
   const { userId } = await requireSpaceMember(input.spaceId);
   const meta = TEMPLATES[input.template];
   const requested = typeof input.title === "string" ? input.title : "";

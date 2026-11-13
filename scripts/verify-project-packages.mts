@@ -1,21 +1,19 @@
 import './load-env.mjs';
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
-import { createRequire } from 'node:module';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../src/lib/db/index.js';
 import { users, spaces, spaceMembers, sessions, projectFiles } from '../src/lib/db/schema.js';
 import { hashSessionToken } from '../src/lib/token-store.js';
 import { removeAttachmentFile } from '../src/lib/attachment-storage.js';
-const require = createRequire(import.meta.url);
-const { chromium, expect: baseExpect } = require('../../trip/node_modules/@playwright/test');
+import { chromium, expect as baseExpect, type Browser } from "@playwright/test";
 const expect = baseExpect.configure({ timeout: 30000 });
 const base = 'http://127.0.0.1:3291';
 const userId = randomUUID(), spaceId = randomUUID(), token = randomBytes(32).toString('hex');
 const output = 'logs/project-packages';
 const results: string[] = [];
-let browser: any;
+let browser: Browser | undefined;
 function pass(message: string) { results.push('PASS ' + message); console.log(results.at(-1)); }
 function archive() {
   const name = Buffer.from('AndroidManifest.xml');
@@ -42,7 +40,7 @@ try {
     const name = `검증.${extension}`;
     await file.setInputFiles({ name, mimeType: 'application/zip', buffer: bytes });
     await version.fill('1.2.3'); await description.fill('실제 브라우저 업로드');
-    const response = page.waitForResponse((r: any) => r.url().endsWith(`/api/spaces/${spaceId}/files`) && r.request().method() === 'POST');
+    const response = page.waitForResponse((r) => r.url().endsWith(`/api/spaces/${spaceId}/files`) && r.request().method() === 'POST');
     await page.getByRole('button', { name: '파일 올리기', exact: true }).click();
     assert.equal((await response).status(), 201);
     const row = page.locator('li').filter({ has: page.getByRole('heading', { name, exact: true }) });
@@ -56,7 +54,7 @@ try {
   }
   await file.setInputFiles({ name: 'broken.apk', mimeType: 'application/zip', buffer: Buffer.from('invalid archive') });
   await version.fill('실패 후 보존'); await description.fill('다시 선택할 때 유지할 설명');
-  const failed = page.waitForResponse((r: any) => r.url().endsWith(`/api/spaces/${spaceId}/files`) && r.request().method() === 'POST');
+  const failed = page.waitForResponse((r) => r.url().endsWith(`/api/spaces/${spaceId}/files`) && r.request().method() === 'POST');
   await page.getByRole('button', { name: '파일 올리기', exact: true }).click();
   assert.equal((await failed).status(), 400);
   await expect(version).toHaveValue('실패 후 보존'); await expect(description).toHaveValue('다시 선택할 때 유지할 설명');

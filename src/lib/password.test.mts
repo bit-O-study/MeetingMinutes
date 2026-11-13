@@ -25,8 +25,11 @@ test("가입 입력은 이메일을 정규화하고 비밀번호 길이·확인�
   assert.equal(loginInput.safeParse({ ...input, email: "not-an-email" }).success, false);
 });
 
-test("로그인 뒤에는 내부 초대 경로로만 복귀한다", () => {
+test("로그인 뒤에는 내부 초대 또는 메모 생성 경로로만 복귀한다", () => {
   assert.equal(loginReturnTo("/join/abc_123-xyz"), "/join/abc_123-xyz");
+  const notePath = "/s/772ff139-122e-4194-bd0e-dad974d025ef/new";
+  assert.equal(loginReturnTo(notePath), notePath);
+  for (const path of [notePath + "?next=//evil.example", "/s/../login/new", "/s/not-a-uuid/new", notePath + "/../../login"]) assert.equal(loginReturnTo(path), "/");
   for (const input of ["https://evil.example", "//evil.example", "/\\evil.example", "/join/../login", "/join/%2f%2fevil.example", "/login", undefined, ["/join/abc"]]) {
     assert.equal(loginReturnTo(input), "/");
   }

@@ -11,6 +11,7 @@ export const registrationInput = loginInput.extend({
 }).refine((input) => input.password === input.passwordConfirm);
 
 export function loginReturnTo(value: unknown): string {
-  // 초대 복귀만 허용해 외부 주소나 로그인 페이지로의 반복 이동을 막는다.
-  return typeof value === "string" && /^\/join\/[a-zA-Z0-9_-]+$/.test(value) ? value : "/";
+  // 초대와 메모 생성 복귀만 허용해 외부 주소나 로그인 반복 이동을 막는다.
+  if (typeof value !== "string") return "/";
+  return /^\/join\/[a-zA-Z0-9_-]+$/.test(value) || /^\/s\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/new$/i.test(value) ? value : "/";
 }

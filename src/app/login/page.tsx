@@ -14,6 +14,7 @@ const errors: Record<string, string> = {
   unavailable: "이 이메일로 가입할 수 없습니다. 다른 이메일을 사용하거나 로그인해 주세요.",
   limited: "시도가 너무 많습니다. 15분 후 다시 시도해 주세요.",
   server: "지금은 로그인 처리를 완료할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+  session: "로그인이 만료되었습니다. 다시 로그인하면 메모 만들기를 이어갈 수 있어요.",
 };
 
 export default async function LoginPage({ searchParams }: {
@@ -39,7 +40,7 @@ export default async function LoginPage({ searchParams }: {
         <h1>{registering ? "함께 기록을 시작해요" : "다시 만나서 반가워요"}</h1>
         <p className="text-sm leading-relaxed text-ink-2">{registering ? "계정을 만들고 팀의 기록을 모아 보세요." : "계정으로 로그인하세요."}</p>
       </div>
-      {returnTo !== "/" && <p className="text-sm text-ink-2">로그인 후 초대받은 스페이스 참여를 이어갑니다.</p>}
+      {returnTo !== "/" && <p className="text-sm text-ink-2">{returnTo.startsWith("/join/") ? "로그인 후 초대받은 스페이스 참여를 이어갑니다." : "로그인 후 메모 만들기를 이어갑니다."}</p>}
       {message && <p role="alert" className="rounded-2xl ring-1 ring-inset ring-line bg-ground px-3 py-2 text-sm text-warn">{message}</p>}
       <form action={registering ? passwordSignUp : passwordSignIn} className="space-y-4">
         <input type="hidden" name="returnTo" value={returnTo} />

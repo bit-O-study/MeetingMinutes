@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/internal-db-tunnel.cjs --ensure",
+    "db:tunnel": "node scripts/internal-db-tunnel.cjs",
     "dev": "next dev",
     "dev:all": "concurrently -n next,collab -c cyan,magenta \"npm:dev\" \"npm:collab\"",
     "collab": "tsx server/collab.ts",
@@ -50,6 +52,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
