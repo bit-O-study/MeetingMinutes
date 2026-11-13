@@ -72,6 +72,8 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item -Recurse .next/standalone release
+          node scripts/deploy/package-collab.cjs release
+          if ($LASTEXITCODE -ne 0) { throw 'Collaboration server packaging failed' }
           Copy-Item -Recurse .next/static release/.next/static
           if (Test-Path public) { Copy-Item -Recurse public release/public }
           @{project='MeetingMinutes';sha=$env:GITHUB_SHA;builtAt=[DateTime]::UtcNow.ToString('o')} | ConvertTo-Json | Set-Content -Encoding utf8 release/release.json

@@ -21,7 +21,8 @@ try {
   browser = await chromium.launch({ channel: "msedge", headless: true });
   const contexts = await Promise.all(ids.map(() => browser!.newContext()));
   contexts.forEach((ctx) => ctx.setDefaultTimeout(20000));
-  await Promise.all(contexts.map((ctx, i) => ctx.addCookies([{ name: "authjs.session-token", value: tokens[i], url: base }])));
+  const secure = base.startsWith("https:") || process.env.EDITOR_TEST_PRODUCTION === "1";
+  await Promise.all(contexts.map((ctx, i) => ctx.addCookies([{ name: secure ? "__Secure-authjs.session-token" : "authjs.session-token", value: tokens[i], domain: new URL(base).hostname, path: "/", secure, httpOnly: true, sameSite: "Lax" }])));
   const pages = await Promise.all(contexts.map((ctx) => ctx.newPage()));
   const errors: string[] = [];
   pages.forEach((p) => p.on("pageerror", (e: Error) => errors.push(e.message)));
