@@ -402,6 +402,24 @@ body {
   opacity: 1;
 }
 
+.collaboration-carets__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  left: -10px;
+  top: -20px;
+  border-radius: 50%;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--brand-paper);
+  box-shadow: 0 0 0 2px var(--surface);
+  z-index: 1;
+}
+
 .collaboration-carets__selection {
   border-radius: 2px;
   mix-blend-mode: multiply;

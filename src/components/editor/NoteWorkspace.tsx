@@ -10,6 +10,8 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
+import { renderCollaborationCaret } from "./collaboration-caret";
+import { resolveCaretColor } from "@/lib/collab/caret-color";
 import { ySyncPluginKey } from "y-prosemirror";
 import { History, Share2 } from "lucide-react";
 
@@ -152,7 +154,7 @@ export function NoteWorkspace({
         Placeholder.configure({ placeholder: "여기에 적으세요" }),
         Collaboration.configure({ document: doc }),
         ...(provider
-          ? [CollaborationCaret.configure({ provider, user: { id: me.id, name: me.name, color: me.color, image: me.image ?? null } })]
+          ? [CollaborationCaret.configure({ provider, user: { id: me.id, name: me.name, color: resolveCaretColor(me.color), image: me.image ?? null }, render: renderCollaborationCaret })]
           : []),
       ],
       editorProps: {
