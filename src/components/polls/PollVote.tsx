@@ -11,6 +11,7 @@ import { remainingLabel, validName } from "@/lib/polls";
 import { cn } from "@/lib/utils";
 
 import { HATCH, MonthGrids } from "./MonthGrids";
+import { PollInfo } from "./PollInfo";
 import { useNow } from "./useNow";
 
 /**
@@ -50,9 +51,9 @@ export function PollVote({ token, view }: { token: string; view: PublicPollView 
   }
 
   const header = (
-    <header className="flex flex-col gap-1">
+    <header className="flex flex-col gap-2">
       <h1 className="text-2xl font-bold leading-snug text-ink">{view.title}</h1>
-      {view.description && <p className="whitespace-pre-wrap text-sm text-ink-2">{view.description}</p>}
+      <PollInfo foodType={view.foodType} restaurant={view.restaurant} location={view.location} />
     </header>
   );
 
@@ -163,24 +164,11 @@ export function PollVote({ token, view }: { token: string; view: PublicPollView 
             }}
           />
         </div>
-        <div className="flex flex-wrap gap-3.5 text-xs text-ink-2">
-          <span className="flex items-center gap-1.5"><span className="size-3.5 rounded bg-surface ring-1 ring-line-2" />가능</span>
-          <span className="flex items-center gap-1.5"><span className="size-3.5 rounded bg-danger" />안 됨</span>
-          <span className="flex items-center gap-1.5"><span className="size-3.5 rounded" style={HATCH} />후보 아님{view.excluded.length > 0 && ` (${view.excluded.length}일)`}</span>
-        </div>
       </section>
 
       {view.me && (
         <section className="flex flex-col gap-2.5 rounded-2xl bg-ok-soft p-4 text-ink">
           <div className="flex items-center gap-2 font-bold text-ok"><Check className="size-5" aria-hidden />제출 완료</div>
-          {view.results && view.results.total > 0 && (
-            <div className="flex flex-col gap-1.5 rounded-xl bg-surface p-3">
-              <strong className="text-sm">안 되는 사람이 적은 날</strong>
-              {view.results.top.map((t) => (
-                <div key={t.day} className="flex justify-between text-sm"><span>{dayLabel(t.day)}</span><span className="text-ink-2">총 {view.results!.total}명 중 {view.results!.total - t.available}명 안 됨</span></div>
-              ))}
-            </div>
-          )}
         </section>
       )}
 

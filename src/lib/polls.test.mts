@@ -7,8 +7,8 @@ import {
 } from "./polls";
 
 const base = {
-  title: "송년 스터디", description: "", rangeStart: "2026-12-01", rangeEnd: "2026-12-31",
-  excluded: ["2026-12-24"], respondBy: null, resultVisibility: "participants" as const,
+  title: "송년 스터디", foodType: "한식", restaurant: "", location: "합정", rangeStart: "2026-12-01", rangeEnd: "2026-12-31",
+  excluded: ["2026-12-24"], respondBy: null,
 };
 
 test("투표 입력: 기간·제외일·후보일 규칙", () => {
@@ -20,6 +20,10 @@ test("투표 입력: 기간·제외일·후보일 규칙", () => {
   assert.equal(pollInput.safeParse({ ...base, excluded: ["2026-12-24", "2026-12-24"] }).success, false, "중복 제외일");
   assert.equal(pollInput.safeParse({ ...base, rangeEnd: "2026-12-01", excluded: ["2026-12-01"] }).success, false, "후보일 0개");
   assert.equal(pollInput.safeParse({ ...base, title: "  " }).success, false);
+  assert.equal(pollInput.safeParse({ ...base, foodType: "가".repeat(31) }).success, false, "음식 종류 30자 초과");
+  assert.equal(pollInput.safeParse({ ...base, restaurant: "가".repeat(61) }).success, false, "식당 60자 초과");
+  assert.equal(pollInput.safeParse({ ...base, location: "가".repeat(101) }).success, false, "위치 100자 초과");
+  assert.ok(pollInput.safeParse({ ...base, foodType: "", restaurant: "", location: "" }).success, "모임 정보는 전부 비워도 된다");
   assert.equal(pollInput.safeParse({ ...base, rangeStart: "2026-02-30" }).success, false, "없는 날짜");
   assert.equal(pollInput.safeParse({ ...base, ownerId: "x" }).success, false, "모르는 키는 거부");
   assert.equal(pollInput.safeParse({ ...base, respondBy: "2026-11-30T18:00" }).success, false, "오프셋 없는 시각 거부");

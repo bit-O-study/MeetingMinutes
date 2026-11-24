@@ -4,7 +4,7 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { pollExcludedDays, pollParticipants, pollUnavailableDays, polls, type Poll, type PollStatus, type PollVisibility } from "@/lib/db/schema";
+import { pollExcludedDays, pollParticipants, pollUnavailableDays, polls, type Poll, type PollStatus } from "@/lib/db/schema";
 import { candidateDays, isPollClosed, tallyPoll, type Tally } from "@/lib/polls";
 import { openLinkToken } from "@/lib/token-store";
 import { absoluteUrl } from "@/lib/utils";
@@ -55,13 +55,14 @@ export async function listMyPolls(): Promise<PollListItem[]> {
 export type OwnerPollView = {
   id: string;
   title: string;
-  description: string;
+  foodType: string;
+  restaurant: string;
+  location: string;
   rangeStart: string;
   rangeEnd: string;
   status: PollStatus;
   closed: boolean;
   confirmedDay: string | null;
-  resultVisibility: PollVisibility;
   respondBy: string | null;
   version: number;
   /** 폐기됐거나 키가 바뀌어 풀 수 없으면 null */
@@ -107,13 +108,14 @@ async function buildOwnerView(poll: Poll): Promise<OwnerPollView> {
   return {
     id: poll.id,
     title: poll.title,
-    description: poll.description,
+    foodType: poll.foodType,
+    restaurant: poll.restaurant,
+    location: poll.location,
     rangeStart: poll.rangeStart,
     rangeEnd: poll.rangeEnd,
     status: poll.status,
     closed: isPollClosed(poll),
     confirmedDay: poll.confirmedDay,
-    resultVisibility: poll.resultVisibility,
     respondBy: poll.respondBy?.toISOString() ?? null,
     version: poll.version,
     url: token ? absoluteUrl(`/v/${token}`) : null,

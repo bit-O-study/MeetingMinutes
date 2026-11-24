@@ -55,7 +55,7 @@ try {
   const token = linkToken();
   const stored = storedLinkToken(token);
   const [poll] = await db.insert(polls).values({
-    ownerId: owner.id, title: "검증 송년 스터디", description: "검증용 설명",
+    ownerId: owner.id, title: "검증 송년 스터디", description: "검증용 설명", foodType: "한식검증", restaurant: "식당검증", location: "위치검증",
     rangeStart: "2026-12-01", rangeEnd: "2026-12-31", respondBy: new Date(Date.now() + 6 * 86_400_000),
     token: stored.token, tokenHash: stored.tokenHash,
   }).returning();
@@ -69,6 +69,7 @@ try {
   await rejects("같은 토큰 해시 거절", () => db.insert(polls).values({ ownerId: owner.id, title: "x", rangeStart: "2026-12-01", rangeEnd: "2026-12-02", token: "t", tokenHash: stored.tokenHash }));
   await rejects("confirmed 인데 날짜 없음 거절", () => db.update(polls).set({ status: "confirmed" }).where(eq(polls.id, poll.id)));
   await rejects("날짜가 있는데 confirmed 아님 거절", () => db.update(polls).set({ confirmedDay: "2026-12-11" }).where(eq(polls.id, poll.id)));
+  await rejects("너무 긴 위치 거절", () => db.update(polls).set({ location: "가".repeat(101) }).where(eq(polls.id, poll.id)));
   await rejects("알 수 없는 상태 거절", () => db.update(polls).set({ status: "weird" as never }).where(eq(polls.id, poll.id)));
 
   const editToken = "verify-edit-token";
@@ -118,7 +119,7 @@ try {
 
   const pub = await get(`/v/${token}`);
   assert.equal(pub.status, 200);
-  for (const text of ["검증 송년 스터디", "이름 또는 닉네임", "안 되는 날", "마감"]) assert.ok(pub.html.includes(text), `공개 화면에 "${text}" 가 있어야 한다`);
+  for (const text of ["검증 송년 스터디", "이름 또는 닉네임", "안 되는 날", "마감", "한식검증", "식당검증", "위치검증"]) assert.ok(pub.html.includes(text), `공개 화면에 "${text}" 가 있어야 한다`);
   for (const secret of ["게스트민수", "회원지은", "소유자홍길동", owner.id, owner.email!]) assert.ok(!pub.html.includes(secret), `공개 화면에 "${secret}" 가 새면 안 된다`);
   assert.equal(pub.headers.get("referrer-policy"), "no-referrer");
   assert.match(pub.headers.get("x-robots-tag") ?? "", /noindex/);

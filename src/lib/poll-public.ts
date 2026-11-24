@@ -6,15 +6,15 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { pollExcludedDays, pollParticipants, pollUnavailableDays, polls, type Poll, type PollParticipant, type PollStatus } from "@/lib/db/schema";
-import { candidateDays, isPollClosed, tallyPoll } from "@/lib/polls";
+import { isPollClosed } from "@/lib/polls";
 import { hashEditToken, pollCookieName } from "@/lib/poll-identity";
 import { hashLinkToken } from "@/lib/token-store";
 
 /**
  * 링크로 들어온 사람(로그인 여부와 무관)이 보는 투표.
  *
- * 노출 범위는 의도적으로 좁다: 제목·설명·기간·제외일·마감·확정 날짜, 그리고 (공개 설정이면) 제출한 뒤의 집계 숫자.
- * 만든 사람의 계정, 다른 투표, 참여자 이름 목록은 어떤 경우에도 내보내지 않는다.
+ * 노출 범위는 의도적으로 좁다: 제목·모임 정보(음식·식당·위치)·기간·제외일·마감·확정 날짜, 그리고 본인 응답뿐이다.
+ * 만든 사람의 계정, 다른 투표, 다른 참여자의 이름과 응답은 어떤 경우에도 내보내지 않는다.
  * 없는 토큰·폐기·삭제는 모두 null 이다 — 화면은 같은 "열 수 없는 링크"로 처리한다.
  */
 
@@ -54,7 +54,9 @@ export async function findMyParticipant(poll: Poll): Promise<{ participant: Poll
 
 export type PublicPollView = {
   title: string;
-  description: string;
+  foodType: string;
+  restaurant: string;
+  location: string;
   rangeStart: string;
   rangeEnd: string;
   excluded: string[];
@@ -66,8 +68,6 @@ export type PublicPollView = {
   viewer: { isMember: boolean; name: string };
   /** 이 기기·계정으로 이미 낸 응답 */
   me: { name: string; unavailable: string[] } | null;
-  /** 공개 설정이고 내가 제출한 뒤에만 채워진다. 숫자만 — 이름은 없다. */
-  results: { total: number; top: { day: string; available: number }[] } | null;
 };
 
 export async function getPublicPoll(token: string): Promise<PublicPollView | null> {
@@ -88,27 +88,12 @@ export async function getPublicPoll(token: string): Promise<PublicPollView | nul
         .orderBy(asc(pollUnavailableDays.day))).map((r) => r.day)
     : [];
 
-  let results: PublicPollView["results"] = null;
-  if (mine && poll.resultVisibility === "participants") {
-    const candidates = candidateDays(poll.rangeStart, poll.rangeEnd, excluded.map((e) => e.day));
-    const people = await db.select({ id: pollParticipants.id }).from(pollParticipants).where(eq(pollParticipants.pollId, poll.id));
-    const rows = people.length
-      ? await db
-          .select({ participantId: pollUnavailableDays.participantId, day: pollUnavailableDays.day })
-          .from(pollUnavailableDays)
-          .innerJoin(pollParticipants, eq(pollParticipants.id, pollUnavailableDays.participantId))
-          .where(eq(pollParticipants.pollId, poll.id))
-      : [];
-    const byPerson = new Map<string, string[]>();
-    for (const row of rows) byPerson.set(row.participantId, [...(byPerson.get(row.participantId) ?? []), row.day]);
-    const tally = tallyPoll(candidates, people.map((p) => ({ id: p.id, unavailable: byPerson.get(p.id) ?? [] })));
-    results = { total: tally.total, top: tally.ranked.slice(0, 3).map((day) => ({ day, available: tally.available[day] })) };
-  }
-
   const closed = isPollClosed(poll);
   return {
     title: poll.title,
-    description: poll.description,
+    foodType: poll.foodType,
+    restaurant: poll.restaurant,
+    location: poll.location,
     rangeStart: poll.rangeStart,
     rangeEnd: poll.rangeEnd,
     excluded: excluded.map((e) => e.day),
@@ -117,6 +102,5 @@ export async function getPublicPoll(token: string): Promise<PublicPollView | nul
     confirmedDay: poll.confirmedDay,
     viewer: { isMember: Boolean(session?.user?.id), name: session?.user?.name ?? "" },
     me: mine ? { name: mine.participant.displayName, unavailable } : null,
-    results,
   };
 }

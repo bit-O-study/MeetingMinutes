@@ -15,6 +15,7 @@ import { remainingLabel, seoulLocalToIso } from "@/lib/polls";
 import { cn } from "@/lib/utils";
 
 import { HATCH, MonthGrids } from "./MonthGrids";
+import { PollInfo } from "./PollInfo";
 import { useNow } from "./useNow";
 
 const CARD = "flex flex-col gap-3 rounded-2xl border border-line bg-surface p-5";
@@ -86,7 +87,7 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
         <p className="text-sm text-ink-2">
           {dayLabel(poll.rangeStart)} ~ {dayLabel(poll.rangeEnd)} · 후보 {poll.candidates.length}일{poll.excluded.length > 0 && ` (제외 ${poll.excluded.length}일)`} · {poll.participants.length}명 응답
         </p>
-        {poll.description && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-2">{poll.description}</p>}
+        <PollInfo foodType={poll.foodType} restaurant={poll.restaurant} location={poll.location} />
       </header>
 
       {created && !confirmed && (
@@ -187,22 +188,22 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
             <section className={CARD} aria-live="polite">
               <div className="flex items-baseline justify-between gap-2">
                 <h2 className="text-base font-bold text-ink">{dayLabel(selected)}{selected === tally.best && " · 추천"}</h2>
-                <span className="text-sm text-ink-2">총 {tally.total}명 중 {tally.total - (tally.available[selected] ?? 0)}명 안 됨</span>
+                <span className="text-sm text-ink-2">비참석 {tally.total - (tally.available[selected] ?? 0)}/{tally.total}명</span>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold text-danger">안 되는 사람 {noList.length}명</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {noList.length === 0 ? <span className="text-sm text-ink-2">없음</span> : noList.map((n) => <span key={n} className="rounded-full bg-danger-soft px-2.5 py-1 text-[13px] text-danger">{n}</span>)}
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold text-ok">되는 사람 {yesList.length}명</span>
+                <span className="text-[13px] font-bold text-ok">참석자 {yesList.length}명</span>
                 <div className="flex flex-wrap gap-1.5">
                   {yesList.length === 0 ? <span className="text-sm text-ink-2">없음</span> : yesList.map((n) => <span key={n} className="rounded-full bg-ok-soft px-2.5 py-1 text-[13px] text-ok">{n}</span>)}
                 </div>
               </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-bold text-danger">비참석자 {noList.length}명</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {noList.length === 0 ? <span className="text-sm text-ink-2">없음</span> : noList.map((n) => <span key={n} className="rounded-full bg-danger-soft px-2.5 py-1 text-[13px] text-danger">{n}</span>)}
+                </div>
+              </div>
               <button type="button" disabled={pending || poll.confirmedDay === selected} onClick={() => run(() => confirmPollDay(poll.id, selected))} className={buttonClass("primary")}>
-                {poll.confirmedDay === selected ? "확정된 날짜예요" : "이 날짜로 확정"}
+                {poll.confirmedDay === selected ? "확정됨" : "이 날짜로 확정"}
               </button>
             </section>
           )}

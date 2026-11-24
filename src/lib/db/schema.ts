@@ -549,6 +549,10 @@ export const polls = pgTable("polls", {
   ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull().default(""),
+  /** 모임 정보(선택). 참여자가 날짜를 고를 때 무엇을 먹는지·어디인지 알 수 있게 한다. */
+  foodType: text("food_type").notNull().default(""),
+  restaurant: text("restaurant").notNull().default(""),
+  location: text("location").notNull().default(""),
   rangeStart: date("range_start").notNull(),
   rangeEnd: date("range_end").notNull(),
   status: text("status").$type<PollStatus>().notNull().default("open"),
@@ -568,6 +572,7 @@ export const polls = pgTable("polls", {
   uniqueIndex("polls_token_hash_idx").on(t.tokenHash),
   index("polls_owner_idx").on(t.ownerId, t.createdAt),
   check("polls_text_check", sql`length(trim(${t.title})) BETWEEN 1 AND 80 AND length(${t.description}) <= 1000`),
+  check("polls_place_check", sql`length(${t.foodType}) <= 30 AND length(${t.restaurant}) <= 60 AND length(${t.location}) <= 100`),
   check("polls_range_check", sql`${t.rangeEnd} >= ${t.rangeStart} AND ${t.rangeEnd} - ${t.rangeStart} <= 59`),
   check("polls_status_check", sql`${t.status} IN ('open','closed','confirmed') AND ${t.resultVisibility} IN ('participants','owner')`),
   check("polls_confirmed_check", sql`(${t.status} = 'confirmed') = (${t.confirmedDay} IS NOT NULL)`),

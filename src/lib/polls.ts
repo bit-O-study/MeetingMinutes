@@ -24,15 +24,21 @@ export function seoulLocalToIso(local: string): string | null {
 
 const deadline = z.string().datetime({ offset: true }).nullable();
 
+/** 음식 종류·식당·위치. 전부 선택이고 짧게만 받는다. */
+const placeFields = {
+  foodType: z.string().trim().max(30, "음식 종류는 30자까지예요."),
+  restaurant: z.string().trim().max(60, "식당은 60자까지예요."),
+  location: z.string().trim().max(100, "위치는 100자까지예요."),
+};
+
 export const pollInput = z
   .object({
     title: z.string().trim().min(1, "제목을 입력해 주세요.").max(80, "제목은 80자까지예요."),
-    description: z.string().trim().max(1000, "설명은 1000자까지예요."),
+    ...placeFields,
     rangeStart: day,
     rangeEnd: day,
     excluded: z.array(day).max(MAX_POLL_DAYS),
     respondBy: deadline,
-    resultVisibility: z.enum(["participants", "owner"]),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -48,12 +54,13 @@ export const pollInput = z
   });
 export type PollInput = z.infer<typeof pollInput>;
 
-/** 제목·설명·결과 공개만 고칠 수 있다. 기간·제외일을 바꾸면 이미 낸 응답이 어긋난다. */
+/** 제목과 모임 정보만 고칠 수 있다. 기간·제외일을 바꾸면 이미 낸 응답이 어긋난다. */
 export const pollPatchInput = z
   .object({
     title: z.string().trim().min(1, "제목을 입력해 주세요.").max(80).optional(),
-    description: z.string().trim().max(1000).optional(),
-    resultVisibility: z.enum(["participants", "owner"]).optional(),
+    foodType: placeFields.foodType.optional(),
+    restaurant: placeFields.restaurant.optional(),
+    location: placeFields.location.optional(),
   })
   .strict()
   .refine((patch) => Object.keys(patch).length > 0, { message: "바꿀 값이 없습니다." });

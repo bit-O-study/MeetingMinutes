@@ -99,6 +99,13 @@
       "when": 1795485299204,
       "tag": "0013_schedule_polls",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795500170005,
+      "tag": "0014_poll_place",
+      "breakpoints": true
     }
   ]
 }

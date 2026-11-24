@@ -59,10 +59,11 @@ export async function createPoll(input: unknown): Promise<PollResult> {
       .values({
         ownerId: user.id,
         title: data.title,
-        description: data.description,
+        foodType: data.foodType,
+        restaurant: data.restaurant,
+        location: data.location,
         rangeStart: data.rangeStart,
         rangeEnd: data.rangeEnd,
-        resultVisibility: data.resultVisibility,
         respondBy,
         token: stored.token,
         tokenHash: stored.tokenHash,

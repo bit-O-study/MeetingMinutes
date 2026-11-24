@@ -15,8 +15,10 @@ import { eq, like } from "drizzle-orm";
 
 import { db, sql } from "../src/lib/db";
 import { polls, sessions, users } from "../src/lib/db/schema";
+import { addDays } from "../src/lib/calendar-dates";
 import { sessionCookie } from "../src/lib/session-cookie";
 import { hashSessionToken } from "../src/lib/token-store";
+import { todayInSeoul } from "../src/lib/utils";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW_MODULE ?? "playwright-core");
@@ -63,28 +65,33 @@ try {
   /* 1. 만들기 */
   await op.goto(`${base}/polls/new`);
   await op.getByLabel("제목").fill("UI 검증 투표");
-  await op.getByRole("button", { name: "② 제외일 찍기" }).click();
-  const firstCandidate = op.getByRole("button", { name: /, 후보일$/ }).first();
-  const excludedLabel = (await firstCandidate.getAttribute("aria-label"))!.replace(", 후보일", "");
-  await firstCandidate.click();
-  await op.getByText(/\(제외 1일\)/).waitFor();
-  done(`제외일 찍기 → 요약에 (제외 1일) [${excludedLabel}]`);
+  await op.getByLabel("음식 종류").fill("한식검증");
+  await op.getByLabel("식당").fill("식당검증");
+  await op.getByLabel("위치").fill("위치검증");
 
-  await op.getByRole("button", { name: "마감 없음" }).click();
-  await op.getByText("마감 없이 진행").waitFor();
-  await op.getByRole("button", { name: "직접 설정" }).click();
-  await op.getByLabel("마감 날짜").fill("2020-01-01");
-  await op.getByText(/이미 지난 시각/).waitFor();
+  // 달력은 "안 되는 날"을 누르는 것 하나뿐이다.
+  const firstDay = op.getByRole("button", { name: /^\d+월 \d+일 \(.\)$/ }).first();
+  const excludedLabel = (await firstDay.getAttribute("aria-label"))!;
+  await op.getByText("후보 14일").waitFor();
+  await firstDay.click();
+  await op.getByText("후보 13일").waitFor();
+  assert.equal(await op.getByRole("button", { name: `${excludedLabel}, 제외` }).getAttribute("aria-pressed"), "true");
+  done(`안 되는 날 클릭 → 후보 14일에서 13일 [${excludedLabel}]`);
+
+  await op.getByLabel("마감 (선택)").fill("2020-01-01T10:00");
+  await op.getByText("이미 지난 시각이에요").waitFor();
   assert.equal(await op.getByRole("button", { name: "투표 만들기" }).isDisabled(), true);
   done("지난 마감 시각은 경고하고 만들기를 막는다");
-  await op.getByRole("button", { name: "3일 뒤 18:00" }).click();
+  await op.getByLabel("마감 (선택)").fill(`${addDays(todayInSeoul(), 3)}T18:00`);
   await op.getByRole("button", { name: "투표 만들기" }).click();
   await op.waitForURL(/\/polls\/[0-9a-f-]{36}\?created=1/);
   const pollId = op.url().match(/\/polls\/([0-9a-f-]{36})/)![1];
   await op.getByText("투표를 만들었어요").waitFor();
+  const infoText = await op.locator("header").innerText();
+  assert.ok(["한식검증", "식당검증", "위치검증"].every((t) => infoText.includes(t)), "관리 화면에 음식·식당·위치가 보여야 한다");
   const shareUrl = await op.getByLabel("공유 링크").inputValue();
   const token = shareUrl.match(/\/v\/([\w-]{8,})/)![1];
-  done("투표 만들기(서버 액션) → 관리 화면 이동, 링크 발급");
+  done("투표 만들기(서버 액션) → 관리 화면 이동, 음식·식당·위치 표시, 링크 발급");
 
   /* 2. 비회원 참여 */
   const guestCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -92,6 +99,9 @@ try {
   gp.on("pageerror", (e: Error) => problems.push(`guest pageerror: ${e.message}`));
   await gp.goto(`${base}/v/${token}`);
   await gp.getByText("UI 검증 투표").first().waitFor();
+  const guestHead = await gp.locator("header").innerText();
+  assert.ok(["한식검증", "식당검증", "위치검증"].every((t) => guestHead.includes(t)), "참여 화면에 음식·식당·위치가 보여야 한다");
+  done("참여 화면에 음식·식당·위치 표시");
   const dayButtons = gp.getByRole("button", { name: /, 가능$/ });
   assert.equal(await dayButtons.first().isDisabled(), true, "이름 전에는 캘린더가 잠겨 있어야 한다");
   assert.equal(await gp.getByRole("button", { name: "제출하기" }).isDisabled(), true);
@@ -144,11 +154,11 @@ try {
   const oneNo = op.getByRole("button", { name: /총 2명 중 1명 안 됨/ }).first();
   await oneNo.waitFor();
   await oneNo.click();
-  await op.getByText("안 되는 사람 1명").waitFor();
-  await op.getByText("되는 사람 1명", { exact: true }).waitFor();
-  const panel = op.locator("section", { hasText: "안 되는 사람 1명" });
-  assert.ok((await panel.innerText()).includes("게스트A"), "안 되는 사람 칸에 게스트A 가 있어야 한다");
-  assert.ok((await panel.innerText()).includes("게스트B"), "되는 사람 칸에 게스트B 가 있어야 한다");
+  await op.getByText("비참석자 1명").waitFor();
+  await op.getByText("참석자 1명", { exact: true }).waitFor();
+  const panel = op.locator("section", { hasText: "비참석자 1명" });
+  assert.ok((await panel.innerText()).includes("게스트A"), "비참석자 칸에 게스트A 가 있어야 한다");
+  assert.ok((await panel.innerText()).includes("게스트B"), "참석자 칸에 게스트B 가 있어야 한다");
   assert.equal(await op.getByText(/명 가능/).count(), 0, "'가능' 인원 표기는 더 이상 없어야 한다");
   done("날짜별 '총 N명 중 M명 안 됨', 날짜 클릭 시 안 되는/되는 사람 이름 표시");
   const deadlineBox = op.locator("section", { hasText: "마감 시각 바꾸기" });

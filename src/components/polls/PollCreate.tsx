@@ -1,41 +1,25 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, CircleAlert, Clock, LoaderCircle, X } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { buttonClass, fieldClass } from "@/components/ui/Button";
 import { createPoll } from "@/lib/actions/polls";
 import { addDays, daysInclusive, eachDay, weekday } from "@/lib/calendar-dates";
-import { dayLabel, deadlineLabel, seoulEvening } from "@/lib/poll-format";
+import { dayLabel } from "@/lib/poll-format";
 import { MAX_POLL_DAYS, remainingLabel, seoulLocalToIso } from "@/lib/polls";
 import { cn } from "@/lib/utils";
 
 import { HATCH, MonthGrids } from "./MonthGrids";
 import { useNow } from "./useNow";
 
-type DeadlineKind = "none" | "d1" | "d3" | "d7" | "custom";
-const DEADLINE_CHIPS: { kind: DeadlineKind; label: string }[] = [
-  { kind: "none", label: "마감 없음" },
-  { kind: "d1", label: "내일 18:00" },
-  { kind: "d3", label: "3일 뒤 18:00" },
-  { kind: "d7", label: "1주 뒤 18:00" },
-  { kind: "custom", label: "직접 설정" },
-];
+const LABEL = "flex flex-col gap-1.5 text-sm font-medium text-ink";
 
-const CARD = "flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 sm:p-6";
-
-function lastDayOf(month: string): string {
-  const [y, m] = month.split("-").map(Number);
-  return `${month}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
-}
-
-function monthShift(month: string, offset: number): string {
-  const [y, m] = month.split("-").map(Number);
-  const d = new Date(Date.UTC(y, m - 1 + offset, 1));
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
+/**
+ * 투표 만들기. 입력은 제목·모임 정보·기간·마감뿐이고, 달력은 "안 되는 날"을 누르는 것 하나만 한다.
+ * 기간은 날짜 입력 두 칸으로 정한다(달력에서 구간을 잡는 모드 전환이 가장 헷갈렸다).
+ */
 export function PollCreate({ today }: { today: string }) {
   const router = useRouter();
   const now = useNow();
@@ -43,65 +27,41 @@ export function PollCreate({ today }: { today: string }) {
   const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [foodType, setFoodType] = useState("");
+  const [restaurant, setRestaurant] = useState("");
+  const [location, setLocation] = useState("");
   const [start, setStart] = useState(addDays(today, 1));
   const [end, setEnd] = useState(addDays(today, 14));
-  const [picking, setPicking] = useState(false);
-  const [mode, setMode] = useState<"range" | "exclude">("range");
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
-  const [visible, setVisible] = useState(addDays(today, 1).slice(0, 7));
-  const [kind, setKind] = useState<DeadlineKind>("d3");
-  const [customDate, setCustomDate] = useState(addDays(today, 3));
-  const [customTime, setCustomTime] = useState("18:00");
-  const [visibility, setVisibility] = useState<"participants" | "owner">("participants");
+  const [deadline, setDeadline] = useState("");
 
-  const length = daysInclusive(start, end);
+  // 기간 밖으로 밀려난 제외일은 저장하지 않는다.
   const excludedDays = useMemo(() => [...excluded].filter((d) => d >= start && d <= end).sort(), [excluded, start, end]);
-  const candidates = length - excludedDays.length;
+  const candidates = daysInclusive(start, end) - excludedDays.length;
   const weekends = useMemo(() => eachDay(start, end).filter((d) => weekday(d) === 0 || weekday(d) === 6), [start, end]);
   const weekendsOut = weekends.length > 0 && weekends.every((d) => excluded.has(d));
 
-  const localDeadline = kind === "none" ? null
-    : kind === "d1" ? seoulEvening(today, 1)
-    : kind === "d3" ? seoulEvening(today, 3)
-    : kind === "d7" ? seoulEvening(today, 7)
-    : customDate && customTime ? `${customDate}T${customTime}` : "";
-  const deadlineIso = localDeadline ? seoulLocalToIso(localDeadline) : null;
+  const deadlineIso = deadline ? seoulLocalToIso(deadline) : null;
+  const past = Boolean(deadlineIso && now && new Date(deadlineIso).getTime() <= now.getTime());
+  const left = deadlineIso && now && !past ? remainingLabel(new Date(deadlineIso), now) : null;
+  const blocked = !title.trim() || candidates < 1 || past || (deadline !== "" && !deadlineIso);
 
-  /** 마감 안내: 문구와 톤. now 가 없을 때(서버 렌더)는 시각 비교를 하지 않는다. */
-  const deadlineNote = (() => {
-    if (kind === "none") return { tone: "neutral" as const, head: "마감 없이 진행", sub: "" };
-    if (!deadlineIso) return { tone: "danger" as const, head: "날짜와 시간을 입력하세요", sub: "" };
-    const at = new Date(deadlineIso);
-    const head = `${deadlineLabel(deadlineIso)}에 마감`;
-    if (now && at.getTime() <= now.getTime()) return { tone: "danger" as const, head: "이미 지난 시각이에요", sub: "" };
-    const left = now ? remainingLabel(at, now) : null;
-    if (localDeadline && localDeadline.slice(0, 10) >= start) {
-      return { tone: "warn" as const, head, sub: `${left ?? ""} · 후보 첫날 이후`.replace(/^ · /, "") };
-    }
-    return { tone: "ok" as const, head, sub: left ?? "" };
-  })();
-  const blocked = deadlineNote.tone === "danger" || candidates < 1 || !title.trim();
+  function changeStart(value: string) {
+    if (!value) return;
+    setStart(value);
+    if (end < value) setEnd(value);
+    else if (daysInclusive(value, end) > MAX_POLL_DAYS) setEnd(addDays(value, MAX_POLL_DAYS - 1));
+  }
 
-  function onDay(day: string) {
-    if (mode === "range") {
-      if (!picking) {
-        setStart(day); setEnd(day); setPicking(true);
-        return;
-      }
-      const a = day < start ? day : start;
-      const b = day < start ? start : day;
-      if (daysInclusive(a, b) > MAX_POLL_DAYS) {
-        setError(`후보 기간은 ${MAX_POLL_DAYS}일까지예요.`);
-        return;
-      }
-      setError("");
-      setStart(a); setEnd(b); setPicking(false);
-      // 기간 밖으로 밀려난 제외일은 버린다.
-      setExcluded((prev) => new Set([...prev].filter((d) => d >= a && d <= b)));
-      return;
-    }
-    if (day < start || day > end) return;
+  function changeEnd(value: string) {
+    if (!value) return;
+    if (value < start) setStart(value);
+    else if (daysInclusive(start, value) > MAX_POLL_DAYS) return setError(`기간은 ${MAX_POLL_DAYS}일까지예요`);
+    setError("");
+    setEnd(value);
+  }
+
+  function toggleDay(day: string) {
     setExcluded((prev) => {
       const next = new Set(prev);
       if (next.has(day)) next.delete(day); else next.add(day);
@@ -119,198 +79,98 @@ export function PollCreate({ today }: { today: string }) {
 
   function submit() {
     setError("");
-    if (!title.trim()) return setError("제목을 입력해 주세요.");
     startTransition(async () => {
       const result = await createPoll({
-        title,
-        description,
+        title, foodType, restaurant, location,
         rangeStart: start,
         rangeEnd: end,
         excluded: excludedDays,
         respondBy: deadlineIso,
-        resultVisibility: visibility,
       });
       if (!result.ok) return setError(result.message);
       router.push(`/polls/${result.id}?created=1`);
     });
   }
 
-  const toneClass = {
-    ok: "bg-ok-soft text-ok", warn: "bg-warn-soft text-warn", danger: "bg-danger-soft text-danger", neutral: "bg-surface-2 text-ink-2",
-  }[deadlineNote.tone];
-
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 break-keep">
-      <header>
-        <h1 className="text-2xl font-bold text-ink">새 일정 투표</h1>
-      </header>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-5 break-keep">
+      <h1 className="text-2xl font-bold text-ink">새 일정 투표</h1>
 
-      <div className="flex flex-wrap items-start gap-5">
-        {/* 왼쪽: 기본 정보 · 마감 · 공개 */}
-        <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-4">
-          <section className={CARD}>
-            <h2 className="text-base font-bold text-ink">기본 정보</h2>
-            <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
-              제목
-              <input className={fieldClass} value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder="예: 12월 송년 스터디" />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
-              설명
-              <textarea
-                className="ui-input min-h-24 w-full rounded-xl bg-surface px-3.5 py-2.5 text-[15px] leading-relaxed text-ink ring-1 ring-inset ring-line focus:ring-2 focus:ring-accent focus:outline-none"
-                value={description}
-                maxLength={1000}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </label>
-          </section>
+      <section className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5">
+        <label className={LABEL}>
+          제목
+          <input className={fieldClass} value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <label className={LABEL}>
+            음식 종류
+            <input className={fieldClass} value={foodType} maxLength={30} onChange={(e) => setFoodType(e.target.value)} placeholder="예: 한식" />
+          </label>
+          <label className={LABEL}>
+            식당
+            <input className={fieldClass} value={restaurant} maxLength={60} onChange={(e) => setRestaurant(e.target.value)} />
+          </label>
+          <label className={LABEL}>
+            위치
+            <input className={fieldClass} value={location} maxLength={100} onChange={(e) => setLocation(e.target.value)} placeholder="예: 합정" />
+          </label>
+        </div>
+      </section>
 
-          <section className={CARD}>
-            <h2 className="text-base font-bold text-ink">투표 마감</h2>
-            <div role="group" aria-label="마감 시각 빠른 선택" className="flex flex-wrap gap-2">
-              {DEADLINE_CHIPS.map((chip) => (
-                <button
-                  key={chip.kind}
-                  type="button"
-                  aria-pressed={kind === chip.kind}
-                  onClick={() => setKind(chip.kind)}
-                  className={cn(
-                    "h-10 rounded-full px-3.5 text-sm ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-accent",
-                    kind === chip.kind ? "bg-accent-soft font-bold text-accent ring-accent" : "bg-surface text-ink ring-line-2 hover:bg-surface-2",
-                  )}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-            {kind === "custom" && (
-              <div className="flex flex-wrap gap-3">
-                <label className="flex min-w-40 flex-1 flex-col gap-1.5 text-sm font-medium text-ink">
-                  마감 날짜
-                  <input type="date" className={fieldClass} min={today} value={customDate} onChange={(e) => setCustomDate(e.target.value)} />
-                </label>
-                <label className="flex min-w-32 flex-1 flex-col gap-1.5 text-sm font-medium text-ink">
-                  마감 시각
-                  <input type="time" className={fieldClass} value={customTime} onChange={(e) => setCustomTime(e.target.value)} />
-                </label>
-              </div>
-            )}
-            <div role="status" className={cn("flex items-start gap-3 rounded-xl px-4 py-3.5", toneClass)}>
-              {deadlineNote.tone === "danger" ? <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden /> : <Clock className="mt-0.5 size-5 shrink-0" aria-hidden />}
-              <div className="flex flex-col gap-0.5">
-                <strong className="text-[15px]">{deadlineNote.head}</strong>
-                {deadlineNote.sub && <span className="text-sm">{deadlineNote.sub}</span>}
-              </div>
-            </div>
-          </section>
-
-          <fieldset className={cn(CARD, "gap-3")}>
-            <legend className="sr-only">결과 공개</legend>
-            <h2 className="text-base font-bold text-ink" aria-hidden>결과 공개</h2>
-            {([
-              ["participants", "참여자도 결과 보기"],
-              ["owner", "나만 결과 보기"],
-            ] as const).map(([value, label]) => (
-              <label key={value} className="flex cursor-pointer items-start gap-3">
-                <input type="radio" name="visibility" className="mt-1 size-[18px] accent-[var(--accent)]" checked={visibility === value} onChange={() => setVisibility(value)} />
-                <span className="font-medium text-ink">{label}</span>
-              </label>
-            ))}
-          </fieldset>
+      <section className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5">
+        <div className="grid grid-cols-2 gap-3">
+          <label className={LABEL}>
+            시작일
+            <input type="date" className={fieldClass} min={today} value={start} onChange={(e) => changeStart(e.target.value)} />
+          </label>
+          <label className={LABEL}>
+            끝나는 날
+            <input type="date" className={fieldClass} min={start} max={addDays(start, MAX_POLL_DAYS - 1)} value={end} onChange={(e) => changeEnd(e.target.value)} />
+          </label>
         </div>
 
-        {/* 오른쪽: 기간 · 제외일 */}
-        <section className={cn(CARD, "min-w-0 flex-[1.25_1_480px]")}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-base font-bold text-ink">후보 기간과 제외일</h2>
-            <div role="group" aria-label="달력 모드" className="flex rounded-[10px] bg-surface-2 p-[3px]">
-              {([["range", "① 기간 정하기"], ["exclude", "② 제외일 찍기"]] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={mode === value}
-                  onClick={() => { setMode(value); setPicking(false); }}
-                  className={cn("h-9 rounded-lg px-3.5 text-sm", mode === value ? "bg-surface font-bold text-ink" : "text-ink-2")}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-[15px] font-bold text-ink">안 되는 날을 누르세요</h2>
+          <button type="button" onClick={toggleWeekends} className={buttonClass("ghost", "sm")}>{weekendsOut ? "주말 해제" : "주말 제외"}</button>
+        </div>
+        <MonthGrids
+          start={start}
+          end={end}
+          gap="gap-1.5"
+          cell={(day) => {
+            const out = excluded.has(day);
+            return (
+              <button
+                type="button"
+                aria-pressed={out}
+                aria-label={`${dayLabel(day)}${out ? ", 제외" : ""}`}
+                onClick={() => toggleDay(day)}
+                style={out ? HATCH : undefined}
+                className={cn(
+                  "h-12 rounded-xl text-[15px] ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-accent",
+                  out ? "text-ink-2 line-through ring-line-2" : "bg-accent-soft text-ink ring-accent-soft",
+                )}
+              >
+                {Number(day.slice(8))}
+              </button>
+            );
+          }}
+        />
+      </section>
+
+      <section className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
+        <label className={LABEL}>
+          마감 (선택)
+          <div className="flex gap-2">
+            <input type="datetime-local" className={cn(fieldClass, "flex-1")} min={`${today}T00:00`} value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            {deadline && <button type="button" onClick={() => setDeadline("")} className={buttonClass("ghost")}>지우기</button>}
           </div>
-          <p className="text-sm text-ink-2">
-            {mode === "range" ? (picking ? "끝나는 날을 누르세요" : "시작일, 끝나는 날 순서로 누르세요") : "뺄 날을 누르세요"}
-          </p>
+        </label>
+        {past && <span role="alert" className="text-sm text-danger">이미 지난 시각이에요</span>}
+        {left && <span className="text-sm text-ink-2">{left}</span>}
+      </section>
 
-          <div className="flex items-center justify-between">
-            <button type="button" aria-label="이전 달" onClick={() => setVisible(monthShift(visible, -1))} className="grid size-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"><ChevronLeft className="size-5" /></button>
-            <strong className="text-[17px] text-ink">{`${visible.slice(0, 4)}년 ${Number(visible.slice(5))}월`}</strong>
-            <button type="button" aria-label="다음 달" onClick={() => setVisible(monthShift(visible, 1))} className="grid size-10 place-items-center rounded-xl text-ink-2 hover:bg-surface-2"><ChevronRight className="size-5" /></button>
-          </div>
-
-          <MonthGrids
-            start={`${visible}-01`}
-            end={lastDayOf(visible)}
-            gap="gap-1.5"
-            blankHeight="h-12"
-            showLabel={false}
-            cell={(day) => {
-              const inRange = day >= start && day <= end;
-              const isEdge = day === start || day === end;
-              const out = inRange && excluded.has(day);
-              const locked = mode === "exclude" && !inRange;
-              return (
-                <button
-                  type="button"
-                  disabled={locked}
-                  onClick={() => onDay(day)}
-                  aria-pressed={out}
-                  aria-label={`${dayLabel(day)}${out ? ", 제외일" : inRange ? ", 후보일" : ""}`}
-                  style={out ? HATCH : undefined}
-                  className={cn(
-                    "h-12 rounded-xl text-[15px] ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-40",
-                    out ? "text-ink-2 line-through ring-line-2"
-                      : isEdge ? "bg-accent font-bold text-on-accent ring-accent"
-                      : inRange ? "bg-accent-soft text-ink ring-accent-soft"
-                      : "bg-surface text-ink-2 ring-line hover:bg-surface-2",
-                    picking && day === start && "ring-2 ring-ink",
-                  )}
-                >
-                  {Number(day.slice(8))}
-                </button>
-              );
-            }}
-          />
-
-          <div className="flex flex-wrap gap-4 text-[13px] text-ink-2">
-            <span className="flex items-center gap-1.5"><span className="size-3.5 rounded bg-accent" />시작·끝</span>
-            <span className="flex items-center gap-1.5"><span className="size-3.5 rounded bg-accent-soft ring-1 ring-line-2" />후보일</span>
-            <span className="flex items-center gap-1.5"><span className="size-3.5 rounded" style={HATCH} />제외일</span>
-          </div>
-
-          <div className="flex flex-col gap-3 border-t border-line pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong className="text-[15px] text-ink">
-                {dayLabel(start)} ~ {dayLabel(end)} · 후보 {candidates}일{excludedDays.length > 0 && ` (제외 ${excludedDays.length}일)`}
-              </strong>
-              <button type="button" onClick={toggleWeekends} className={buttonClass("ghost", "sm")}>{weekendsOut ? "주말 제외 풀기" : "주말 모두 제외"}</button>
-            </div>
-            {excludedDays.length > 0 && (
-              <ul className="flex flex-wrap gap-2">
-                {excludedDays.map((day) => (
-                  <li key={day} className="inline-flex h-8 items-center gap-1 rounded-full bg-surface-2 pr-1 pl-3 text-sm text-ink">
-                    {dayLabel(day)}
-                    <button type="button" aria-label={`${dayLabel(day)} 제외 취소`} onClick={() => setExcluded((prev) => { const next = new Set(prev); next.delete(day); return next; })} className="grid size-6 place-items-center rounded-full text-ink-2 hover:bg-line">
-                      <X className="size-3.5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <div className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-3 border-t border-line bg-ground/95 px-1 py-3 backdrop-blur">
+      <div className="sticky bottom-0 -mx-1 flex items-center justify-end gap-3 border-t border-line bg-ground/95 px-1 py-3 backdrop-blur">
         <span role={error ? "alert" : undefined} className={cn("mr-auto text-sm", error ? "text-danger" : "text-ink-2")}>
           {error || (candidates < 1 ? "후보일이 없어요" : `후보 ${candidates}일`)}
         </span>
