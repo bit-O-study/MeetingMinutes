@@ -16,7 +16,8 @@ import { Card, EmptyState } from "@/components/ui/Panels";
 import { ProjectIcon } from "@/components/ui/ProjectIcon";
 import { PROJECT_SCOPE_CLASS, projectColor } from "@/components/ui/projectColor";
 import { buttonClass } from "@/components/ui/Button";
-import { Plus, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
+import styles from "@/components/screens/Project.module.css";
 import { TaskRow } from "@/components/screens/TaskRow";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { SpaceOwnerPanel } from "@/components/screens/SpaceOwnerPanel";
@@ -66,29 +67,23 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   const tabs = [{ value: "chat", label: "대화" }, { value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "meetings", label: "일정" }, { value: "issues", label: "이슈" }, { value: "members", label: role === "owner" ? "멤버·설정" : "멤버" }];
   const color = projectColor(spaceId);
 
-  // 재디자인(2026-10-14): 프로젝트 색 머리글 + 붙어 있는 밑줄 탭. 화면 전체를 project-* 로 감싸
-  // 버튼·탭·내 말풍선·체크가 그 프로젝트 색을 따른다. 설정은 머리글이 아니라 멤버·설정 탭으로 옮겼다.
+  // 프로젝트의 식별 색은 아이콘에 남기고, 주요 동작과 탐색은 공통 스타일을 쓴다.
   return (
     <div className={cn("workspace-page project-page", PROJECT_SCOPE_CLASS[color])}>
-      <header className="project-heading">
-        <div className="relative flex items-center gap-3">
+      <header className={`project-heading ${styles.heading}`}>
+        <div className={styles.identity}>
           <ProjectIcon spaceId={spaceId} name={space.name} size="lg"  />
           <div className="min-w-0 flex-1">
             <h1 className="break-words text-xl font-semibold tracking-tight md:text-2xl">{space.name}</h1>
-            <p className="mt-0.5 text-[13px] opacity-90">{kindLabels[space.kind]} · 멤버 {members.length}명</p>
+            <p>{kindLabels[space.kind]} · 멤버 {members.length}명</p>
           </div>
           <div className="hidden sm:block"><AvatarStack people={members} /></div>
         </div>
-        <div className="relative mt-4 flex flex-wrap gap-2">
+        <div className={styles.actions}>
           <Link href={"/s/" + spaceId + "/new"} className="press inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-medium text-on-accent">
             <Plus className="size-4" />새 노트
           </Link>
           <Link href={"/s/" + spaceId + "/files"} className="press inline-flex h-10 items-center rounded-xl border border-line bg-surface px-4 text-sm font-medium text-ink-2">배포 파일</Link>
-          {role === "owner" && (
-            <Link href={"/s/" + spaceId + "?tab=members"} className="press inline-flex h-10 items-center gap-1.5 rounded-xl border border-line bg-surface px-4 text-sm font-medium text-ink-2">
-              <Settings className="size-4" />멤버 초대·설정
-            </Link>
-          )}
         </div>
       </header>
 
@@ -108,12 +103,12 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
         noteRows.length === 0 ? (
           <Card><EmptyState title="첫 노트를 만들어 보세요" hint="스터디 회의록, 인수인계 메모, 빈 노트로 시작할 수 있어요." action={{ href: "/s/" + spaceId + "/new", label: "새 노트" }} /></Card>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className={styles.notes}>
             {noteRows.slice(0, 30).map((note) => (
               <li key={note.id}>
-                <Link href={"/s/" + spaceId + "/n/" + note.id} className="ui-card flex flex-col gap-1.5 px-4 py-4 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent">
-                  <span className="flex items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate text-[15px] font-extrabold text-ink">{note.title}</span>
+                <Link href={"/s/" + spaceId + "/n/" + note.id} className={styles.note}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className={styles.noteTitle}>{note.title}</span>
                     {questionCounts[note.id] > 0 && <Badge tone="warn">질문 {questionCounts[note.id]}</Badge>}
                     <NoteStatusBadge status={note.status} />
                   </span>
@@ -149,18 +144,18 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
       )}
 
       {tab === "issues" && issueList && <>
-        <header className="rounded-2xl border border-line bg-surface p-5">
-          <h2 className="text-lg font-semibold">{status === "raw" ? "검토함" : "프로젝트 이슈"}</h2>
-          <p className="mt-2 text-sm leading-6 text-ink-2">{status === "raw" ? "대화에서 담은 후보입니다. 실행할 내용은 이슈로 등록하고, 불필요한 후보는 삭제하세요. 채팅 원문은 유지됩니다." : "실행할 작업에 집중하세요. 대화에서 담은 미가공 이슈는 검토함에서 따로 정리합니다."}</p>
+        <header className={styles.issueHeading}>
+          <h2>{status === "raw" ? "검토함" : "프로젝트 이슈"}</h2>
+          <p>{status === "raw" ? "대화에서 담은 후보를 검토하세요. 후보를 삭제해도 원문은 남습니다." : "실행할 작업을 관리합니다. 대화에서 담은 후보는 검토함에 있습니다."}</p>
         </header>
         <div className="flex flex-wrap items-center gap-2">
           <nav aria-label="이슈 상태" className="flex flex-wrap gap-1.5">
             {Object.entries(ISSUE_STATUSES).sort(([a], [b]) => Number(a === "raw") - Number(b === "raw")).map(([value, label]) => (
               <Link key={value} aria-current={status === value ? "page" : undefined} href={"/s/" + spaceId + "?tab=issues&status=" + value}
-                className={cn("press inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-bold", status === value ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>{value === "raw" ? "검토함" : label}</Link>
+                className={cn("inline-flex min-h-10 items-center rounded-lg px-3.5 text-[13px] font-medium", status === value ? "bg-accent-soft text-accent" : "bg-surface text-ink-2")}>{value === "raw" ? "검토함" : label}</Link>
             ))}
             <Link href={"/s/" + spaceId + "?tab=issues&status=all"} aria-current={!status ? "page" : undefined}
-              className={cn("press inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-bold", !status ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>전체</Link>
+              className={cn("inline-flex min-h-10 items-center rounded-lg px-3.5 text-[13px] font-medium", !status ? "bg-accent-soft text-accent" : "bg-surface text-ink-2")}>전체</Link>
           </nav>
           <span className="ml-auto text-sm text-ink-3">{issueList.total}개</span>
         </div>

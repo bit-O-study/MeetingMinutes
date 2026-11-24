@@ -127,21 +127,20 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
         const showName = !mine && (index === 0 || sorted[index - 1].createdBy !== row.createdBy);
         return <li key={row.id} className={`group flex min-w-0 max-w-[92%] flex-col gap-1 ${mine ? "self-end items-end" : "self-start items-start"}`}>
           {showName && <span className="mt-2 px-1 text-xs font-semibold text-ink-3">{nameOf(row.createdBy)}</span>}
-          <div className="flex items-end gap-1.5">
-            {mine && <span className="pb-1 text-[11px] text-ink-3">{when(row.createdAt)}</span>}
+          <div className="flex min-w-0 items-end gap-1.5">
             <p
               onPointerDown={() => startPress(row)} onPointerUp={cancelPress} onPointerLeave={cancelPress} onPointerCancel={cancelPress}
               onContextMenu={(event) => { event.preventDefault(); setMenuFor(row); }}
-              className={`min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed select-none md:select-text ${mine ? "rounded-br-md bg-accent text-on-accent" : "rounded-bl-md bg-surface text-ink"}`}>
+              className={`min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed text-ink select-none md:select-text ${mine ? "rounded-br-md bg-accent-soft" : "rounded-bl-md border border-line bg-surface"}`}>
               {row.body}
             </p>
-            {!mine && <span className="pb-1 text-[11px] text-ink-3">{when(row.createdAt)}</span>}
               <button type="button" disabled={deleting} onClick={() => setMenuFor(row)}
                 title="메시지 메뉴" aria-label="메시지 메뉴" aria-haspopup="dialog"
-                className="mb-0.5 grid size-9 flex-none place-items-center rounded-full text-ink-3 hover:bg-surface hover:text-accent">
+                className="grid size-10 flex-none place-items-center rounded-lg text-ink-3 hover:bg-surface hover:text-accent focus-visible:outline-2 focus-visible:outline-accent">
                 <MoreHorizontal className="size-4" />
               </button>
           </div>
+          <time dateTime={new Date(row.createdAt).toISOString()} className="px-1 text-[11px] text-ink-3">{when(row.createdAt)}</time>
           {row.issueId && (
             <Link href={`/s/${spaceId}?tab=issues&issue=${row.issueId}#issue-${row.issueId}`}
               className="flex items-center gap-2 px-2 py-1 text-xs text-ink-3 hover:text-accent">
@@ -150,7 +149,7 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
           )}
         </li>;
       })}
-      {!sorted.length && <li className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-ink-3">첫 메시지를 남겨 보세요.<br />정리하지 않아도 괜찮아요. 필요한 말은 나중에 이슈로 담을 수 있어요.</li>}
+      {!sorted.length && <li className="rounded-2xl border border-line bg-surface px-4 py-8 text-center text-sm text-ink-2">첫 메시지를 남겨 보세요.</li>}
     </ol>
     {page > 1 && <Link className="self-center rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-ink-2" href={`/s/${spaceId}?tab=chat&page=${page - 1}`}>최근 대화로</Link>}
 

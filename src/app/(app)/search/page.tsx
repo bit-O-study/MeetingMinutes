@@ -8,6 +8,7 @@ import { listMySpaces, mySpaceIds } from "@/lib/access";
 import { searchNotes } from "@/lib/actions/search";
 import { Badge, NoteStatusBadge } from "@/components/ui/Badge";
 import { relativeTime } from "@/lib/utils";
+import styles from "@/components/screens/Search.module.css";
 
 function one(value: string | string[] | undefined) {
   return typeof value === "string" ? value : "";
@@ -33,31 +34,31 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const to = one(params.to);
   const invalidDates = !validDate(from) || !validDate(to) || Boolean(from && to && from > to);
   const status = params.status === "draft" || params.status === "tidied" ? params.status : "";
-  const inputClass = "h-11 w-full min-w-0 rounded-xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none";
+  const inputClass = styles.input;
   const formKey = [query, selectedSpace, from, to, status].join("|");
   const result = query && !invalidSpace && !invalidDates && spaceIds.length > 0
     ? await searchNotes(query, { spaceIds: selectedSpace ? [selectedSpace] : spaceIds, from, to, status: status || null, limit: 30 })
     : { total: 0, hits: [] };
 
   return (
-    <div className="search-page mx-auto flex w-full max-w-3xl flex-col gap-6 px-5 py-10">
-      <h1 className="page-title">무엇을 찾으세요?</h1>
-      <form key={formKey} action="/search" method="get" className="space-y-4">
+    <div className={styles.page}>
+      <header className={styles.header}><h1>검색</h1><p>함께 작성한 노트를 찾아보세요.</p></header>
+      <form key={formKey} action="/search" method="get" className={styles.form}>
         <div>
-          <label htmlFor="search-q" className="mb-2 block text-sm font-medium text-ink">검색어</label>
-          <div className="flex gap-2">
+          <label htmlFor="search-q" className="sr-only">검색어</label>
+          <div className={styles.query}>
             <input id="search-q" name="q" type="search" defaultValue={query} maxLength={200}
               placeholder="노트 제목과 본문에서 찾기" className={inputClass + " min-w-0 flex-1"} />
-            <button type="submit" className="shrink-0 press inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45">검색</button>
+            <button type="submit" className="shrink-0 inline-flex min-h-11 items-center justify-center rounded-lg bg-accent px-5 text-sm font-medium text-on-accent hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">검색</button>
           </div>
         </div>
-        <details open={Boolean(selectedSpace || status || from || to)} className="rounded-xl border border-line p-3">
-          <summary className="cursor-pointer text-xs text-ink-2">프로젝트·기간·상태로 좁혀 찾기</summary>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <details open={Boolean(selectedSpace || status || from || to)} className={styles.filters}>
+          <summary>검색 조건{selectedSpace || status || from || to ? " · 적용 중" : ""}</summary>
+        <div className={styles.filterFields}>
           <div>
-            <label htmlFor="search-space" className="mb-1 block text-xs text-ink-2">스페이스</label>
+            <label htmlFor="search-space" className="mb-2 block text-sm text-ink-2">프로젝트</label>
             <select id="search-space" name="space" defaultValue={selectedSpace} className={inputClass}>
-              <option value="">내 스페이스 전체</option>
+              <option value="">내 프로젝트 전체</option>
               {spaces.map(({ space }) => <option key={space.id} value={space.id}>{space.name}</option>)}
             </select>
           </div>
@@ -77,9 +78,9 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           </div>
         </div>
         </details>
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-3">
-          <p>검색 범위: 내 스페이스 {spaceIds.length}개 · 날짜는 한국 시간 기준</p>
-          <Link href="/search" className="text-ink-2 hover:text-accent">검색 조건 초기화</Link>
+        <div className={styles.meta}>
+          <p>내 프로젝트 {spaceIds.length}개에서 검색 · 한국 시간 기준</p>
+          {Boolean(query || selectedSpace || from || to || status) && <Link href="/search" className="hover:text-accent">초기화</Link>}
         </div>
       </form>
       {invalidSpace || invalidDates ? (
@@ -87,22 +88,22 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           {invalidSpace ? "선택한 검색 범위를 사용할 수 없습니다. 검색 조건을 다시 선택해 주세요." : "검색 기간을 확인해 주세요. 시작일은 종료일보다 늦을 수 없습니다."}
         </p>
       ) : spaceIds.length === 0 ? (
-        <Card><EmptyState title="검색할 스페이스가 없습니다" hint="참여 중인 스페이스의 노트를 검색할 수 있습니다." action={{ href: "/", label: "홈으로" }} /></Card>
+        <Card><EmptyState title="검색할 프로젝트가 없습니다" hint="참여 중인 프로젝트의 노트를 검색할 수 있습니다." action={{ href: "/projects", label: "프로젝트 보기" }} /></Card>
       ) : !query ? (
         <Card><EmptyState title="찾고 싶은 내용을 입력해 주세요" hint="제목이나 본문의 단어로 함께 작성한 노트를 찾습니다." /></Card>
       ) : result.hits.length === 0 ? (
         <Card>
-          <EmptyState title="검색 결과가 없습니다" hint="다른 단어를 입력하거나 스페이스·기간·상태 조건을 넓혀 보세요." />
+          <EmptyState title="검색 결과가 없습니다" hint="다른 단어를 입력하거나 프로젝트·기간·상태 조건을 넓혀 보세요." />
         </Card>
       ) : (
         <section aria-label="검색 결과" className="space-y-3">
           <p className="text-sm text-ink-2">
             {result.total !== result.hits.length ? `${result.total}건 중 상위 ${result.hits.length}건` : `${result.total}건`} · 최근 수정순
           </p>
-          <ul className="space-y-3">
+          <ul className={styles.results}>
             {result.hits.map((hit) => (
-              <li key={hit.id}><Card>
-                <Link href={`/s/${hit.spaceId}/n/${hit.id}`} className="block space-y-2 p-4 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent">
+              <li key={hit.id}>
+                <Link href={`/s/${hit.spaceId}/n/${hit.id}`} className={`${styles.result} space-y-2`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="min-w-0 break-words text-sm font-semibold text-ink">{hit.title}</h2>
                     <NoteStatusBadge status={hit.status} />
@@ -111,7 +112,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
                   <p className="text-xs text-ink-3">{hit.spaceName} · {relativeTime(hit.updatedAt)} 수정</p>
                   {hit.snippet && <p className="break-words text-sm leading-relaxed text-ink-2">{hit.snippet}</p>}
                 </Link>
-              </Card></li>
+              </li>
             ))}
           </ul>
         </section>

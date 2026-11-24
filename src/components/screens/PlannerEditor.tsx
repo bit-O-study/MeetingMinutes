@@ -9,10 +9,10 @@ import type { LinkTarget } from "@/lib/calendar-entries";
 import { plannerInput, type PlannerInput, type PlannerItem } from "@/lib/planner";
 import { cn } from "@/lib/utils";
 
-/** 입력칸은 라벨 대신 아이콘과 안내 문구로 말한다. 접근성 이름은 aria-label 로 둔다. */
-const FIELD = "flex h-12 items-center gap-3 rounded-2xl bg-surface-2 px-3.5 focus-within:outline-2 focus-within:outline-accent";
-const INPUT = "min-w-0 flex-1 bg-transparent text-[15px] font-semibold tabular-nums outline-none placeholder:font-medium placeholder:text-ink-3";
-const PILL = "press inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-sm font-bold transition-colors";
+/** 공통 입력 스타일을 쓰되 시간 입력은 좁은 화면에서도 구분되도록 라벨을 표시한다. */
+const FIELD = "flex h-12 items-center gap-3 rounded-lg border border-line bg-surface px-3.5 focus-within:outline-2 focus-within:outline-accent";
+const INPUT = "min-w-0 flex-1 bg-transparent text-base font-medium tabular-nums outline-none placeholder:font-medium placeholder:text-ink-3";
+const PILL = "press inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-colors";
 
 /**
  * 개인 일정·할 일 편집 창.
@@ -95,18 +95,18 @@ export function PlannerEditor({ item, kind, date, onClose, linkTargets = [] }: {
   const KindIcon = isEvent ? CalendarDays : ListChecks;
 
   return <dialog ref={dialog} aria-labelledby="planner-editor-title" onCancel={event => { event.preventDefault(); close(); }}
-    className="m-auto max-h-[calc(100dvh-1.5rem)] w-[30rem] max-w-[calc(100%-1.5rem)] overflow-y-auto rounded-[2rem] border-0 bg-surface p-0 text-ink shadow-[var(--shadow-float)] backdrop:bg-ink/40 backdrop:backdrop-blur-sm">
+    className="m-auto max-h-[calc(100dvh-1.5rem)] w-[30rem] max-w-[calc(100%-1.5rem)] overflow-y-auto rounded-[var(--radius-dialog)] border border-line bg-surface p-0 text-ink shadow-[var(--shadow-float)] backdrop:bg-ink/40 backdrop:backdrop-blur-sm">
     <form className="flex flex-col gap-4 p-5 md:p-6" onSubmit={event => { event.preventDefault(); persist(!item); }}>
       <h2 id="planner-editor-title" className="sr-only">{item ? "" : "새 "}{isEvent ? "개인 일정" : "할 일"}</h2>
       <div className="flex items-center gap-3">
         <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent"><KindIcon className="size-5" /></span>
         <input autoFocus aria-label="제목" value={form.title} maxLength={160} required disabled={pending} onChange={e => change("title", e.target.value)} placeholder={isEvent ? "일정 이름" : "할 일"}
-          className="min-w-0 flex-1 bg-transparent py-1 text-[1.5rem] font-black leading-tight tracking-tight outline-none placeholder:text-ink-3/60" />
-        <button type="button" aria-label="닫기" onClick={close} disabled={pending} className="press grid size-10 shrink-0 place-items-center rounded-full bg-surface-2 hover:bg-line"><X className="size-5" /></button>
+          className="min-w-0 flex-1 bg-transparent py-1 text-xl font-semibold leading-tight tracking-tight outline-none placeholder:text-ink-3/60" />
+        <button type="button" aria-label="닫기" onClick={close} disabled={pending} className="press grid size-10 shrink-0 place-items-center rounded-lg bg-surface-2 hover:bg-line"><X className="size-5" /></button>
       </div>
 
       <fieldset disabled={pending} className="m-0 flex min-w-0 flex-col gap-4 border-0 p-0">
-        <div role="group" aria-label="날짜 방식" className="flex gap-1 rounded-full bg-surface-2 p-1">
+        <div role="group" aria-label="날짜 방식" className="flex gap-1 rounded-xl bg-surface-2 p-1">
           {modes.map(([mode, label, Icon]) => (
             <button key={mode} type="button" aria-pressed={form.mode === mode} onClick={() => pickMode(mode)}
               className={cn(PILL, form.mode === mode ? "bg-surface text-accent shadow-sm" : "text-ink-3 hover:text-ink")}>
@@ -139,11 +139,13 @@ export function PlannerEditor({ item, kind, date, onClose, linkTargets = [] }: {
                 <Sun aria-hidden="true" className="size-4" />종일
               </button>
               {!form.allDay && (
-                <div className={cn(FIELD, "min-w-[17rem] flex-1 gap-2")}>
-                  <Clock aria-hidden="true" className="size-5 shrink-0 text-ink-3" />
-                  <input type="time" aria-label="시작 시간" value={form.from || ""} required onChange={e => change("from", empty(e.target.value))} className={INPUT} />
-                  <span aria-hidden="true" className="text-ink-3">–</span>
-                  <input type="time" aria-label="종료 시간" value={form.to || ""} required onChange={e => change("to", empty(e.target.value))} className={INPUT} />
+                <div className="grid w-full grid-cols-1 gap-3 min-[400px]:grid-cols-2">
+                  <label className="min-w-0 text-xs text-ink-2">시작 시간
+                    <input type="time" value={form.from || ""} required onChange={e => change("from", empty(e.target.value))} className="mt-2 h-12 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-accent" />
+                  </label>
+                  <label className="min-w-0 text-xs text-ink-2">종료 시간
+                    <input type="time" value={form.to || ""} required onChange={e => change("to", empty(e.target.value))} className="mt-2 h-12 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-accent" />
+                  </label>
                 </div>
               )}
             </div>
@@ -182,22 +184,22 @@ export function PlannerEditor({ item, kind, date, onClose, linkTargets = [] }: {
         <div role="alertdialog" aria-label="삭제 확인" className="rounded-2xl bg-danger-soft p-3">
           <p className="flex items-center gap-2 text-sm font-bold text-danger"><CircleAlert aria-hidden="true" className="size-4 shrink-0" />삭제하면 복구할 수 없어요</p>
           <div className="mt-2.5 flex gap-2">
-            <button type="button" onClick={remove} disabled={pending} className="press inline-flex h-10 items-center rounded-full bg-danger px-4 text-sm font-black text-on-accent">삭제하기</button>
-            <button type="button" onClick={() => setConfirmDelete(false)} disabled={pending} className="press inline-flex h-10 items-center rounded-full bg-surface px-4 text-sm font-bold shadow-sm">취소</button>
+            <button type="button" onClick={remove} disabled={pending} className="press inline-flex h-10 items-center rounded-lg bg-danger px-4 text-sm font-medium text-on-accent">삭제하기</button>
+            <button type="button" onClick={() => setConfirmDelete(false)} disabled={pending} className="press inline-flex h-10 items-center rounded-lg bg-surface px-4 text-sm font-bold shadow-sm">취소</button>
           </div>
         </div>
       ) : (
         <div className="flex items-center gap-2">
-          {item && <button type="button" aria-label="삭제" title="삭제" onClick={() => setConfirmDelete(true)} disabled={pending} className="press grid size-11 shrink-0 place-items-center rounded-full bg-danger-soft text-danger hover:brightness-95 disabled:opacity-50"><Trash2 className="size-5" /></button>}
+          {item && <button type="button" aria-label="삭제" title="삭제" onClick={() => setConfirmDelete(true)} disabled={pending} className="press grid size-11 shrink-0 place-items-center rounded-lg bg-danger-soft text-danger hover:brightness-95 disabled:opacity-50"><Trash2 className="size-5" /></button>}
           <span role="status" aria-live="polite" className="mr-auto inline-flex items-center gap-1.5 text-sm font-semibold text-ink-3">
             {pending ? <><LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" /><span className="sr-only">반영 중</span></>
               : dirty && item ? <><i aria-hidden="true" className="size-2 animate-pulse rounded-full bg-warn motion-reduce:animate-none" /><span className="sr-only">입력 중</span></>
               : savedLabel ? <><Check aria-hidden="true" className="size-4 text-ok" /><span className="sr-only">{savedLabel}</span></> : null}
           </span>
-          {(!item || error) && <button type="button" aria-label={item ? "미반영 변경 취소" : "입력 취소"} onClick={onClose} disabled={pending} className="press inline-flex h-11 items-center rounded-full px-4 text-sm font-bold text-ink-2 hover:bg-surface-2">취소</button>}
+          {(!item || error) && <button type="button" aria-label={item ? "미반영 변경 취소" : "입력 취소"} onClick={onClose} disabled={pending} className="press inline-flex h-11 items-center rounded-lg px-4 text-sm font-bold text-ink-2 hover:bg-surface-2">취소</button>}
           {item
-            ? <button type="button" aria-label="완료" onClick={close} disabled={pending} className="press inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-5 text-sm font-black text-on-accent shadow-md hover:brightness-105 disabled:opacity-50"><Check aria-hidden="true" className="size-4" strokeWidth={3} />완료</button>
-            : <button type="submit" aria-label="등록하기" disabled={pending} className="press inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-5 text-sm font-black text-on-accent shadow-md hover:brightness-105 disabled:opacity-50"><Check aria-hidden="true" className="size-4" strokeWidth={3} />저장</button>}
+            ? <button type="button" aria-label="완료" onClick={close} disabled={pending} className="press inline-flex h-11 items-center gap-1.5 rounded-lg bg-accent px-5 text-sm font-medium text-on-accent hover:brightness-105 disabled:opacity-50"><Check aria-hidden="true" className="size-4" strokeWidth={3} />완료</button>
+            : <button type="submit" aria-label="등록하기" disabled={pending} className="press inline-flex h-11 items-center gap-1.5 rounded-lg bg-accent px-5 text-sm font-medium text-on-accent hover:brightness-105 disabled:opacity-50"><Check aria-hidden="true" className="size-4" strokeWidth={2} />등록하기</button>}
         </div>
       )}
     </form>

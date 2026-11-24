@@ -1,0 +1,14 @@
+.heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; }
+.identity { display:flex; align-items:center; gap:12px; min-width:0; flex:1 1 280px; }
+.identity h1 { overflow-wrap:anywhere; }
+.identity p { margin-top:4px; color:var(--ink-2); font-size:13px; }
+.actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.notes { overflow:hidden; border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); }
+.notes > li + li { border-top:1px solid var(--line); }
+.note { display:flex; flex-direction:column; gap:8px; padding:20px; }
+.note:hover { background:var(--surface-2); }
+.note:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
+.noteTitle { min-width:0; flex:1 1 240px; overflow-wrap:anywhere; font-size:15px; font-weight:600; }
+.issueHeading h2 { font-size:16px; font-weight:600; }
+.issueHeading p { margin-top:6px; font-size:13px; line-height:1.7; color:var(--ink-2); }
+@media(max-width:767px) { .heading { gap:16px; } .identity { flex-basis:100%; } .note { padding:16px; } }
