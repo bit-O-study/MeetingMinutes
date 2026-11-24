@@ -112,12 +112,12 @@ export function IssuePanel({ spaceId, members, rows }: { spaceId: string; member
     <aside ref={panelRef} tabIndex={-1} id="issue-detail" className={styles.panel} aria-label="이슈 편집 · 원문 보기">
       <div className={styles.panelHead}><h2>{creating ? "새 이슈" : "이슈 편집 · 원문 보기"}</h2>{(selected || creating) && <button type="button" onClick={() => { setSelectedId(null); setCreating(false); }}>닫기</button>}</div>
       {creating ? <IssueForm spaceId={spaceId} members={members} /> : selected ? <>
-        <section className={styles.source}><h3>채팅 원문</h3><p>{selected.originalBody ?? (selected.status === "raw" ? selected.body : "연결된 채팅 원문이 없습니다.")}</p></section>
+        <section className={styles.source}><h3>채팅 원문</h3>{!selected.sourceMessageId && selected.originalBody != null && <p>원본 메시지가 삭제되었습니다. 이슈에 담긴 사본입니다.</p>}<p>{selected.originalBody ?? (selected.status === "raw" ? selected.body : "연결된 채팅 원문이 없습니다.")}</p></section>
         <fieldset disabled={cleaning}>
           <IssueForm key={`${selected.id}:${selected.version}`} spaceId={spaceId} members={members} issue={selected} />
           {selected.status === "raw" && <RawIssueActions key={selected.version} spaceId={spaceId} issue={selected} />}
         </fieldset>
-        <p className="mt-5 text-xs leading-6 text-ink-3">내용을 정리해도 채팅 원문은 그대로 유지됩니다.</p>
+        <p className="mt-5 text-xs leading-6 text-ink-3">이슈 내용을 정리하거나 원본 메시지를 삭제해도 여기에 담긴 원문 사본은 유지됩니다.</p>
       </> : <p className={styles.empty}>목록에서 이슈를 선택하면<br />원문을 보고 내용을 정리할 수 있어요.</p>}
     </aside>
   </section>;
