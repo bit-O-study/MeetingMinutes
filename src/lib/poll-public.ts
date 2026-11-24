@@ -57,7 +57,7 @@ export type PublicPollView = {
   description: string;
   rangeStart: string;
   rangeEnd: string;
-  excluded: { day: string; reason: string }[];
+  excluded: string[];
   /** 마감 시각까지 반영한 지금 상태. open 이면 응답을 받는다. */
   state: PollStatus;
   respondBy: string | null;
@@ -111,7 +111,7 @@ export async function getPublicPoll(token: string): Promise<PublicPollView | nul
     description: poll.description,
     rangeStart: poll.rangeStart,
     rangeEnd: poll.rangeEnd,
-    excluded: excluded.map((e) => ({ day: e.day, reason: e.reason })),
+    excluded: excluded.map((e) => e.day),
     state: poll.status === "confirmed" ? "confirmed" : closed ? "closed" : "open",
     respondBy: poll.respondBy?.toISOString() ?? null,
     confirmedDay: poll.confirmedDay,

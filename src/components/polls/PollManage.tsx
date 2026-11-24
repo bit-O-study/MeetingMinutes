@@ -37,7 +37,7 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
   }
 
   const names = useMemo(() => new Map(poll.participants.map((p) => [p.id, p.name])), [poll.participants]);
-  const excluded = useMemo(() => new Map(poll.excluded.map((e) => [e.day, e.reason])), [poll.excluded]);
+  const excluded = useMemo(() => new Set(poll.excluded), [poll.excluded]);
   const { tally } = poll;
   const confirmed = poll.status === "confirmed";
 
@@ -77,7 +77,7 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 break-keep">
       <header className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold text-ink">{poll.title}</h1>
@@ -92,16 +92,14 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
       {created && !confirmed && (
         <div role="status" className="flex flex-wrap items-center gap-3 rounded-2xl bg-ok-soft px-5 py-4 text-ok">
           <Check className="size-5" aria-hidden />
-          <strong className="text-[15px]">투표가 만들어졌어요.</strong>
-          <span className="flex-1 text-sm">아래 참여 링크를 복사해 공유하세요. 받는 사람은 로그인하지 않아도 돼요.</span>
+          <strong className="text-[15px]">투표를 만들었어요</strong>
         </div>
       )}
 
       {confirmed && poll.confirmedDay && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-ok-soft px-5 py-4 text-ok">
           <Check className="size-5" aria-hidden />
-          <strong className="text-[17px]">{dayLabel(poll.confirmedDay)}로 확정했어요</strong>
-          <span className="flex-1 text-sm">링크로 들어온 사람에게도 확정 날짜가 보여요.</span>
+          <strong className="flex-1 text-[17px]">{dayLabel(poll.confirmedDay)} 확정</strong>
           <button type="button" disabled={pending} onClick={() => run(() => unconfirmPoll(poll.id))} className="h-10 rounded-xl px-4 text-sm font-bold ring-1 ring-inset ring-ok">확정 취소</button>
         </div>
       )}
@@ -114,12 +112,12 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
         {/* 히트맵 */}
         <section className={cn(CARD, "min-w-0 flex-[1.5_1_520px] gap-4 p-6")}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-base font-bold text-ink">날짜별 가능 인원</h2>
+            <h2 className="text-base font-bold text-ink">날짜별 안 되는 인원</h2>
             <div className="flex items-center gap-2 text-[13px] text-ink-2" aria-hidden>
-              적음<span className="h-2.5 w-28 rounded-full" style={{ background: "linear-gradient(90deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--accent))" }} />많음
+              안 되는 사람 적음<span className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(90deg, var(--surface-2), var(--danger))" }} />많음
             </div>
           </div>
-          {tally.total === 0 && <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-ink-2">아직 응답한 사람이 없어요. 링크를 공유하면 여기에 모여요.</p>}
+          {tally.total === 0 && <p className="text-sm text-ink-2">아직 응답이 없어요</p>}
           <MonthGrids
             start={poll.rangeStart}
             end={poll.rangeEnd}
@@ -128,27 +126,28 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
             cell={(day) => {
               if (excluded.has(day)) {
                 return (
-                  <div style={HATCH} title={excluded.get(day) || undefined} className="flex h-[70px] flex-col justify-between rounded-xl p-2 text-ink-2 ring-1 ring-inset ring-line-2" aria-label={`${dayLabel(day)} 제외일`}>
-                    <span className="text-sm line-through">{Number(day.slice(8))}</span>
-                    <span className="text-xs">제외</span>
+                  <div style={HATCH} className="flex h-[70px] flex-col justify-between rounded-xl p-2 text-ink-2 ring-1 ring-inset ring-line-2" aria-label={`${dayLabel(day)} 제외일`}>
+                    <span className="text-sm whitespace-nowrap line-through">{Number(day.slice(8))}</span>
+                    <span className="text-xs whitespace-nowrap">제외</span>
                   </div>
                 );
               }
               const available = tally.available[day] ?? 0;
-              const ratio = tally.total > 0 ? available / tally.total : 0;
-              const pct = Math.round(10 + ratio * 80);
+              const unavailable = tally.total - available;
+              const ratio = tally.total > 0 ? unavailable / tally.total : 0;
+              const pct = Math.round(6 + ratio * 80);
               const isBest = day === tally.best;
               return (
                 <button
                   type="button"
                   aria-pressed={selected === day}
-                  aria-label={`${dayLabel(day)}, ${tally.total}명 중 ${available}명 가능${isBest ? ", 추천" : ""}${poll.confirmedDay === day ? ", 확정" : ""}`}
+                  aria-label={`${dayLabel(day)}, 총 ${tally.total}명 중 ${unavailable}명 안 됨${isBest ? ", 추천" : ""}${poll.confirmedDay === day ? ", 확정" : ""}`}
                   onClick={() => setSelected(day)}
-                  style={tally.total > 0 ? { background: `color-mix(in srgb, var(--accent) ${pct}%, var(--surface))` } : undefined}
+                  style={tally.total > 0 ? { background: `color-mix(in srgb, var(--danger) ${pct}%, var(--surface))` } : undefined}
                   className={cn(
                     "flex h-[70px] flex-col items-stretch justify-between rounded-xl p-2 text-left focus-visible:outline-2 focus-visible:outline-accent",
                     tally.total === 0 && "bg-surface-2",
-                    pct >= 80 && tally.total > 0 ? "text-on-accent" : "text-ink",
+                    pct >= 75 && tally.total > 0 ? "text-on-accent" : "text-ink",
                     selected === day ? "ring-2 ring-ink" : "ring-1 ring-inset ring-transparent",
                     poll.confirmedDay === day && "outline-2 outline-offset-2 outline-ok",
                   )}
@@ -157,15 +156,15 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
                     {Number(day.slice(8))}
                     {isBest && <Star className="size-4 fill-current" aria-hidden />}
                   </span>
-                  <span className="text-[13px]">{tally.total > 0 ? `${available}/${tally.total}` : "–"}</span>
+                  <span className="text-xs whitespace-nowrap sm:text-[13px]">{tally.total > 0 ? `${unavailable}/${tally.total}명` : "–"}</span>
                 </button>
               );
             }}
           />
           <div className="flex flex-wrap items-center gap-4 text-[13px] text-ink-2">
-            <span className="flex items-center gap-1.5"><Star className="size-3.5 fill-current" aria-hidden />가능 인원이 가장 많은 날</span>
+            <span className="flex items-center gap-1.5"><Star className="size-3.5 fill-current" aria-hidden />가장 적은 날</span>
             <span className="flex items-center gap-1.5"><span className="size-3.5 rounded" style={HATCH} />제외일</span>
-            <span>숫자는 가능 / 전체 응답</span>
+            <span>안 됨/총원</span>
           </div>
 
           {tally.total > 0 && (
@@ -175,7 +174,7 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
                 <button key={day} type="button" onClick={() => setSelected(day)} className="flex h-12 items-center gap-3 rounded-xl bg-surface px-3.5 text-left text-[15px] text-ink ring-1 ring-inset ring-line hover:bg-surface-2">
                   <span className="w-6 font-bold text-accent">{index + 1}</span>
                   <span className="flex-1">{dayLabel(day)}</span>
-                  <span className="text-sm text-ink-2">{tally.available[day]}/{tally.total}명 가능</span>
+                  <span className="text-sm text-ink-2">총 {tally.total}명 중 {tally.total - tally.available[day]}명 안 됨</span>
                 </button>
               ))}
             </div>
@@ -188,16 +187,16 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
             <section className={CARD} aria-live="polite">
               <div className="flex items-baseline justify-between gap-2">
                 <h2 className="text-base font-bold text-ink">{dayLabel(selected)}{selected === tally.best && " · 추천"}</h2>
-                <span className="text-sm text-ink-2">{tally.total}명 중 {tally.available[selected] ?? 0}명 가능</span>
+                <span className="text-sm text-ink-2">총 {tally.total}명 중 {tally.total - (tally.available[selected] ?? 0)}명 안 됨</span>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold text-danger">못 오는 사람 {noList.length}명</span>
+                <span className="text-[13px] font-bold text-danger">안 되는 사람 {noList.length}명</span>
                 <div className="flex flex-wrap gap-1.5">
                   {noList.length === 0 ? <span className="text-sm text-ink-2">없음</span> : noList.map((n) => <span key={n} className="rounded-full bg-danger-soft px-2.5 py-1 text-[13px] text-danger">{n}</span>)}
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold text-ok">올 수 있는 사람 {yesList.length}명</span>
+                <span className="text-[13px] font-bold text-ok">되는 사람 {yesList.length}명</span>
                 <div className="flex flex-wrap gap-1.5">
                   {yesList.length === 0 ? <span className="text-sm text-ink-2">없음</span> : yesList.map((n) => <span key={n} className="rounded-full bg-ok-soft px-2.5 py-1 text-[13px] text-ok">{n}</span>)}
                 </div>
@@ -219,10 +218,7 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
               <div className="flex flex-col">
                 <strong className="text-base text-ink">{poll.respondBy ? deadlineLabel(poll.respondBy) : "마감 시각 없음"}</strong>
                 <span className="text-sm text-ink-2">
-                  {confirmed ? "날짜가 확정돼 응답을 받지 않아요"
-                    : poll.status === "closed" ? "직접 마감했어요"
-                    : deadline && now ? (remain ?? "마감 시각이 지났어요")
-                    : deadline ? "" : "직접 마감하거나 날짜를 확정할 때까지 열려 있어요"}
+                  {confirmed ? "확정됨" : poll.status === "closed" ? "마감됨" : deadline && now ? (remain ?? "마감됨") : ""}
                 </span>
               </div>
             </div>
@@ -243,7 +239,6 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
                   : <button type="button" onClick={() => run(() => closePoll(poll.id))} className={cn(SMALL_BTN, "font-bold text-danger ring-danger")}>지금 마감</button>}
               </div>
             </fieldset>
-            {confirmed && <p className="text-[13px] text-ink-2">확정된 투표는 마감을 바꿀 수 없어요. 확정을 취소하면 다시 바꿀 수 있어요.</p>}
           </section>
 
           {/* 링크 */}
@@ -255,15 +250,14 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
                   <input readOnly aria-label="공유 링크" value={poll.url} onFocus={(e) => e.currentTarget.select()} className="h-10 min-w-0 flex-1 rounded-lg bg-ground px-3 text-sm text-ink ring-1 ring-inset ring-line-2" />
                   <button type="button" onClick={copy} className={cn(buttonClass("primary", "sm"), "h-10")}>{copied ? "복사됨" : "복사"}</button>
                 </div>
-                <span className="text-[13px] text-ink-2">링크를 다시 만들면 이전 링크는 열리지 않아요. 응답은 그대로 남아요.</span>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" disabled={pending} onClick={() => { if (window.confirm("새 링크를 만들면 이전 링크로는 들어올 수 없어요. 계속할까요?")) run(() => rotatePollLink(poll.id)); }} className={SMALL_BTN}>새 링크 만들기</button>
-                  <button type="button" disabled={pending} onClick={() => { if (window.confirm("링크를 폐기하면 아무도 이 투표에 들어올 수 없어요. 계속할까요?")) run(() => revokePollLink(poll.id)); }} className={SMALL_BTN}>링크 폐기</button>
+                  <button type="button" disabled={pending} onClick={() => { if (window.confirm("이전 링크는 못 써요. 새 링크를 만들까요?")) run(() => rotatePollLink(poll.id)); }} className={SMALL_BTN}>새 링크 만들기</button>
+                  <button type="button" disabled={pending} onClick={() => { if (window.confirm("링크를 폐기할까요?")) run(() => revokePollLink(poll.id)); }} className={SMALL_BTN}>링크 폐기</button>
                 </div>
               </>
             ) : (
               <>
-                <p className="text-sm text-ink-2">{poll.revoked ? "링크를 폐기해 지금은 아무도 들어올 수 없어요." : "링크를 표시할 수 없어요."} 새 링크를 만들어 다시 공유하세요.</p>
+                <p className="text-sm text-ink-2">{poll.revoked ? "폐기된 링크" : "링크 없음"}</p>
                 <button type="button" disabled={pending} onClick={() => run(() => rotatePollLink(poll.id))} className={buttonClass("primary", "sm")}>새 링크 만들기</button>
               </>
             )}
@@ -272,7 +266,7 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
           {/* 참여자 */}
           <section className={cn(CARD, "gap-1")}>
             <h2 className="mb-2 text-base font-bold text-ink">응답한 사람 {poll.participants.length}명</h2>
-            {poll.participants.length === 0 && <p className="text-sm text-ink-2">아직 없어요.</p>}
+            {poll.participants.length === 0 && <p className="text-sm text-ink-2">없음</p>}
             {poll.participants.map((p) => (
               <div key={p.id} className="flex h-11 items-center gap-2.5 border-t border-line">
                 <span className="grid size-7 place-items-center rounded-full bg-accent-soft text-[13px] font-bold text-accent" aria-hidden>{[...p.name][0]}</span>
@@ -295,7 +289,7 @@ export function PollManage({ poll, today, created }: { poll: OwnerPollView; toda
             type="button"
             disabled={pending}
             onClick={() => {
-              if (!window.confirm("이 투표와 모든 응답을 삭제할까요? 되돌릴 수 없어요.")) return;
+              if (!window.confirm("투표와 응답을 모두 삭제할까요?")) return;
               startTransition(async () => {
                 const result = await deletePoll(poll.id);
                 if (!result.ok) return setError(result.message);

@@ -30,7 +30,7 @@ export const pollInput = z
     description: z.string().trim().max(1000, "설명은 1000자까지예요."),
     rangeStart: day,
     rangeEnd: day,
-    excluded: z.array(z.object({ day, reason: z.string().trim().max(40, "사유는 40자까지예요.") }).strict()).max(MAX_POLL_DAYS),
+    excluded: z.array(day).max(MAX_POLL_DAYS),
     respondBy: deadline,
     resultVisibility: z.enum(["participants", "owner"]),
   })
@@ -40,9 +40,9 @@ export const pollInput = z
     if (value.rangeEnd < value.rangeStart) return issue("기간의 끝이 시작보다 빠를 수 없어요.");
     const length = daysInclusive(value.rangeStart, value.rangeEnd);
     if (length > MAX_POLL_DAYS) return issue("후보 기간은 60일 이내로 정해 주세요.");
-    const outside = value.excluded.find((e) => e.day < value.rangeStart || e.day > value.rangeEnd);
+    const outside = value.excluded.find((d) => d < value.rangeStart || d > value.rangeEnd);
     if (outside) return issue("후보 기간 밖의 제외일이 있어요.");
-    const unique = new Set(value.excluded.map((e) => e.day));
+    const unique = new Set(value.excluded);
     if (unique.size !== value.excluded.length) return issue("같은 날이 제외일에 두 번 들어 있어요.");
     if (length - unique.size < 1) issue("후보일이 하나도 없어요. 제외일을 줄여 주세요.");
   });

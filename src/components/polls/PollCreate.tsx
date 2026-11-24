@@ -48,7 +48,7 @@ export function PollCreate({ today }: { today: string }) {
   const [end, setEnd] = useState(addDays(today, 14));
   const [picking, setPicking] = useState(false);
   const [mode, setMode] = useState<"range" | "exclude">("range");
-  const [excluded, setExcluded] = useState<Record<string, string>>({});
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [visible, setVisible] = useState(addDays(today, 1).slice(0, 7));
   const [kind, setKind] = useState<DeadlineKind>("d3");
   const [customDate, setCustomDate] = useState(addDays(today, 3));
@@ -56,10 +56,10 @@ export function PollCreate({ today }: { today: string }) {
   const [visibility, setVisibility] = useState<"participants" | "owner">("participants");
 
   const length = daysInclusive(start, end);
-  const excludedDays = useMemo(() => Object.keys(excluded).filter((d) => d >= start && d <= end).sort(), [excluded, start, end]);
+  const excludedDays = useMemo(() => [...excluded].filter((d) => d >= start && d <= end).sort(), [excluded, start, end]);
   const candidates = length - excludedDays.length;
   const weekends = useMemo(() => eachDay(start, end).filter((d) => weekday(d) === 0 || weekday(d) === 6), [start, end]);
-  const weekendsOut = weekends.length > 0 && weekends.every((d) => d in excluded);
+  const weekendsOut = weekends.length > 0 && weekends.every((d) => excluded.has(d));
 
   const localDeadline = kind === "none" ? null
     : kind === "d1" ? seoulEvening(today, 1)
@@ -70,16 +70,16 @@ export function PollCreate({ today }: { today: string }) {
 
   /** 마감 안내: 문구와 톤. now 가 없을 때(서버 렌더)는 시각 비교를 하지 않는다. */
   const deadlineNote = (() => {
-    if (kind === "none") return { tone: "neutral" as const, head: "마감 시각 없이 열어 둬요", sub: "직접 마감하거나 날짜를 확정하기 전까지 응답을 받아요." };
-    if (!deadlineIso) return { tone: "danger" as const, head: "날짜와 시간을 입력해 주세요", sub: "입력하기 전에는 투표를 만들 수 없어요." };
+    if (kind === "none") return { tone: "neutral" as const, head: "마감 없이 진행", sub: "" };
+    if (!deadlineIso) return { tone: "danger" as const, head: "날짜와 시간을 입력하세요", sub: "" };
     const at = new Date(deadlineIso);
     const head = `${deadlineLabel(deadlineIso)}에 마감`;
-    if (now && at.getTime() <= now.getTime()) return { tone: "danger" as const, head: `${deadlineLabel(deadlineIso)}은 이미 지났어요`, sub: "지금보다 뒤의 시각을 골라 주세요." };
+    if (now && at.getTime() <= now.getTime()) return { tone: "danger" as const, head: "이미 지난 시각이에요", sub: "" };
     const left = now ? remainingLabel(at, now) : null;
     if (localDeadline && localDeadline.slice(0, 10) >= start) {
-      return { tone: "warn" as const, head, sub: `${left ?? ""} · 후보 첫날(${dayLabel(start)}) 이후예요. 날짜가 지난 뒤에도 투표를 받게 돼요.`.replace(/^ · /, "") };
+      return { tone: "warn" as const, head, sub: `${left ?? ""} · 후보 첫날 이후`.replace(/^ · /, "") };
     }
-    return { tone: "ok" as const, head, sub: `${left ?? ""} · 마감 뒤에는 응답을 받지 않아요. 만든 사람은 마감을 연장할 수 있어요.`.replace(/^ · /, "") };
+    return { tone: "ok" as const, head, sub: left ?? "" };
   })();
   const blocked = deadlineNote.tone === "danger" || candidates < 1 || !title.trim();
 
@@ -98,21 +98,21 @@ export function PollCreate({ today }: { today: string }) {
       setError("");
       setStart(a); setEnd(b); setPicking(false);
       // 기간 밖으로 밀려난 제외일은 버린다.
-      setExcluded((prev) => Object.fromEntries(Object.entries(prev).filter(([d]) => d >= a && d <= b)));
+      setExcluded((prev) => new Set([...prev].filter((d) => d >= a && d <= b)));
       return;
     }
     if (day < start || day > end) return;
     setExcluded((prev) => {
-      const next = { ...prev };
-      if (day in next) delete next[day]; else next[day] = "";
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day); else next.add(day);
       return next;
     });
   }
 
   function toggleWeekends() {
     setExcluded((prev) => {
-      const next = { ...prev };
-      for (const d of weekends) { if (weekendsOut) delete next[d]; else if (!(d in next)) next[d] = ""; }
+      const next = new Set(prev);
+      for (const d of weekends) { if (weekendsOut) next.delete(d); else next.add(d); }
       return next;
     });
   }
@@ -126,7 +126,7 @@ export function PollCreate({ today }: { today: string }) {
         description,
         rangeStart: start,
         rangeEnd: end,
-        excluded: excludedDays.map((day) => ({ day, reason: excluded[day] ?? "" })),
+        excluded: excludedDays,
         respondBy: deadlineIso,
         resultVisibility: visibility,
       });
@@ -140,10 +140,9 @@ export function PollCreate({ today }: { today: string }) {
   }[deadlineNote.tone];
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 break-keep">
       <header>
         <h1 className="text-2xl font-bold text-ink">새 일정 투표</h1>
-        <p className="mt-1 text-sm text-ink-2">후보 기간과 제외할 날, 마감 시각을 정해 링크를 공유하세요. 참여하는 사람은 로그인하지 않아도 돼요.</p>
       </header>
 
       <div className="flex flex-wrap items-start gap-5">
@@ -156,7 +155,7 @@ export function PollCreate({ today }: { today: string }) {
               <input className={fieldClass} value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} placeholder="예: 12월 송년 스터디" />
             </label>
             <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
-              <span>설명 <span className="font-normal text-ink-2">(선택)</span></span>
+              설명
               <textarea
                 className="ui-input min-h-24 w-full rounded-xl bg-surface px-3.5 py-2.5 text-[15px] leading-relaxed text-ink ring-1 ring-inset ring-line focus:ring-2 focus:ring-accent focus:outline-none"
                 value={description}
@@ -167,10 +166,7 @@ export function PollCreate({ today }: { today: string }) {
           </section>
 
           <section className={CARD}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-base font-bold text-ink">투표 마감</h2>
-              <span className="text-[13px] text-ink-2">마감 뒤에는 응답을 받지 않아요</span>
-            </div>
+            <h2 className="text-base font-bold text-ink">투표 마감</h2>
             <div role="group" aria-label="마감 시각 빠른 선택" className="flex flex-wrap gap-2">
               {DEADLINE_CHIPS.map((chip) => (
                 <button
@@ -212,12 +208,12 @@ export function PollCreate({ today }: { today: string }) {
             <legend className="sr-only">결과 공개</legend>
             <h2 className="text-base font-bold text-ink" aria-hidden>결과 공개</h2>
             {([
-              ["participants", "참여한 사람 모두", "제출한 뒤에만 날짜별 가능 인원을 볼 수 있어요."],
-              ["owner", "만든 사람만", "참여자는 자기 응답만 볼 수 있어요."],
-            ] as const).map(([value, label, help]) => (
+              ["participants", "참여자도 결과 보기"],
+              ["owner", "나만 결과 보기"],
+            ] as const).map(([value, label]) => (
               <label key={value} className="flex cursor-pointer items-start gap-3">
                 <input type="radio" name="visibility" className="mt-1 size-[18px] accent-[var(--accent)]" checked={visibility === value} onChange={() => setVisibility(value)} />
-                <span><span className="font-medium text-ink">{label}</span><br /><span className="text-sm text-ink-2">{help}</span></span>
+                <span className="font-medium text-ink">{label}</span>
               </label>
             ))}
           </fieldset>
@@ -242,9 +238,7 @@ export function PollCreate({ today }: { today: string }) {
             </div>
           </div>
           <p className="text-sm text-ink-2">
-            {mode === "range"
-              ? picking ? `끝나는 날을 눌러 주세요. (${dayLabel(start)}부터)` : "시작하는 날을 누르고, 이어서 끝나는 날을 누르세요."
-              : "후보에서 뺄 날을 눌러 주세요. 다시 누르면 되돌아가요. 제외한 날은 참여자 화면에서 회색으로 잠겨요."}
+            {mode === "range" ? (picking ? "끝나는 날을 누르세요" : "시작일, 끝나는 날 순서로 누르세요") : "뺄 날을 누르세요"}
           </p>
 
           <div className="flex items-center justify-between">
@@ -262,7 +256,7 @@ export function PollCreate({ today }: { today: string }) {
             cell={(day) => {
               const inRange = day >= start && day <= end;
               const isEdge = day === start || day === end;
-              const out = inRange && day in excluded;
+              const out = inRange && excluded.has(day);
               const locked = mode === "exclude" && !inRange;
               return (
                 <button
@@ -300,23 +294,13 @@ export function PollCreate({ today }: { today: string }) {
               </strong>
               <button type="button" onClick={toggleWeekends} className={buttonClass("ghost", "sm")}>{weekendsOut ? "주말 제외 풀기" : "주말 모두 제외"}</button>
             </div>
-            {excludedDays.length === 0 ? (
-              <span className="text-sm text-ink-2">제외한 날이 없어요. 모든 날이 후보예요.</span>
-            ) : (
-              <ul className="flex flex-col gap-2">
+            {excludedDays.length > 0 && (
+              <ul className="flex flex-wrap gap-2">
                 {excludedDays.map((day) => (
-                  <li key={day} className="flex items-center gap-2">
-                    <span className="w-24 shrink-0 text-sm text-ink">{dayLabel(day)}</span>
-                    <input
-                      aria-label={`${dayLabel(day)} 제외 사유`}
-                      className="h-9 min-w-0 flex-1 rounded-lg bg-surface px-3 text-sm text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none"
-                      placeholder="사유 (선택)"
-                      maxLength={40}
-                      value={excluded[day] ?? ""}
-                      onChange={(e) => setExcluded((prev) => ({ ...prev, [day]: e.target.value }))}
-                    />
-                    <button type="button" aria-label={`${dayLabel(day)} 제외 취소`} onClick={() => setExcluded((prev) => { const next = { ...prev }; delete next[day]; return next; })} className="grid size-8 place-items-center rounded-lg text-ink-2 hover:bg-surface-2">
-                      <X className="size-4" />
+                  <li key={day} className="inline-flex h-8 items-center gap-1 rounded-full bg-surface-2 pr-1 pl-3 text-sm text-ink">
+                    {dayLabel(day)}
+                    <button type="button" aria-label={`${dayLabel(day)} 제외 취소`} onClick={() => setExcluded((prev) => { const next = new Set(prev); next.delete(day); return next; })} className="grid size-6 place-items-center rounded-full text-ink-2 hover:bg-line">
+                      <X className="size-3.5" />
                     </button>
                   </li>
                 ))}
@@ -328,7 +312,7 @@ export function PollCreate({ today }: { today: string }) {
 
       <div className="sticky bottom-0 -mx-1 flex flex-wrap items-center justify-end gap-3 border-t border-line bg-ground/95 px-1 py-3 backdrop-blur">
         <span role={error ? "alert" : undefined} className={cn("mr-auto text-sm", error ? "text-danger" : "text-ink-2")}>
-          {error || (candidates < 1 ? "후보일이 하나도 없어요. 제외일을 줄여 주세요." : `후보 ${candidates}일 · ${localDeadline && deadlineIso ? `${deadlineLabel(deadlineIso)} 마감` : "마감 없음"}`)}
+          {error || (candidates < 1 ? "후보일이 없어요" : `후보 ${candidates}일`)}
         </span>
         <button type="button" onClick={() => router.push("/polls")} className={buttonClass("ghost")}>취소</button>
         <button type="button" onClick={submit} disabled={blocked || pending} className={buttonClass("primary")}>

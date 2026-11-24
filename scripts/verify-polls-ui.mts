@@ -71,17 +71,17 @@ try {
   done(`제외일 찍기 → 요약에 (제외 1일) [${excludedLabel}]`);
 
   await op.getByRole("button", { name: "마감 없음" }).click();
-  await op.getByText("마감 시각 없이 열어 둬요").waitFor();
+  await op.getByText("마감 없이 진행").waitFor();
   await op.getByRole("button", { name: "직접 설정" }).click();
   await op.getByLabel("마감 날짜").fill("2020-01-01");
-  await op.getByText(/이미 지났어요/).waitFor();
+  await op.getByText(/이미 지난 시각/).waitFor();
   assert.equal(await op.getByRole("button", { name: "투표 만들기" }).isDisabled(), true);
   done("지난 마감 시각은 경고하고 만들기를 막는다");
   await op.getByRole("button", { name: "3일 뒤 18:00" }).click();
   await op.getByRole("button", { name: "투표 만들기" }).click();
   await op.waitForURL(/\/polls\/[0-9a-f-]{36}\?created=1/);
   const pollId = op.url().match(/\/polls\/([0-9a-f-]{36})/)![1];
-  await op.getByText("투표가 만들어졌어요.").waitFor();
+  await op.getByText("투표를 만들었어요").waitFor();
   const shareUrl = await op.getByLabel("공유 링크").inputValue();
   const token = shareUrl.match(/\/v\/([\w-]{8,})/)![1];
   done("투표 만들기(서버 액션) → 관리 화면 이동, 링크 발급");
@@ -107,7 +107,7 @@ try {
   const marked = (await gp.getByRole("button", { name: /, 안 됨$/ }).count());
   assert.equal(marked, 2);
   await gp.getByRole("button", { name: "제출하기" }).click();
-  await gp.getByText("게스트A님의 응답을 받았어요").waitFor();
+  await gp.getByText("제출 완료").waitFor();
   const cookies = await guestCtx.cookies();
   assert.ok(cookies.some((c: { name: string; httpOnly: boolean }) => c.name === `pv_${pollId}` && c.httpOnly), "수정용 쿠키(HttpOnly)가 있어야 한다");
   done("비회원 제출(서버 액션) → 쿠키 발급, 완료 안내");
@@ -133,13 +133,24 @@ try {
   done("다른 기기에서 같은 이름(공백·대소문자만 다름)은 거절");
   await g2.locator("#poll-name").fill("게스트B");
   await g2.getByRole("button", { name: "제출하기" }).click();
-  await g2.getByText("게스트B님의 응답을 받았어요").waitFor();
+  await g2.getByText("제출 완료").waitFor();
   assert.equal((await g2.locator("body").innerText()).includes("게스트A"), false, "다른 참여자 이름이 보이면 안 된다");
   done("전부 가능으로 제출, 다른 참여자 이름 미노출");
 
   /* 3. 만든 사람: 마감 관리 */
   await op.reload();
   await op.getByText("응답한 사람 2명").waitFor();
+  // 결과: 날짜마다 "총 N명 중 M명 안 됨"만 보이고, 날짜를 누르면 누가 안 되는지 이름이 나온다.
+  const oneNo = op.getByRole("button", { name: /총 2명 중 1명 안 됨/ }).first();
+  await oneNo.waitFor();
+  await oneNo.click();
+  await op.getByText("안 되는 사람 1명").waitFor();
+  await op.getByText("되는 사람 1명", { exact: true }).waitFor();
+  const panel = op.locator("section", { hasText: "안 되는 사람 1명" });
+  assert.ok((await panel.innerText()).includes("게스트A"), "안 되는 사람 칸에 게스트A 가 있어야 한다");
+  assert.ok((await panel.innerText()).includes("게스트B"), "되는 사람 칸에 게스트B 가 있어야 한다");
+  assert.equal(await op.getByText(/명 가능/).count(), 0, "'가능' 인원 표기는 더 이상 없어야 한다");
+  done("날짜별 '총 N명 중 M명 안 됨', 날짜 클릭 시 안 되는/되는 사람 이름 표시");
   const deadlineBox = op.locator("section", { hasText: "마감 시각 바꾸기" });
   const before = (await db.select().from(polls).where(eq(polls.id, pollId)))[0];
   await op.getByRole("button", { name: "+1일 연장" }).click();
@@ -187,12 +198,12 @@ try {
 
   /* 4. 확정 */
   await op.reload();
-  const heat = op.getByRole("button", { name: /명 중 \d+명 가능/ });
+  const heat = op.getByRole("button", { name: /명 중 \d+명 안 됨/ });
   await heat.nth(3).click();
   await op.getByRole("button", { name: "이 날짜로 확정" }).click();
-  await op.getByText(/로 확정했어요/).waitFor();
+  await op.getByText(/\d+월 \d+일 \(.\) 확정$/).waitFor();
   await gp.reload();
-  await gp.getByText("모임 날짜가 정해졌어요").waitFor();
+  await gp.getByText("확정된 날짜").waitFor();
   done("날짜 확정 → 참여자 화면에 확정 날짜 표시");
   assert.equal(await op.getByRole("button", { name: "+1일 연장" }).isDisabled(), true);
   done("확정 중에는 마감 관리 잠김");

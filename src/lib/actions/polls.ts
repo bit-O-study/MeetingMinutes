@@ -69,7 +69,7 @@ export async function createPoll(input: unknown): Promise<PollResult> {
       })
       .returning({ id: polls.id });
     if (data.excluded.length > 0) {
-      await tx.insert(pollExcludedDays).values(data.excluded.map((e) => ({ pollId: row.id, day: e.day, reason: e.reason })));
+      await tx.insert(pollExcludedDays).values(data.excluded.map((day) => ({ pollId: row.id, day })));
     }
     return row.id;
   });

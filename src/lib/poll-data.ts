@@ -67,7 +67,7 @@ export type OwnerPollView = {
   /** 폐기됐거나 키가 바뀌어 풀 수 없으면 null */
   url: string | null;
   revoked: boolean;
-  excluded: { day: string; reason: string }[];
+  excluded: string[];
   participants: { id: string; name: string; isMember: boolean; submittedAt: string; unavailable: string[] }[];
   candidates: string[];
   tally: Tally;
@@ -118,7 +118,7 @@ async function buildOwnerView(poll: Poll): Promise<OwnerPollView> {
     version: poll.version,
     url: token ? absoluteUrl(`/v/${token}`) : null,
     revoked: poll.revokedAt !== null,
-    excluded: excluded.map((e) => ({ day: e.day, reason: e.reason })),
+    excluded: excluded.map((e) => e.day),
     participants,
     candidates,
     tally: tallyPoll(candidates, participants.map((p) => ({ id: p.id, unavailable: p.unavailable }))),

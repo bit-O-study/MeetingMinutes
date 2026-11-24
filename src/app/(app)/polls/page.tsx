@@ -10,11 +10,10 @@ import { cn } from "@/lib/utils";
 export default async function PollsPage() {
   const polls = await listMyPolls();
   return (
-    <div className="workspace-page">
+    <div className="workspace-page break-keep">
       <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="page-title">일정 투표</h1>
-          <p className="mt-2 text-sm text-ink-2">링크를 보내 로그인 없이 날짜를 모아요.</p>
         </div>
         <ButtonLink href="/polls/new" variant="secondary" size="sm"><Plus size={17} />새 투표</ButtonLink>
       </header>
@@ -22,9 +21,8 @@ export default async function PollsPage() {
       {polls.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line-2 px-6 py-14 text-center">
           <CalendarCheck className="size-8 text-ink-3" aria-hidden />
-          <p className="text-base font-semibold text-ink">아직 만든 투표가 없어요</p>
-          <p className="max-w-xs text-sm text-ink-2">후보 기간을 정하고 링크를 공유하면, 받은 사람이 안 되는 날을 체크해요.</p>
-          <ButtonLink href="/polls/new">첫 투표 만들기</ButtonLink>
+          <p className="text-base font-semibold text-ink">투표가 없어요</p>
+          <ButtonLink href="/polls/new">투표 만들기</ButtonLink>
         </div>
       ) : (
         <ul className="mt-6 flex flex-col gap-3">

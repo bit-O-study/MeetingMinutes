@@ -8,7 +8,7 @@ import {
 
 const base = {
   title: "송년 스터디", description: "", rangeStart: "2026-12-01", rangeEnd: "2026-12-31",
-  excluded: [{ day: "2026-12-24", reason: "" }], respondBy: null, resultVisibility: "participants" as const,
+  excluded: ["2026-12-24"], respondBy: null, resultVisibility: "participants" as const,
 };
 
 test("투표 입력: 기간·제외일·후보일 규칙", () => {
@@ -16,9 +16,9 @@ test("투표 입력: 기간·제외일·후보일 규칙", () => {
   assert.equal(pollInput.safeParse({ ...base, rangeEnd: "2026-11-30" }).success, false, "끝이 시작보다 빠름");
   assert.equal(pollInput.safeParse({ ...base, rangeEnd: "2027-02-01" }).success, false, "60일 초과");
   assert.ok(pollInput.safeParse({ ...base, rangeEnd: "2027-01-29" }).success, "정확히 60일");
-  assert.equal(pollInput.safeParse({ ...base, excluded: [{ day: "2027-01-01", reason: "" }] }).success, false, "범위 밖 제외일");
-  assert.equal(pollInput.safeParse({ ...base, excluded: [{ day: "2026-12-24", reason: "" }, { day: "2026-12-24", reason: "" }] }).success, false, "중복 제외일");
-  assert.equal(pollInput.safeParse({ ...base, rangeEnd: "2026-12-01", excluded: [{ day: "2026-12-01", reason: "" }] }).success, false, "후보일 0개");
+  assert.equal(pollInput.safeParse({ ...base, excluded: ["2027-01-01"] }).success, false, "범위 밖 제외일");
+  assert.equal(pollInput.safeParse({ ...base, excluded: ["2026-12-24", "2026-12-24"] }).success, false, "중복 제외일");
+  assert.equal(pollInput.safeParse({ ...base, rangeEnd: "2026-12-01", excluded: ["2026-12-01"] }).success, false, "후보일 0개");
   assert.equal(pollInput.safeParse({ ...base, title: "  " }).success, false);
   assert.equal(pollInput.safeParse({ ...base, rangeStart: "2026-02-30" }).success, false, "없는 날짜");
   assert.equal(pollInput.safeParse({ ...base, ownerId: "x" }).success, false, "모르는 키는 거부");

@@ -100,7 +100,7 @@ try {
 
   const manage = await get(`/polls/${poll.id}`, login);
   assert.equal(manage.status, 200);
-  for (const text of ["검증 송년 스터디", "게스트민수", "회원지은", "날짜별 가능 인원", "마감 시각 바꾸기", "+1일 연장", "참여 링크", `/v/${token}`]) assert.ok(manage.html.includes(text), `관리 화면에 "${text}" 가 있어야 한다`);
+  for (const text of ["검증 송년 스터디", "게스트민수", "회원지은", "날짜별 안 되는 인원", "마감 시각 바꾸기", "+1일 연장", "참여 링크", `/v/${token}`]) assert.ok(manage.html.includes(text), `관리 화면에 "${text}" 가 있어야 한다`);
   ok("/polls/[id] 관리 화면 렌더(이름·집계·마감 관리·링크)");
 
   const anonymousManage = await get(`/polls/${poll.id}`);
@@ -118,7 +118,7 @@ try {
 
   const pub = await get(`/v/${token}`);
   assert.equal(pub.status, 200);
-  for (const text of ["검증 송년 스터디", "이름이나 닉네임", "안 되는 날", "성탄 전야", "마감"]) assert.ok(pub.html.includes(text), `공개 화면에 "${text}" 가 있어야 한다`);
+  for (const text of ["검증 송년 스터디", "이름 또는 닉네임", "안 되는 날", "마감"]) assert.ok(pub.html.includes(text), `공개 화면에 "${text}" 가 있어야 한다`);
   for (const secret of ["게스트민수", "회원지은", "소유자홍길동", owner.id, owner.email!]) assert.ok(!pub.html.includes(secret), `공개 화면에 "${secret}" 가 새면 안 된다`);
   assert.equal(pub.headers.get("referrer-policy"), "no-referrer");
   assert.match(pub.headers.get("x-robots-tag") ?? "", /noindex/);
@@ -126,10 +126,10 @@ try {
   ok("/v/[token] 비로그인 렌더, 참여자 이름·소유자 정보 미노출, 보안 헤더");
 
   const mine = await get(`/v/${token}`, `${pollCookieName(poll.id)}=${editToken}`);
-  assert.ok(mine.html.includes("게스트민수님의 응답을 받았어요"), "쿠키가 맞으면 내 응답을 알아봐야 한다");
+  assert.ok(mine.html.includes("제출 완료"), "쿠키가 맞으면 내 응답을 알아봐야 한다");
   assert.ok(!mine.html.includes("회원지은"), "다른 참여자 이름은 여전히 안 보여야 한다");
   const wrong = await get(`/v/${token}`, `${pollCookieName(poll.id)}=wrong-token`);
-  assert.ok(!wrong.html.includes("님의 응답을 받았어요"), "틀린 쿠키로 남의 응답을 열면 안 된다");
+  assert.ok(!wrong.html.includes("제출 완료"), "틀린 쿠키로 남의 응답을 열면 안 된다");
   ok("쿠키로 내 응답 복원, 틀린 쿠키 거절, 결과는 숫자만");
 
   const bad = await get("/v/not-a-real-token-123456");
@@ -150,7 +150,7 @@ try {
 
   await db.update(polls).set({ status: "confirmed", confirmedDay: "2026-12-11" }).where(eq(polls.id, poll.id));
   const confirmed = await get(`/v/${token}`);
-  assert.ok(confirmed.html.includes("12월 11일 (금)") && confirmed.html.includes("모임 날짜가 정해졌어요"));
+  assert.ok(confirmed.html.includes("12월 11일 (금)") && confirmed.html.includes("확정된 날짜"));
   ok("확정 날짜 표시");
 
   /* ── 삭제 연쇄 ── */

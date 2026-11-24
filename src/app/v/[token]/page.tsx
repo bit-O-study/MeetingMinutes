@@ -36,7 +36,7 @@ function Unavailable() {
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
       <div className="size-7 rounded-full border border-line-2" />
       <p className="text-base font-semibold text-ink">링크를 열 수 없습니다</p>
-      <p className="max-w-xs text-sm leading-relaxed text-ink-2">만료되었거나 회수된 링크예요. 보낸 분에게 새 링크를 요청하세요.</p>
+      
     </div>
   );
 }
