@@ -96,8 +96,8 @@ try {
   ok("/polls 목록 렌더");
 
   const create = await get("/polls/new", login);
-  assert.equal(create.status, 200); assert.ok(create.html.includes("새 일정 투표") && create.html.includes("투표 마감"));
-  ok("/polls/new 렌더(마감 선택 포함)");
+  assert.equal(create.status, 200); assert.ok(create.html.includes("새 일정 투표") && create.html.includes("마감 (선택)") && create.html.includes("음식 종류") && create.html.includes("식당") && create.html.includes("위치"));
+  ok("/polls/new 렌더(음식·식당·위치·마감)");
 
   const manage = await get(`/polls/${poll.id}`, login);
   assert.equal(manage.status, 200);

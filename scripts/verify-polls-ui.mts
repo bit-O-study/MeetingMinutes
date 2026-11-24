@@ -87,7 +87,7 @@ try {
   await op.waitForURL(/\/polls\/[0-9a-f-]{36}\?created=1/);
   const pollId = op.url().match(/\/polls\/([0-9a-f-]{36})/)![1];
   await op.getByText("투표를 만들었어요").waitFor();
-  const infoText = await op.locator("header").innerText();
+  const infoText = await op.locator("main header").innerText();
   assert.ok(["한식검증", "식당검증", "위치검증"].every((t) => infoText.includes(t)), "관리 화면에 음식·식당·위치가 보여야 한다");
   const shareUrl = await op.getByLabel("공유 링크").inputValue();
   const token = shareUrl.match(/\/v\/([\w-]{8,})/)![1];
@@ -150,6 +150,16 @@ try {
   /* 3. 만든 사람: 마감 관리 */
   await op.reload();
   await op.getByText("응답한 사람 2명").waitFor();
+  // 좁은 폭(휴대폰)에서 달력 칸의 "제외"가 "제 / 외"로 쪼개지지 않아야 한다.
+  await op.setViewportSize({ width: 390, height: 900 });
+  const excludedCell = op.locator("main").getByText("제외", { exact: true }).first();
+  await excludedCell.waitFor();
+  const wrapBox = (await excludedCell.boundingBox())!;
+  assert.ok(wrapBox.height < 20, `'제외'가 여러 줄로 나뉘었다 (높이 ${wrapBox.height}px)`);
+  await op.screenshot({ path: process.env.POLL_SHOT ?? "poll-manage-390.png" });
+  await op.setViewportSize({ width: 1280, height: 900 });
+  done(`폭 390에서 '제외'가 한 줄 (높이 ${Math.round(wrapBox.height)}px)`);
+
   // 결과: 날짜마다 "총 N명 중 M명 안 됨"만 보이고, 날짜를 누르면 누가 안 되는지 이름이 나온다.
   const oneNo = op.getByRole("button", { name: /총 2명 중 1명 안 됨/ }).first();
   await oneNo.waitFor();
