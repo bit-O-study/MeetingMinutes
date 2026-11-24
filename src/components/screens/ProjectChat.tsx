@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Copy, Flag } from "lucide-react";
+import { ArrowUp, Copy, Flag, MoreHorizontal } from "lucide-react";
 import Link from "@/components/PendingLink";
 import { useRouter } from "next/navigation";
 import { sendProjectMessage, captureMessageIssue } from "@/lib/actions/project-chat";
@@ -31,6 +31,12 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
   }, [message, failed, pending, capturing]);
   // 길게 누르기 메뉴(재디자인) — 앱(WebView)에서 길게 누르면 글자 선택이 먼저 떠서, 메뉴에 '복사'를 꼭 둔다.
   const [menuFor, setMenuFor] = useState<Message | null>(null);
+  const menuDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (menuFor) menuDialog.current?.showModal();
+    else menuDialog.current?.close();
+  }, [menuFor]);
+  // TODO(CODEX): 채팅 삭제는 docs/work-split.md 요청 큐의 권한 검사 액션 제공 후 연결한다.
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messageList = useRef<HTMLOListElement>(null);
   const followLatest = useRef(true);
@@ -54,6 +60,7 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
   }, [router]);
   async function capture(messageId: string) {
     if (captureLock.current) return;
+    if (!window.confirm("후속 작업이나 결정이 필요한 대화인가요? 검토함에 후보로 담습니다. 이미 담은 내용인지 먼저 확인해 주세요.")) return;
     captureLock.current = true;
     setCapturing(messageId);
     try {
@@ -109,18 +116,18 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
               {row.body}
             </p>
             {!mine && <span className="pb-1 text-[11px] text-ink-3">{when(row.createdAt)}</span>}
-            {!row.issueId && (
-              <button type="button" disabled={capturing !== null} onClick={() => void capture(row.id)}
-                title="이슈로 담기" aria-label="이 메시지를 이슈로 담기"
-                className="mb-0.5 hidden size-8 flex-none place-items-center rounded-full text-ink-3 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface hover:text-accent disabled:opacity-40 md:grid">
-                <Flag className="size-4" />
+            {(
+              <button type="button" onClick={() => setMenuFor(row)}
+                title="메시지 메뉴" aria-label="메시지 메뉴" aria-haspopup="dialog"
+                className="mb-0.5 grid size-9 flex-none place-items-center rounded-full text-ink-3 hover:bg-surface hover:text-accent">
+                <MoreHorizontal className="size-4" />
               </button>
             )}
           </div>
           {row.issueId && (
-            <Link href={`/s/${spaceId}?tab=issues&status=${row.issueStatus ?? "raw"}#issue-${row.issueId}`}
-              className="flex items-center gap-2 rounded-xl bg-warn-soft px-3 py-1.5 text-xs font-bold text-warn">
-              <Flag className="size-3.5" />{row.issueStatus === "raw" ? "미가공 이슈로 담김 · 이슈 탭에서 정리" : "이슈로 정리됨 · 보기"}
+            <Link href={`/s/${spaceId}?tab=issues&issue=${row.issueId}#issue-${row.issueId}`}
+              className="flex items-center gap-2 px-2 py-1 text-xs text-ink-3 hover:text-accent">
+              <Flag className="size-3.5" />{row.issueStatus === "raw" ? "검토함에 담김 · 검토하기" : "연결된 이슈 보기"}
             </Link>
           )}
         </li>;
@@ -149,21 +156,19 @@ export function ProjectChat({ spaceId, userId, members, rows, total, page }: {
     </form>
     <p className="hidden px-2 text-xs text-ink-3 md:block">Enter 줄바꿈 · Ctrl/⌘ + Enter 전송</p>
 
-    {menuFor && <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="메시지 메뉴">
-      <button type="button" aria-label="닫기" className="absolute inset-0 bg-ink/40" onClick={() => setMenuFor(null)} />
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 rounded-t-3xl bg-surface px-4 pt-3 shadow-float md:inset-x-auto md:right-6 md:bottom-6 md:w-80 md:rounded-3xl"
-        style={{ paddingBottom: "calc(var(--safe-bottom) + 16px)" }}>
-        <div className="mx-auto h-1 w-10 rounded-full bg-line md:hidden" />
+    <dialog ref={menuDialog} onCancel={() => setMenuFor(null)} onClose={() => setMenuFor(null)} aria-label="메시지 메뉴" className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-surface p-4 text-ink shadow-float backdrop:bg-ink/40">
+      {menuFor && <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between"><h2 className="text-sm font-semibold">메시지 메뉴</h2><button type="button" className="min-h-10 px-3 text-sm text-ink-2" onClick={() => setMenuFor(null)}>닫기</button></div>
         <p className="line-clamp-2 px-1 text-xs text-ink-3">{nameOf(menuFor.createdBy)} · {menuFor.body}</p>
         <button type="button" className="press flex h-12 items-center gap-3 rounded-2xl bg-surface-2 px-4 text-sm font-bold text-ink"
-          onClick={() => { void navigator.clipboard?.writeText(menuFor.body).catch(() => {}); setMessage("복사했어요."); setFailed(false); setMenuFor(null); }}>
+          onClick={async () => { try { await navigator.clipboard.writeText(menuFor.body); setMessage("복사했어요."); setFailed(false); } catch { setMessage("복사하지 못했습니다. 다시 시도해 주세요."); setFailed(true); } setMenuFor(null); }}>
           <Copy className="size-4" />복사
         </button>
         {!menuFor.issueId && <button type="button" disabled={capturing !== null} className="press flex h-12 items-center gap-3 rounded-2xl bg-accent-soft px-4 text-left text-sm font-bold text-accent"
           onClick={() => { const id = menuFor.id; setMenuFor(null); void capture(id); }}>
-          <Flag className="size-4" /><span>이슈로 담기<span className="block text-xs font-medium opacity-80">미가공으로 담고, 이슈 탭에서 정리해요</span></span>
+          <Flag className="size-4" /><span>검토함에 담기<span className="block text-xs font-medium opacity-80">후속 작업이 필요한 대화만 담아 주세요</span></span>
         </button>}
-      </div>
-    </div>}
+      </div>}
+    </dialog>
   </section>;
 }

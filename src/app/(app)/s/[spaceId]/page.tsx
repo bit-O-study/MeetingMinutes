@@ -37,7 +37,8 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
   const today = todayInSeoul();
   const requestedPage = Number(query.page ?? 1);
   const notePage = Number.isSafeInteger(requestedPage) ? Math.max(1, Math.min(10000, requestedPage)) : 1;
-  const status = query.status === "raw" || query.status === "open" || query.status === "in_progress" || query.status === "closed" ? query.status : undefined;
+  // 미검토 대화가 실제 작업을 밀어내지 않도록 기본 목록은 열린 이슈만 조회한다.
+  const status = query.status === "raw" || query.status === "open" || query.status === "in_progress" || query.status === "closed" ? query.status : query.status === "all" || query.issue ? undefined : "open";
   const [members, questionCounts, noteRows, taskRows, issueList, chatList] = await Promise.all([
     listSpaceMembers(spaceId),
     tab === "notes" ? openQuestionCounts(spaceId, notePage) : {} as Record<string, number>,
@@ -148,21 +149,25 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
       )}
 
       {tab === "issues" && issueList && <>
+        <header className="rounded-2xl border border-line bg-surface p-5">
+          <h2 className="text-lg font-semibold">{status === "raw" ? "검토함" : "프로젝트 이슈"}</h2>
+          <p className="mt-2 text-sm leading-6 text-ink-2">{status === "raw" ? "대화에서 담은 후보입니다. 실행할 내용은 이슈로 등록하고, 불필요한 후보는 삭제하세요. 채팅 원문은 유지됩니다." : "실행할 작업에 집중하세요. 대화에서 담은 미가공 이슈는 검토함에서 따로 정리합니다."}</p>
+        </header>
         <div className="flex flex-wrap items-center gap-2">
           <nav aria-label="이슈 상태" className="flex flex-wrap gap-1.5">
-            <Link href={"/s/" + spaceId + "?tab=issues"} aria-current={!status ? "page" : undefined}
-              className={cn("press inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-bold", !status ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>전체</Link>
-            {Object.entries(ISSUE_STATUSES).map(([value, label]) => (
+            {Object.entries(ISSUE_STATUSES).sort(([a], [b]) => Number(a === "raw") - Number(b === "raw")).map(([value, label]) => (
               <Link key={value} aria-current={status === value ? "page" : undefined} href={"/s/" + spaceId + "?tab=issues&status=" + value}
-                className={cn("press inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-bold", status === value ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>{label}</Link>
+                className={cn("press inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-bold", status === value ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>{value === "raw" ? "검토함" : label}</Link>
             ))}
+            <Link href={"/s/" + spaceId + "?tab=issues&status=all"} aria-current={!status ? "page" : undefined}
+              className={cn("press inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-bold", !status ? "bg-accent text-on-accent" : "bg-surface text-ink-2")}>전체</Link>
           </nav>
           <span className="ml-auto text-sm text-ink-3">{issueList.total}개</span>
         </div>
-        <IssuePanel spaceId={spaceId} members={members} rows={issueList.rows} />
+        <IssuePanel key={`${status ?? "all"}:${issueList.page}:${query.issue ?? ""}`} spaceId={spaceId} members={members} rows={issueList.rows} />
         <nav aria-label="이슈 페이지" className="flex gap-2">
-          {issueList.page > 1 && <Link className={buttonClass("ghost", "sm")} href={"/s/" + spaceId + "?tab=issues&status=" + (status ?? "") + "&page=" + (issueList.page - 1)}>이전</Link>}
-          {issueList.page * 30 < issueList.total && <Link className={buttonClass("ghost", "sm")} href={"/s/" + spaceId + "?tab=issues&status=" + (status ?? "") + "&page=" + (issueList.page + 1)}>다음</Link>}
+          {issueList.page > 1 && <Link className={buttonClass("ghost", "sm")} href={"/s/" + spaceId + "?tab=issues&status=" + (status ?? "all") + "&page=" + (issueList.page - 1)}>이전</Link>}
+          {issueList.page * 30 < issueList.total && <Link className={buttonClass("ghost", "sm")} href={"/s/" + spaceId + "?tab=issues&status=" + (status ?? "all") + "&page=" + (issueList.page + 1)}>다음</Link>}
         </nav>
       </>}
 

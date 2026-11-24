@@ -2,8 +2,12 @@
 .create { grid-column:1 / -1; justify-self:end; min-height:40px; padding:8px 18px; border-radius:9px; background:var(--accent); color:var(--on-accent); font-size:12px; font-weight:600; }
 .list { overflow:hidden; border:1px solid var(--line); border-radius:16px; background:var(--surface); }
 .row + .row { border-top:1px solid var(--line); }
-.row { border-left:3px solid var(--stripe); }
-.row button { display:block; width:100%; text-align:left; padding:18px; }
+.row { display:flex; border-left:3px solid var(--stripe); }
+.row button { display:block; flex:1; min-width:0; text-align:left; padding:16px; }
+.check { display:flex; align-items:center; justify-content:center; flex:none; width:44px; cursor:pointer; }
+.check input { width:16px; height:16px; accent-color:var(--accent); }
+.reviewBar { grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); font-size:14px; }
+.reviewBar p { margin-top:6px; color:var(--ink-2); font-size:12px; line-height:1.7; }
 .row button:hover,.selected { background:var(--accent-soft); }
 .title { display:block; font-size:13px; font-weight:600; overflow-wrap:anywhere; }
 .meta { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px; font-size:10px; color:var(--ink-2); }
