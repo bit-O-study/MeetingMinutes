@@ -1,0 +1,26 @@
+.page { width:100%; max-width:720px; margin-inline:auto; padding:40px var(--page-gutter) 56px; }
+.header { margin-bottom:28px; }
+.back { display:inline-flex; align-items:center; min-height:44px; margin-bottom:12px; color:var(--ink-2); font-size:13px; }
+.back:hover { color:var(--accent); }
+.header h1 { color:var(--ink); font-size:28px; font-weight:700; letter-spacing:-.04em; }
+.header p { margin-top:8px; color:var(--ink-2); font-size:14px; line-height:1.7; overflow-wrap:anywhere; }
+.form { display:flex; flex-direction:column; gap:28px; padding:28px; border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); min-width:0; }
+.fields { display:flex; min-width:0; flex-direction:column; gap:24px; }
+.label { display:block; margin-bottom:10px; color:var(--ink); font-size:14px; font-weight:600; }
+.input { width:100%; min-width:0; min-height:46px; padding:10px 12px; border:1px solid var(--line-2); border-radius:var(--radius-control); background:var(--surface); color:var(--ink); font-size:16px; }
+.input::placeholder { color:var(--ink-3); }
+.input:focus-visible,.choice:focus-within { outline:2px solid var(--accent); outline-offset:3px; }
+.choices { display:flex; flex-direction:column; gap:10px; }
+.choice { display:flex; align-items:flex-start; gap:12px; padding:16px; border:1px solid var(--line); border-radius:var(--radius-control); cursor:pointer; }
+.choice:has(input:checked) { border-color:var(--accent); background:var(--accent-soft); }
+.choice input { flex-shrink:0; width:16px; height:16px; margin-top:3px; accent-color:var(--accent); }
+.choice strong { display:block; color:var(--ink); font-size:14px; font-weight:600; }
+.choice small { display:block; margin-top:4px; color:var(--ink-2); font-size:13px; line-height:1.65; }
+.hint { color:var(--ink-2); font-size:13px; line-height:1.7; }
+.input + .hint { margin-top:8px; }
+.actions { display:flex; align-items:center; gap:20px; padding-top:20px; border-top:1px solid var(--line); }
+.cancel { display:inline-flex; align-items:center; min-height:44px; color:var(--ink-2); font-size:14px; }
+.cancel:hover { color:var(--accent); }
+.warning { padding:12px 14px; border-radius:var(--radius-control); background:var(--warn-soft); color:var(--warn); font-size:13px; line-height:1.7; }
+@media(max-width:767px) { .page { padding:24px 20px 40px; } .header { margin-bottom:24px; } .header h1 { font-size:24px; } .form { padding:20px; gap:24px; } }
+@media(max-width:359px) { .page { padding-inline:16px; } .form { padding:16px; } .choice { padding:12px; } }
