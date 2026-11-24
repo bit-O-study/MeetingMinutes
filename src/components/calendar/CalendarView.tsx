@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/components/PendingLink";
-import { AlarmClock, CalendarDays, CalendarPlus, CalendarRange, Check, ChevronLeft, ChevronRight, Eye, EyeOff, Layers, ListChecks, ListPlus, Plus, Users } from "lucide-react";
+import { AlarmClock, CalendarCheck, CalendarDays, CalendarPlus, CalendarRange, Check, ChevronLeft, ChevronRight, Eye, EyeOff, Layers, ListChecks, ListPlus, Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
@@ -224,6 +224,9 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
               </button>
             </div>
           </details>
+
+          {/* 링크로 날짜를 모으는 투표. 휴대폰에서는 사이드바가 없어 여기가 유일한 진입점이라 숨기지 않는다. */}
+          <Link href="/polls" aria-label="일정 투표" title="일정 투표" className={GHOST}><CalendarCheck className="size-[1.05rem]" /></Link>
 
           <Link href="/tasks" aria-label="할 일 목록" title="할 일 목록" className={cn(GHOST, "max-sm:hidden")}><ListChecks className="size-[1.05rem]" /></Link>
 
