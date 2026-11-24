@@ -27,12 +27,12 @@ export function HomeFocus({ items, today }: { items: FocusTask[]; today: string 
     });
   }
   return <div className={styles.focus}>
-    <div className={styles.focusHeading}><h2>내 할 일 {items.length}개</h2><Link href="/tasks">전체 보기 →</Link></div>
+    <div className={styles.focusHeading}><h2>내 할 일</h2><Link href="/tasks">전체 보기 →</Link></div>
     {items.length ? <ul>{items.map(item => <li key={item.id}>
       <input type="checkbox" checked={false} disabled={pending} onChange={() => complete(item)} aria-label={`${item.title} 완료`} />
       <Link href={item.href}><strong>{item.title}</strong><span>{item.context}</span></Link>
       {item.due && <small>{item.due < today ? "기한 지남" : item.due === today ? "오늘" : `${Number(item.due.slice(5, 7))}/${Number(item.due.slice(8))}`}</small>}
-    </li>)}</ul> : <p className={styles.focusEmpty}>지금 챙길 일이 없어요.<br />새로운 할 일이 생기면 여기에 모아 드려요.</p>}
+    </li>)}</ul> : <p className={styles.focusEmpty}>지금 챙길 할 일이 없습니다.</p>}
     {error && <p role="alert" className="mt-3 text-xs">{error}</p>}
   </div>;
 }

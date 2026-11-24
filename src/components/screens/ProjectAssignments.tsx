@@ -4,7 +4,7 @@
  */
 import Link from "@/components/PendingLink";
 import { and, asc, eq, inArray, isNull, isNotNull } from "drizzle-orm";
-import { Card, CardTitle, EmptyState, SectionHeading } from "@/components/ui/Panels";
+import { Card, CardTitle, EmptyState } from "@/components/ui/Panels";
 import { TaskRow } from "@/components/screens/TaskRow";
 import { AssignedIssueRow } from "@/components/screens/AssignedIssueRow";
 import { assignedIssues } from "@/components/screens/assigned-issues";
@@ -54,20 +54,18 @@ export async function ProjectAssignments({ searchParams }: { searchParams: Promi
   const filters = [{ value: "open", label: "미완료" }, { value: "done", label: "완료" }, { value: "all", label: "전체" }];
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:px-6 md:py-8">
-      <SectionHeading>프로젝트에서 맡은 일</SectionHeading>
-      <p className="text-sm text-ink-2">참여 중인 프로젝트에서 나에게 배정된 할 일과 이슈입니다. 공용 항목은 프로젝트에서 확인하세요.</p>
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      <div className="flex items-center justify-between gap-3"><h2 className="text-base font-semibold text-ink">프로젝트에서 맡은 일</h2><span className="text-xs text-ink-2">{rows.length + myIssues.length}개</span></div>
       <nav aria-label="할 일 상태" className="flex flex-wrap gap-2">
         {filters.map((filter) => (
           <Link key={filter.value} href={"/tasks?status=" + filter.value}
             aria-current={status === filter.value ? "page" : undefined}
-            className={cn("press inline-flex h-9 items-center rounded-full px-4 text-[13px] font-bold focus-visible:outline-2 focus-visible:outline-accent",
-              status === filter.value ? "bg-accent text-on-accent" : "bg-surface text-ink-2 hover:text-ink")}>
+            className={cn("inline-flex min-h-10 items-center rounded-lg px-4 text-[13px] font-medium focus-visible:outline-2 focus-visible:outline-accent",
+              status === filter.value ? "bg-accent-soft text-accent" : "bg-surface-2 text-ink-2 hover:text-ink")}>
             {filter.label}
           </Link>
         ))}
       </nav>
-      <p className="text-xs text-ink-3">{rows.length + myIssues.length}개 · 기한은 한국 시간 기준이며 이번 주는 일요일까지입니다.</p>
       {myIssues.length > 0 && <Card>
         <CardTitle>담당 이슈 <span className="font-semibold text-ink-3">{myIssues.length}</span></CardTitle>
         <ul className="divide-y divide-line">{myIssues.map(row => <AssignedIssueRow key={row.issue.id} {...row} />)}</ul>
@@ -90,7 +88,7 @@ export async function ProjectAssignments({ searchParams }: { searchParams: Promi
         <Card><EmptyState
           title={status === "done" ? "완료한 할 일이 없습니다" : status === "open" ? "남은 할 일이 없습니다" : "배정된 할 일이 없습니다"}
           hint={status === "done" ? "완료한 항목은 여기서 확인할 수 있습니다." : "노트의 할 일과 프로젝트에서 나에게 배정된 이슈가 여기에 모입니다."}
-          action={{ href: "/", label: "내 스페이스 보기" }} /></Card>
+          action={{ href: "/projects", label: "프로젝트 보기" }} /></Card>
       )}
     </div>
   );

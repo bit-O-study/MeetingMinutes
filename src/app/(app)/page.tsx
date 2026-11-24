@@ -48,21 +48,19 @@ export default async function HomePage() {
   return <div className={styles.home}>
     <header className={styles.greeting}>
       <div><Link href="/calendar" className={styles.date}>{dateLabel}<ChevronRight size={14} /></Link>
-      <h1>함께 쌓아가는 기록</h1>
-      <p>프로젝트별로 모으고, 작은 이야기부터 이어가세요.</p></div>
+      <h1>오늘</h1></div>
       <Link href="/spaces/new" className={styles.primary}><Plus size={16} />새 프로젝트</Link>
     </header>
     <div className={styles.overview}>
       <HomeFocus items={focus} today={today} />
       <section className={styles.agenda} aria-label="오늘의 일정">
-        <div className={styles.sectionHeading}><h2>오늘의 일정</h2><Link href="/calendar">개인 일정 →</Link></div>
-        <p className="mb-3 text-xs text-ink-3">일정 {agenda.length}개 · 오늘 할 일을 챙겨요</p>
-        {agenda.length ? agenda.slice(0, 3).map(item => <Link href={`/calendar?day=${today}`} key={item.id} className={styles.agendaItem}><small>{plannerWhen(item)}</small><strong>{item.title}</strong></Link>) : <p className="py-5 text-xs leading-6 text-ink-2">등록된 일정이 없어요.<br />여유 있는 하루를 계획해 보세요.</p>}
-        <Link href="/calendar" className={styles.agendaMore}>일정 살펴보기 →</Link>
+        <div className={styles.sectionHeading}><h2>오늘의 일정</h2><Link href="/calendar">전체 보기 →</Link></div>
+        {agenda.length ? agenda.slice(0, 3).map(item => <Link href={`/calendar?day=${today}`} key={item.id} className={styles.agendaItem}><small>{plannerWhen(item)}</small><strong>{item.title}</strong></Link>) : <p className="py-5 text-sm text-ink-2">오늘은 예정된 일정이 없습니다.</p>}
+        {agenda.length > 3 && <Link href={`/calendar?day=${today}`} className={styles.agendaMore}>{agenda.length - 3}개 더 보기 →</Link>}
       </section>
     </div>
-    <section aria-labelledby="home-work-heading" className={styles.section}>
-      <div className={styles.sectionHeading}><h2 id="home-work-heading">내 할 일 · 담당 이슈 {issues.length}개</h2><Link href="/tasks">전체 보기<ChevronRight size={15} /></Link></div>
+    {work.length > 0 && <section aria-labelledby="home-work-heading" className={styles.section}>
+      <div className={styles.sectionHeading}><h2 id="home-work-heading">담당 이슈 {issues.length}개</h2><Link href="/tasks">전체 보기<ChevronRight size={15} /></Link></div>
       {work.length > 0 ? <ul className={styles.rows}>{work.map(item => <li key={item.id}>
         <Link href={item.href} className={styles.row}>
           <ListTodo className={styles.taskIcon} size={20} strokeWidth={1.5} />
@@ -71,9 +69,9 @@ export default async function HomePage() {
           <ChevronRight className={styles.rowArrow} size={16} />
         </Link>
       </li>)}</ul> : <div className={styles.quiet}><ListTodo size={20} /><div><p>지금 챙길 일이 없어요</p><span>할 일이 생기면 이곳에서 바로 이어갈 수 있어요.</span></div></div>}
-    </section>
+    </section>}
     <section className={styles.section} aria-labelledby="projects-heading">
-      <div className={styles.sectionHeading}><div><h2 id="projects-heading">내 프로젝트</h2><p className="mt-1 text-xs text-ink-3">프로젝트를 누르면 함께 쌓은 기록이 열려요.</p></div><Link href="/projects">전체 보기 →</Link></div>
+      <div className={styles.sectionHeading}><h2 id="projects-heading">내 프로젝트</h2><Link href="/projects">전체 보기 →</Link></div>
       <HomeProjects userId={user.id} initial={folders} projects={[...spaceRows].sort((a,b)=>b.space.lastActivityAt.getTime()-a.space.lastActivityAt.getTime()).map(({space})=>({id:space.id,name:space.name,kindLabel:kindLabels[space.kind],noteCount:noteCounts.get(space.id)??0,activityLabel:relativeTime(space.lastActivityAt),people:members.filter(member=>member.spaceId===space.id)}))} />
     </section>
     <section aria-labelledby="resume-heading" className={styles.section}>

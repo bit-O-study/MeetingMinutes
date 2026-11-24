@@ -30,7 +30,7 @@
 .projectShortcut { display:flex; align-items:center; gap:10px; margin-top:30px; padding:16px 4px; border-top:1px solid var(--line); color:var(--ink-2); font-size:13px; }
 .projectShortcut span { flex:1; }
 .overview { display:grid; grid-template-columns:minmax(0,2fr) minmax(220px,1fr); gap:20px; }
-.focus { position:relative; overflow:hidden; border-radius:var(--radius-panel); padding:24px; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-top:3px solid var(--accent); }
+.focus { position:relative; overflow:hidden; border-radius:var(--radius-panel); padding:20px; background:var(--surface); color:var(--ink); border:1px solid var(--line);  }
 .focus::after { content:none; }
 .focusHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:15px; font-size:12px; }
 .focusHeading h2 { font-size:15px; font-weight:700; }
@@ -40,13 +40,13 @@
 .focus li strong { font-size:14px; font-weight:500; overflow-wrap:anywhere; }
 .focus li span { font-size:11px; opacity:.8; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .focus li small { flex-shrink:0; font-size:11px; }
-.focusEmpty { padding:32px 0; font-size:13px; line-height:1.9; }
+.focusEmpty { padding:20px 0; font-size:14px; line-height:1.7; color:var(--ink-2); }
 .agenda { border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); padding:20px; }
-.agenda .sectionHeading { margin-bottom:4px; }
-.agenda .sectionHeading > a { min-height:28px; font-size:11px; }
+.agenda .sectionHeading { margin-bottom:16px; }
+.agenda .sectionHeading > a { min-height:32px; font-size:12px; }
 .agendaItem { display:flex; flex-direction:column; border-left:2px solid var(--accent); padding-left:10px; margin-bottom:14px; gap:3px; }
 .agendaItem small { font-size:11px; color:var(--ink-2); }
-.agendaItem strong { font-size:12px; font-weight:500; }
+.agendaItem strong { font-size:14px; font-weight:500; overflow-wrap:anywhere; }
 .agendaMore { display:inline-flex; min-height:36px; align-items:center; font-size:11px; color:var(--ink-2); }
 .greeting .primary { flex-shrink:0; margin:0; min-height:40px; border-radius:9px; }
 @media(max-width:1000px) { .home { padding-inline:28px; } .overview { grid-template-columns:minmax(0,1fr); }   }

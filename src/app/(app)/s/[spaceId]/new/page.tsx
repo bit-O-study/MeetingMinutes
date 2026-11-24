@@ -3,7 +3,7 @@
  * 용도에 맞는 템플릿을 먼저 선택하고 노트 생성은 기존 액션에 맡긴다.
  */
 import Link from "@/components/PendingLink";
-import { SectionHeading } from "@/components/ui/Panels";
+import styles from "@/components/screens/Form.module.css";
 import { TemplatePicker } from "@/components/screens/TemplatePicker";
 import { requireSpaceMember } from "@/lib/access";
 import { suggestNoteTitle } from "@/lib/actions/notes";
@@ -20,9 +20,12 @@ export default async function NewNotePage({ params }: { params: Promise<{ spaceI
     return { kind, label: TEMPLATES[kind].label, blurb: TEMPLATES[kind].blurb, title: suggestion.title };
   }));
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-5 py-8">
-      <SectionHeading action={<Link href={"/s/" + spaceId} className="text-xs text-ink-2 hover:text-accent">취소</Link>}>새 노트</SectionHeading>
-      <p className="break-words text-sm text-ink-2">{space.name}에 함께 작성할 노트를 만듭니다.</p>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <Link href={"/s/" + spaceId + "?tab=notes"} className={styles.back}>← 노트 목록</Link>
+        <h1>새 노트</h1>
+        <p>{space.name}</p>
+      </header>
       <TemplatePicker spaceId={spaceId} initialTemplate={defaultTemplateFor(space.kind)} templates={templates} />
     </div>
   );
