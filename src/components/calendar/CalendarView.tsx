@@ -157,11 +157,9 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
       entries={entries}
       toneOf={toneOf}
       layerLabel={layerLabel}
-      spaces={spaces}
       pendingId={pendingId}
       onOpenEntry={open}
       onToggle={toggle}
-      onCreate={create}
     />
   );
 
@@ -263,7 +261,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
             {isWeek ? (
               <div className="flex flex-col gap-6 p-4">
                 {weekDays(weekStart).map((day) => (
-                  <DayPanel key={day} day={day} today={today} entries={entries} toneOf={toneOf} layerLabel={layerLabel} spaces={spaces} pendingId={pendingId} showCreate={false} onOpenEntry={open} onToggle={toggle} onCreate={create} />
+                  <DayPanel key={day} day={day} today={today} entries={entries} toneOf={toneOf} layerLabel={layerLabel} pendingId={pendingId} onOpenEntry={open} onToggle={toggle} />
                 ))}
               </div>
             ) : (

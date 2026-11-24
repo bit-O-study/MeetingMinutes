@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/components/PendingLink";
-import { AlarmClock, CalendarDays, CalendarPlus, CalendarRange, Check, Clock, Link2, ListPlus, Users } from "lucide-react";
+import { AlarmClock, CalendarDays, CalendarRange, Check, Clock, Link2 } from "lucide-react";
 
 import { shortDay, weekdayLabel } from "@/lib/calendar-dates";
 import { compareEntries, occursOnDay, type CalendarEntry } from "@/lib/calendar-entries";
@@ -10,21 +10,15 @@ import { cn } from "@/lib/utils";
 import { KindMark } from "./EntryChip";
 import { entryAria, layerStyle, timeLabel } from "./layer";
 
-export type SpaceOption = { id: string; label: string };
-
 type Props = {
   day: string;
   today: string;
   entries: CalendarEntry[];
   toneOf: (layerId: string) => number;
   layerLabel: (layerId: string) => string;
-  spaces: SpaceOption[];
   pendingId: string | null;
-  /** 만들기 버튼을 숨길 때(주간 모바일의 하루별 목록) false */
-  showCreate?: boolean;
   onOpenEntry: (entry: CalendarEntry) => void;
   onToggle: (entry: CalendarEntry, done: boolean) => void;
-  onCreate: (kind: "event" | "task", day: string) => void;
 };
 
 function RelativeDay({ day, today }: { day: string; today: string }) {
@@ -33,13 +27,11 @@ function RelativeDay({ day, today }: { day: string; today: string }) {
   return label ? <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent">{label}</span> : null;
 }
 
-const PILL = "press inline-flex h-10 items-center gap-1.5 rounded-lg bg-surface-2 px-4 text-sm font-semibold text-ink hover:bg-accent-soft hover:text-accent";
-
 /**
  * 선택한 날의 목록. 날짜를 크게 보이고, 각 항목은 옅은 색면 위에 아이콘·시각·연결을 한 줄로 얹는다.
  * 글자 라벨(레이어 이름, 종류 이름)은 빼고 점 색과 아이콘으로 대신한다. 정확한 이름은 읽어 주기·툴팁에서 알려 준다.
  */
-export function DayPanel({ day, today, entries, toneOf, layerLabel, spaces, pendingId, showCreate = true, onOpenEntry, onToggle, onCreate }: Props) {
+export function DayPanel({ day, today, entries, toneOf, layerLabel, pendingId, onOpenEntry, onToggle }: Props) {
   const list = entries.filter((entry) => occursOnDay(entry, day)).sort(compareEntries);
   return (
     <section aria-label={`${shortDay(day)} 일정`} className="flex flex-col gap-4">
@@ -117,30 +109,6 @@ export function DayPanel({ day, today, entries, toneOf, layerLabel, spaces, pend
         </ul>
       )}
 
-      {showCreate && (
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => onCreate("event", day)} className={PILL}>
-            <CalendarPlus className="size-4" aria-hidden="true" />일정
-          </button>
-          <button type="button" onClick={() => onCreate("task", day)} className={PILL}>
-            <ListPlus className="size-4" aria-hidden="true" />할 일
-          </button>
-          {spaces.length > 0 && (
-            <details className="relative">
-              <summary className={cn(PILL, "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
-                <Users className="size-4" aria-hidden="true" />모임
-              </summary>
-              <ul className="absolute left-0 top-12 z-20 w-56 rounded-2xl bg-surface p-1.5 shadow-[var(--shadow-float)]">
-                {spaces.map((space) => (
-                  <li key={space.id}>
-                    <Link href={`/s/${space.id}?tab=meetings&new=1&start=${day}`} className="block rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-surface-2">{space.label}</Link>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      )}
     </section>
   );
 }
