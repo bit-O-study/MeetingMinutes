@@ -225,6 +225,12 @@ Codex가 필요한데 없는 것을 여기 적는다. Claude가 구현하고 체
 
 ## 5. 변경 로그
 
+### 2026-11-24 — 일정 투표(링크 참여형) 1차
+
+- 스키마: `polls`, `poll_excluded_days`, `poll_participants`, `poll_unavailable_days`(마이그레이션 `0013_schedule_polls`, RLS 켬). **운영 DB 적용은 `node scripts/apply-schedule-polls.mjs --check` 후 적용 → 그다음 배포.**
+- 액션: `actions/polls.ts`(만든 사람: 생성·마감 변경/연장/해제·지금 마감/다시 열기·확정/취소·응답 삭제·링크 재발급/폐기·삭제), `actions/poll-vote.ts`(링크로 들어온 사람의 제출, 로그인 불필요).
+- 화면: `/polls`, `/polls/new`, `/polls/[pollId]`, 공개 `/v/[token]`. 사이드바에 "일정 투표" 추가. 설계는 `docs/GUEST-SCHEDULE-POLL.md`.
+
 ### 2026-11-24 — 채팅 삭제 후속 반영
 
 - `deleteProjectMessage({ spaceId, messageId })` 추가. 서버의 스페이스 멤버 검사 후 작성자 조건으로 삭제한다. 다른 작성자·없는 메시지는 같은 응답을 반환한다. 재시도는 추가 데이터를 지우지 않으며 이미 삭제된 항목은 확인 불가 응답이다.

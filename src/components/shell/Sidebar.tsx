@@ -1,4 +1,4 @@
-import { CalendarDays, CheckSquare, FolderClosed, Home, Plus, Search } from "lucide-react";
+import { CalendarCheck, CalendarDays, CheckSquare, FolderClosed, Home, Plus, Search } from "lucide-react";
 
 import type { Space } from "@/lib/db/schema";
 import { NavLink } from "@/components/shell/NavLink";
@@ -36,6 +36,9 @@ export function Sidebar({
       </NavLink>
       <NavLink href="/calendar" className={item} activeClassName={on}>
         <CalendarDays className="size-4" /> 개인 일정
+      </NavLink>
+      <NavLink href="/polls" className={item} activeClassName={on}>
+        <CalendarCheck className="size-4" /> 일정 투표
       </NavLink>
       <NavLink href="/tasks" className={item} activeClassName={on}>
         <CheckSquare className="size-4" />

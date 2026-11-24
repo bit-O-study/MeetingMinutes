@@ -535,3 +535,80 @@ export const projectFolderAssignments = pgTable("project_folder_assignments", {
   primaryKey({ columns: [t.ownerId, t.spaceId] }),
   index("project_folder_assignments_folder_idx").on(t.folderId),
 ]).enableRLS();
+
+/* ────────────────────────────────────────────────────────────
+   일정 투표(링크 참여형) — 회원이 만들고, 링크를 받은 사람은 로그인 없이 이름만 적고
+   안 되는 날을 칠한다. 스페이스와 무관한 개인 소유 투표다(docs/GUEST-SCHEDULE-POLL.md).
+   ──────────────────────────────────────────────────────────── */
+
+export type PollStatus = "open" | "closed" | "confirmed";
+export type PollVisibility = "participants" | "owner";
+
+export const polls = pgTable("polls", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  rangeStart: date("range_start").notNull(),
+  rangeEnd: date("range_end").notNull(),
+  status: text("status").$type<PollStatus>().notNull().default("open"),
+  confirmedDay: date("confirmed_day"),
+  resultVisibility: text("result_visibility").$type<PollVisibility>().notNull().default("participants"),
+  /** 응답 마감. 지나면 서버가 응답을 거절한다(하드 마감). null 이면 마감 없음. */
+  respondBy: timestamp("respond_by", { withTimezone: true }),
+  /** 공유 링크 — 초대·공유 링크와 같은 방식(암호문 사본 + 조회용 해시). */
+  token: text("token").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  maxParticipants: integer("max_participants").notNull().default(100),
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("polls_token_hash_idx").on(t.tokenHash),
+  index("polls_owner_idx").on(t.ownerId, t.createdAt),
+  check("polls_text_check", sql`length(trim(${t.title})) BETWEEN 1 AND 80 AND length(${t.description}) <= 1000`),
+  check("polls_range_check", sql`${t.rangeEnd} >= ${t.rangeStart} AND ${t.rangeEnd} - ${t.rangeStart} <= 59`),
+  check("polls_status_check", sql`${t.status} IN ('open','closed','confirmed') AND ${t.resultVisibility} IN ('participants','owner')`),
+  check("polls_confirmed_check", sql`(${t.status} = 'confirmed') = (${t.confirmedDay} IS NOT NULL)`),
+  check("polls_limits_check", sql`${t.maxParticipants} BETWEEN 1 AND 500 AND ${t.version} > 0`),
+]).enableRLS();
+
+/** 후보에서 뺀 날. 참여자 화면에서 회색으로 잠긴다. */
+export const pollExcludedDays = pgTable("poll_excluded_days", {
+  pollId: uuid("poll_id").notNull().references(() => polls.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+  reason: text("reason").notNull().default(""),
+}, (t) => [
+  primaryKey({ columns: [t.pollId, t.day] }),
+  check("poll_excluded_days_reason_check", sql`length(${t.reason}) <= 40`),
+]).enableRLS();
+
+/**
+ * 제출한 사람. 로그인 없이 참여한 사람은 user_id 가 비고, 본인 수정은 edit_token_hash(쿠키)로 가린다.
+ * 같은 투표 안에서 이름은 정규화한 name_key 로 유일하다.
+ */
+export const pollParticipants = pgTable("poll_participants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  pollId: uuid("poll_id").notNull().references(() => polls.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  displayName: text("display_name").notNull(),
+  nameKey: text("name_key").notNull(),
+  editTokenHash: text("edit_token_hash"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("poll_participants_name_idx").on(t.pollId, t.nameKey),
+  uniqueIndex("poll_participants_user_idx").on(t.pollId, t.userId).where(sql`${t.userId} IS NOT NULL`),
+  index("poll_participants_edit_idx").on(t.editTokenHash),
+  check("poll_participants_name_check", sql`length(trim(${t.displayName})) BETWEEN 1 AND 20`),
+]).enableRLS();
+
+/** "안 되는 날"만 저장한다. 행이 곧 체크다. 가능일 수는 후보일 - 제외일 - 불가일로 계산한다. */
+export const pollUnavailableDays = pgTable("poll_unavailable_days", {
+  participantId: uuid("participant_id").notNull().references(() => pollParticipants.id, { onDelete: "cascade" }),
+  day: date("day").notNull(),
+}, (t) => [primaryKey({ columns: [t.participantId, t.day] })]).enableRLS();
+
+export type Poll = typeof polls.$inferSelect;
+export type PollParticipant = typeof pollParticipants.$inferSelect;

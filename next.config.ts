@@ -20,6 +20,9 @@ const baseHeaders = [
 /** 주소 자체가 열쇠인 화면. 같은 사이트 안에서도 Referer로 토큰을 흘리지 않는다. */
 const tokenPageHeaders = [{ key: "Referrer-Policy", value: "no-referrer" }];
 
+/** 일정 투표 참여 링크. 토큰 화면이면서 응답 현황이 검색에 올라가거나 캐시되면 안 된다. */
+const pollLinkHeaders = [...tokenPageHeaders, { key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }];
+
 const nextConfig: NextConfig = {
   output: "standalone",
   // 사진·패키지 업로드가 프록시 기본 본문 한도에 걸리지 않게 한다.
@@ -29,6 +32,7 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: baseHeaders },
       { source: "/p/:token*", headers: tokenPageHeaders },
       { source: "/join/:token*", headers: tokenPageHeaders },
+      { source: "/v/:token*", headers: pollLinkHeaders },
     ];
   },
 };
