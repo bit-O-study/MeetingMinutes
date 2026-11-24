@@ -1,4 +1,6 @@
 .root { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:22px; align-items:start; }
+.root.idleRoot { grid-template-columns:minmax(0,1fr); }
+.idlePanel { display:none; }
 .create { grid-column:1 / -1; justify-self:end; min-height:40px; padding:8px 18px; border-radius:9px; background:var(--accent); color:var(--on-accent); font-size:12px; font-weight:600; }
 .list { overflow:hidden; border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); }
 .row + .row { border-top:1px solid var(--line); }
