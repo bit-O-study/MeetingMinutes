@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Noto_Sans_KR, Noto_Serif_KR } from "next/font/google";
+import { IBM_Plex_Mono, Noto_Sans_KR } from "next/font/google";
 
 import "./globals.css";
 
 const notoSans = Noto_Sans_KR({ variable: "--font-ui-sans", subsets: ["latin"], display: "swap" });
-const notoSerif = Noto_Serif_KR({ variable: "--font-ui-serif", subsets: ["latin"], weight: ["600", "700"], display: "swap" });
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
@@ -24,7 +23,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "rgb(244 242 237)" },
+    { media: "(prefers-color-scheme: light)", color: "rgb(247 248 250)" },
     { media: "(prefers-color-scheme: dark)", color: "#0f131b" },
   ],
 };
@@ -38,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${notoSans.variable} ${notoSerif.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${plexMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

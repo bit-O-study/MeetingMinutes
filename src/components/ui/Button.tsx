@@ -1,19 +1,16 @@
 import Link from "@/components/PendingLink";
 import { cn } from "@/lib/utils";
 
-/**
- * 공용 버튼 모양 — 재디자인 전에는 화면마다 버튼 클래스를 따로 적어 모양이 제각각이었다.
- * 프로젝트 안에서는 accent 가 그 프로젝트 색이라 버튼도 따라 바뀐다.
- */
+/** 프로젝트와 관계없이 조작부의 모양과 강조색을 유지한다. */
 const VARIANTS = {
-  primary: "bg-accent text-on-accent shadow-sm hover:brightness-110",
+  primary: "bg-accent text-on-accent hover:brightness-110",
   secondary: "bg-accent-soft text-accent hover:brightness-[0.98]",
   ghost: "bg-surface text-ink ring-1 ring-inset ring-line hover:bg-surface-2",
   danger: "bg-danger-soft text-danger hover:brightness-[0.98]",
 } as const;
 const SIZES = {
   sm: "h-9 rounded-lg px-3 text-[13px]",
-  md: "h-11 rounded-xl px-4 text-sm",
+  md: "h-11 rounded-lg px-4 text-sm",
 } as const;
 
 export type ButtonVariant = keyof typeof VARIANTS;

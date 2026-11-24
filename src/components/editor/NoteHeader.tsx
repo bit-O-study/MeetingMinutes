@@ -67,7 +67,7 @@ export function NoteHeader({
   }
 
   return (
-    <header className="note-heading flex min-w-0 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-ground px-4 py-3 md:px-8">
+    <header className="note-heading flex min-w-0 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-4 py-3 md:px-8">
       <Link
         href={`/s/${spaceId}`}
         className="min-w-0 truncate text-xs font-semibold text-ink-3 transition-colors hover:text-accent"
@@ -99,7 +99,7 @@ export function NoteHeader({
           type="button"
           onClick={() => setEditing(true)}
           title="클릭해서 제목 수정"
-          className="min-w-0 max-w-full break-words rounded-xl px-1 text-left font-serif text-2xl font-bold tracking-tight text-ink transition-colors hover:bg-surface-2 md:text-3xl"
+          className="min-w-0 max-w-full break-words rounded-xl px-1 text-left font-sans text-2xl font-bold tracking-tight text-ink transition-colors hover:bg-surface-2 md:text-3xl"
         >
           {title}
         </button>

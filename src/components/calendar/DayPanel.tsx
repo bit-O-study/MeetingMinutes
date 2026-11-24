@@ -30,10 +30,10 @@ type Props = {
 function RelativeDay({ day, today }: { day: string; today: string }) {
   const diff = Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
   const label = diff === 0 ? "오늘" : diff === 1 ? "내일" : diff === -1 ? "어제" : null;
-  return label ? <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold text-accent">{label}</span> : null;
+  return label ? <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent">{label}</span> : null;
 }
 
-const PILL = "press inline-flex h-10 items-center gap-1.5 rounded-full bg-surface-2 px-4 text-sm font-bold text-ink hover:bg-accent-soft hover:text-accent";
+const PILL = "press inline-flex h-10 items-center gap-1.5 rounded-lg bg-surface-2 px-4 text-sm font-semibold text-ink hover:bg-accent-soft hover:text-accent";
 
 /**
  * 선택한 날의 목록. 날짜를 크게 보이고, 각 항목은 옅은 색면 위에 아이콘·시각·연결을 한 줄로 얹는다.
@@ -44,8 +44,8 @@ export function DayPanel({ day, today, entries, toneOf, layerLabel, spaces, pend
   return (
     <section aria-label={`${shortDay(day)} 일정`} className="flex flex-col gap-4">
       <header className="flex items-end gap-2.5">
-        <span className="text-[2.75rem] font-black leading-none tracking-tight tabular-nums">{Number(day.slice(8))}</span>
-        <span className="pb-1 text-sm font-bold text-ink-2">{Number(day.slice(5, 7))}월 {weekdayLabel(day)}요일</span>
+        <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums">{Number(day.slice(8))}</span>
+        <span className="pb-1 text-sm font-semibold text-ink-2">{Number(day.slice(5, 7))}월 {weekdayLabel(day)}요일</span>
         <span className="pb-1"><RelativeDay day={day} today={today} /></span>
         {list.length > 0 && <span aria-label={`항목 ${list.length}개`} className="mb-1 ml-auto grid size-6 place-items-center rounded-full bg-surface-2 text-xs font-black text-ink-2">{list.length}</span>}
       </header>
@@ -61,7 +61,7 @@ export function DayPanel({ day, today, entries, toneOf, layerLabel, spaces, pend
             const tone = toneOf(entry.layerId);
             const isTask = entry.kind === "task";
             const time = timeLabel(entry);
-            const title = <span className={cn("text-base font-bold leading-snug [overflow-wrap:anywhere]", entry.done && "text-ink-3 line-through")}>{entry.title}</span>;
+            const title = <span className={cn("text-base font-semibold leading-snug [overflow-wrap:anywhere]", entry.done && "text-ink-3 line-through")}>{entry.title}</span>;
             return (
               <li
                 key={entry.id}
@@ -101,7 +101,7 @@ export function DayPanel({ day, today, entries, toneOf, layerLabel, spaces, pend
                     {entry.start !== entry.end && (
                       <span className="inline-flex items-center gap-1"><CalendarRange aria-hidden="true" className="size-3.5" />{entry.start.slice(5).replace("-", "/")}–{entry.end.slice(5).replace("-", "/")}</span>
                     )}
-                    {entry.overdue && !entry.done && <span className="inline-flex items-center gap-1 font-bold text-danger"><AlarmClock aria-label="지연" className="size-3.5" /></span>}
+                    {entry.overdue && !entry.done && <span className="inline-flex items-center gap-1 font-semibold text-danger"><AlarmClock aria-label="지연" className="size-3.5" /></span>}
                     {entry.note && <span className="min-w-0 [overflow-wrap:anywhere]">{entry.note}</span>}
                     {entry.linkTitle && (
                       <span className="inline-flex min-w-0 items-center gap-1 text-accent">

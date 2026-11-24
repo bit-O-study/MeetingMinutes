@@ -21,8 +21,8 @@
   min-height: 44px;
 }
 .home [data-project-target] {
-  border-radius: 20px;
-  box-shadow: 0 3px 12px color-mix(in srgb, var(--ink) 3%, transparent);
+  border-radius:var(--radius-panel);
+  box-shadow: none;
   transition: box-shadow 160ms ease, border-color 160ms ease;
 }
 .home [data-project-target] > a { padding: 18px 14px; gap: 18px; }

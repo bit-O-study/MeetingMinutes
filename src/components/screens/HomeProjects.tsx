@@ -254,7 +254,7 @@ export function HomeProjects({ userId, projects, initial }: { userId: string; pr
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <p role="status" className={message && organizing ? "text-xs text-ink-2" : "sr-only"}>{message}</p>
       {visible.length === 0 && <p className="rounded-2xl border border-dashed border-line p-5 text-center text-sm text-ink-2">{currentFolder === UNGROUPED ? "미소속 프로젝트가 없어요." : activeFolder ? "빈 그룹이에요. 프로젝트를 이 그룹으로 옮겨 보세요." : "아직 프로젝트가 없어요."}</p>}
-      <ul className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map(project => <li key={project.id} data-project-target={project.id} className={`project-card ${PROJECT_SCOPE_CLASS[projectColor(project.id)]} relative flex min-w-0 flex-col rounded-2xl border border-line bg-surface ${drag?.id === project.id ? "opacity-50 ring-2 ring-accent" : drag?.target === `project:${project.id}` ? "ring-2 ring-accent bg-accent-soft" : ""}`}>
           <button type="button" disabled={!ready} aria-label={project.name + " 이동 손잡이"}
             onPointerDown={event => { event.preventDefault(); start(event, project.id); }} onPointerMove={moving}

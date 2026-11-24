@@ -34,7 +34,7 @@ type Props = {
 
 const HIDE_DONE = "~done";
 /** 배경 없는 작은 아이콘 버튼. 머리에 같은 무게의 상자가 늘어서지 않게 평소에는 면을 두지 않는다. */
-const GHOST = "press grid size-9 shrink-0 place-items-center rounded-full text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink";
+const GHOST = "press grid size-9 shrink-0 place-items-center rounded-lg text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink";
 const MENU = "absolute right-0 top-11 z-30 w-60 rounded-2xl bg-surface p-1.5 shadow-[var(--shadow-float)]";
 const MENU_ROW = "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-surface-2";
 
@@ -166,7 +166,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
   );
 
   return (
-    <div className="calendar-page mx-auto flex w-full max-w-[84rem] flex-col gap-3 px-3 py-3 md:px-6 md:py-5">
+    <div className="calendar-page mx-auto flex w-full flex-col gap-5 px-5 py-6">
       <header className="flex flex-wrap items-center gap-x-2 gap-y-2">
         <div className="flex items-center">
           <Link href={prevHref} aria-label={isWeek ? "이전 주" : "이전 달"} className={GHOST}><ChevronLeft className="size-[1.15rem]" /></Link>
@@ -175,29 +175,29 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
             aria-label={isWeek ? `${weekStart} 부터 ${weekEnd} 까지` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`}
           >
             {isWeek ? (
-              <span className="text-lg font-bold tabular-nums tracking-tight">{Number(weekStart.slice(5, 7))}.{Number(weekStart.slice(8))}<span className="mx-1 font-medium text-ink-3">–</span>{Number(weekEnd.slice(5, 7))}.{Number(weekEnd.slice(8))}</span>
+              <span className="text-lg font-semibold tabular-nums tracking-tight">{Number(weekStart.slice(5, 7))}.{Number(weekStart.slice(8))}<span className="mx-1 font-medium text-ink-3">–</span>{Number(weekEnd.slice(5, 7))}.{Number(weekEnd.slice(8))}</span>
             ) : (
               <>
-                <span className="text-lg font-bold tracking-tight">{Number(month.slice(5))}월</span>
+                <span className="text-lg font-semibold tracking-tight">{Number(month.slice(5))}월</span>
                 <span className="text-[13px] font-medium tabular-nums text-ink-3">{month.slice(0, 4)}</span>
               </>
             )}
           </h1>
           <Link href={nextHref} aria-label={isWeek ? "다음 주" : "다음 달"} className={GHOST}><ChevronRight className="size-[1.15rem]" /></Link>
         </div>
-        <Link href={todayHref} aria-label="오늘로" className="press inline-flex h-8 items-center rounded-full px-3 text-[13px] font-bold text-accent transition-colors hover:bg-accent-soft">오늘</Link>
+        <Link href={todayHref} aria-label="오늘로" className="press inline-flex h-8 items-center rounded-lg px-3 text-[13px] font-semibold text-accent transition-colors hover:bg-accent-soft">오늘</Link>
 
         <div className="ml-auto flex items-center gap-1">
           {summary && (
-            <p className="mr-2 flex items-center gap-2.5 text-xs font-bold tabular-nums text-ink-2 max-sm:hidden" aria-label={`오늘 일정 ${summary.events}개, 할 일 ${summary.tasks}개, 지연 ${summary.overdue}개`}>
+            <p className="mr-2 flex items-center gap-2.5 text-xs font-semibold tabular-nums text-ink-2 max-sm:hidden" aria-label={`오늘 일정 ${summary.events}개, 할 일 ${summary.tasks}개, 지연 ${summary.overdue}개`}>
               <span className="inline-flex items-center gap-1" title="오늘 일정"><CalendarDays aria-hidden="true" className="size-3.5 text-ink-3" />{summary.events}</span>
               <span className="inline-flex items-center gap-1" title="오늘 할 일"><ListChecks aria-hidden="true" className="size-3.5 text-ink-3" />{summary.tasks}</span>
               {summary.overdue > 0 && <span className="inline-flex items-center gap-1 text-danger" title="지연"><AlarmClock aria-hidden="true" className="size-3.5" />{summary.overdue}</span>}
             </p>
           )}
-          <nav aria-label="보기 방식" className="mr-1 inline-flex rounded-full bg-surface-2 p-0.5">
-            <Link href={monthHref} aria-label="월 보기" title="월" aria-current={!isWeek ? "page" : undefined} className={cn("grid size-8 place-items-center rounded-full transition-colors", !isWeek ? "bg-surface text-accent shadow-sm" : "text-ink-3 hover:text-ink")}><CalendarDays className="size-4" /></Link>
-            <Link href={weekHref} aria-label="주 보기" title="주" aria-current={isWeek ? "page" : undefined} className={cn("grid size-8 place-items-center rounded-full transition-colors", isWeek ? "bg-surface text-accent shadow-sm" : "text-ink-3 hover:text-ink")}><CalendarRange className="size-4" /></Link>
+          <nav aria-label="보기 방식" className="mr-1 inline-flex rounded-lg bg-surface-2 p-0.5">
+            <Link href={monthHref} aria-label="월 보기" title="월" aria-current={!isWeek ? "page" : undefined} className={cn("grid size-8 place-items-center rounded-lg transition-colors", !isWeek ? "bg-surface text-accent" : "text-ink-3 hover:text-ink")}><CalendarDays className="size-4" /></Link>
+            <Link href={weekHref} aria-label="주 보기" title="주" aria-current={isWeek ? "page" : undefined} className={cn("grid size-8 place-items-center rounded-lg transition-colors", isWeek ? "bg-surface text-accent" : "text-ink-3 hover:text-ink")}><CalendarRange className="size-4" /></Link>
           </nav>
 
           <details ref={layerMenu} className="relative">
@@ -231,13 +231,13 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
           <Link href="/tasks" aria-label="할 일 목록" title="할 일 목록" className={cn(GHOST, "max-sm:hidden")}><ListChecks className="size-[1.05rem]" /></Link>
 
           <details ref={createMenu} className="relative ml-1">
-            <summary aria-label="새로 만들기" title="새로 만들기" className="press grid size-9 cursor-pointer list-none place-items-center rounded-full bg-accent text-on-accent shadow-sm transition-[filter] hover:brightness-105 [&::-webkit-details-marker]:hidden">
+            <summary aria-label="새로 만들기" title="새로 만들기" className="press grid size-9 cursor-pointer list-none place-items-center rounded-lg bg-accent text-on-accent transition-[filter] hover:brightness-105 [&::-webkit-details-marker]:hidden">
               <Plus className="size-[1.15rem]" strokeWidth={2.6} />
             </summary>
             <div className={MENU}>
               <button type="button" onClick={() => create("event", selectedDay)} className={MENU_ROW}><CalendarPlus className="size-[1.1rem] text-accent" aria-hidden="true" />일정</button>
               <button type="button" onClick={() => create("task", selectedDay)} className={MENU_ROW}><ListPlus className="size-[1.1rem] text-accent" aria-hidden="true" />할 일</button>
-              {spaces.length > 0 && <p className="mx-3 mt-1 border-t border-line pt-2 text-xs font-bold text-ink-3">모임</p>}
+              {spaces.length > 0 && <p className="mx-3 mt-1 border-t border-line pt-2 text-xs font-semibold text-ink-3">모임</p>}
               {spaces.map((space) => (
                 <Link key={space.id} href={`/s/${space.id}?tab=meetings&new=1&start=${selectedDay}`} className={MENU_ROW}><Users className="size-[1.1rem] text-accent" aria-hidden="true" /><span className="min-w-0 truncate">{space.label}</span></Link>
               ))}
@@ -249,7 +249,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
       {error && <p role="alert" className="rounded-2xl bg-danger-soft px-4 py-2.5 text-sm font-semibold text-danger">{error}</p>}
 
       <div className={cn("grid gap-4", !isWeek && "lg:grid-cols-[minmax(0,1fr)_21rem]")}>
-        <div className="min-w-0 overflow-hidden rounded-3xl bg-surface shadow-sm">
+        <div className="min-w-0 overflow-hidden rounded-3xl bg-surface">
           {/* 큰 화면: 월 격자(768px~) / 주간 시간표(1024px~, 칸이 좁으면 겹친 일정을 읽을 수 없다) */}
           <div className={cn("hidden", isWeek ? "lg:block" : "md:block")}>
             {isWeek ? (
@@ -275,7 +275,7 @@ export function CalendarView({ data, linkTargets, view, anchorDay, preview = fal
         </div>
 
         <aside className={cn("min-w-0", isWeek && "max-lg:hidden")}>
-          <div className={cn("rounded-3xl bg-surface p-5 shadow-sm", !isWeek && "lg:sticky lg:top-4")}>{panel}</div>
+          <div className={cn("rounded-3xl bg-surface p-5", !isWeek && "lg:sticky lg:top-4")}>{panel}</div>
         </aside>
       </div>
 

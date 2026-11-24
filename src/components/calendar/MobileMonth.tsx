@@ -43,7 +43,7 @@ function Dot({ entry, tone }: { entry: CalendarEntry; tone: number }) {
 export function MobileMonth({ month, weeks, entries, toneOf, selectedDay, today, onSelectDay }: Props) {
   return (
     <div role="grid" aria-label={`${month.slice(0, 4)}년 ${Number(month.slice(5))}월 캘린더`} className="px-3 pb-2">
-      <div role="row" className="grid grid-cols-7 text-center text-xs font-bold text-ink-3">
+      <div role="row" className="grid grid-cols-7 text-center text-xs font-medium text-ink-3">
         {WEEKDAYS.map((label, index) => (
           <div key={label} role="columnheader" className={cn("py-2", index === 0 && "text-danger/80")}>{label}</div>
         ))}
@@ -63,9 +63,9 @@ export function MobileMonth({ month, weeks, entries, toneOf, selectedDay, today,
                 onClick={() => onSelectDay(day)}
                 style={selected ? ({ "--c": "var(--on-accent)" } as React.CSSProperties) : undefined}
                 className={cn(
-                  "mx-auto my-0.5 flex h-[3.6rem] w-full max-w-[3.6rem] flex-col items-center justify-start gap-1 rounded-[1.4rem] pt-2 text-[15px] tabular-nums transition-colors",
+                  "mx-auto my-0.5 flex h-[3.6rem] w-full max-w-[3.6rem] flex-col items-center justify-start gap-1 rounded-lg pt-2 text-[15px] tabular-nums transition-colors",
                   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
-                  selected ? "bg-accent font-black text-on-accent shadow-md" : isInMonth(day, month) ? "font-bold text-ink" : "font-medium text-ink-3",
+                  selected ? "bg-accent font-semibold text-on-accent" : isInMonth(day, month) ? "font-bold text-ink" : "font-medium text-ink-3",
                   day === today && !selected && "bg-accent-soft text-accent",
                 )}
               >

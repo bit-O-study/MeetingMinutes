@@ -32,7 +32,7 @@ export default async function LoginPage({ searchParams }: {
   return <main className={styles.login}>
     <section className={styles.story} aria-label="모아 소개">
       <Logo />
-      <div className={styles.storyCopy}><h2>함께 쓰면,<br />회의가<br />기록이 됩니다.</h2><p>스터디 회의록과 인수인계 메모를 여럿이 동시에 쓰고,<br />할 일까지 한곳에서 챙겨요. 저장 버튼은 없어요.</p></div>
+      <div className={styles.storyCopy}><h2>함께 나눈 이야기,<br /> 기록으로 이어가요.</h2><p>스터디 회의록과 인수인계 메모를 여럿이 동시에 쓰고,<br />결정한 내용과 다음 할 일까지 한곳에서 이어가세요.</p></div>
       <div className={styles.orbits} aria-hidden="true"><i /><i /><i /></div>
     </section>
     <div className={styles.formSide}><section className={styles.form}>

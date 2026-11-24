@@ -3,9 +3,12 @@
 
 /* 공통 규격은 한곳에서 정해 헤더와 하위 탭의 스크롤 기준이 어긋나지 않게 한다. */
 :root {
-  --radius-control: 10px;
-  --radius-panel: 16px;
-  --radius-dialog: 20px;
+  --font-ui-serif: var(--font-ui-sans);
+  --page-width: 1200px;
+  --page-gutter: clamp(20px, 4vw, 48px);
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-dialog: 16px;
   --shadow-panel: 0 2px 6px color-mix(in srgb, var(--ink) 2%, transparent);
 }
 
@@ -34,26 +37,21 @@
 }
 
 
-/*
-  디자인 토큰 — 2026-10-14 재디자인("프로젝트마다 색이 있는 메모장").
-  선 대신 면으로 묶는다: 맑은 회청색 바탕 위 흰 카드. 강조색은 기본 파랑이고,
-  프로젝트 안에서는 그 프로젝트 색(--pc)이 강조색 자리를 대신한다(.project-* 클래스).
-  옛 이름(ground·surface·accent…)은 그대로 두고 값만 바꿨다 — 아직 안 바꾼 화면도 새 색을 따라가게.
-*/
+/* 모든 화면의 조작 색을 고정하고 프로젝트 식별 색과 분리한다. */
 :root {
-  --ground: rgb(244 242 237);
+  --ground: rgb(247 248 250);
   --surface: oklch(1 0 0);
-  --surface-2: rgb(236 233 227);
+  --surface-2: rgb(240 242 246);
 
-  --ink: rgb(22 24 29);
-  --ink-2: rgb(98 103 119);
-  --ink-3: rgb(112 115 128);
+  --ink: rgb(28 34 48);
+  --ink-2: rgb(91 101 121);
+  --ink-3: rgb(110 120 137);
 
-  --line: rgb(229 226 219);
-  --line-2: rgb(207 202 192);
+  --line: rgb(227 231 238);
+  --line-2: rgb(199 207 220);
 
-  --accent: rgb(73 50 242);
-  --accent-soft: rgb(237 234 255);
+  --accent: rgb(70 85 205);
+  --accent-soft: rgb(237 240 253);
   --on-accent: #ffffff;
 
   --ok: #1f7a4f;
@@ -175,10 +173,7 @@
     --shadow-float: 0 10px 30px rgb(0 0 0 / 0.45);
 }
 
-/*
-  프로젝트 색 — 프로젝트 안의 화면을 감싸는 요소에 project-* 를 붙이면
-  accent 계열(버튼·탭·칩·체크)이 그 색으로 바뀐다. 옅은 색은 진한 색에서 만든다.
-*/
+/* 프로젝트 색은 아이콘과 식별점에만 사용한다. */
 .project-blue { --pc: var(--p-blue); }
 .project-teal { --pc: var(--p-teal); }
 .project-orange { --pc: var(--p-orange); }
@@ -187,12 +182,12 @@
 .project-pink { --pc: var(--p-pink); }
 .project-yellow { --pc: var(--p-yellow); }
 .project-slate { --pc: var(--p-slate); }
-:is(.project-blue, .project-teal, .project-orange, .project-violet, .project-green, .project-pink, .project-yellow, .project-slate) {
-  --accent: var(--pc);
-  --accent-soft: color-mix(in srgb, var(--pc) 13%, var(--surface));
-}
-
 @theme inline {
+  /* 기존 화면의 Tailwind 카드·입력칸도 공통 곡률을 사용한다. */
+  --radius-lg: var(--radius-control);
+  --radius-xl: var(--radius-control);
+  --radius-2xl: var(--radius-panel);
+  --radius-3xl: var(--radius-dialog);
   --color-ground: var(--ground);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -229,8 +224,8 @@
   --shadow-float: var(--shadow-float);
 
   --font-sans: var(--font-ui-sans);
-  /* 기록 제목은 명조로 구분하고 조작부는 고딕을 유지한다. */
-  --font-serif: var(--font-ui-serif);
+  /* 기존 제목 클래스도 같은 고딕 체계를 따른다. */
+  --font-serif: var(--font-ui-sans);
   --font-mono: var(--font-plex-mono);
 }
 
@@ -270,7 +265,7 @@ body {
 .tiptap ul ul:not([data-type="taskList"]) { list-style-type: circle; }
 .tiptap ul ul ul:not([data-type="taskList"]) { list-style-type: square; }
 .tiptap li > p { margin: 0.15em 0; }
-.tiptap h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin: 1.2em 0 0.5em; }
+.tiptap h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin: 1.2em 0 0.5em; }
 .tiptap h3 { font-size: 1rem; font-weight: 600; margin: 1em 0 0.4em; }
 .tiptap h4, .tiptap h5, .tiptap h6 { font-weight: 600; margin: 0.8em 0 0.3em; }
 .tiptap a { color: var(--accent); text-decoration: underline; }
@@ -282,7 +277,7 @@ body {
 /* 구획 제목 — 명조·밑줄은 양식 같아서 굵은 고딕으로(재디자인). */
 .tiptap h2 {
   font-size: 1.0625rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ink);
   margin: 1.6rem 0 0.4rem;
