@@ -1,3 +1,4 @@
+import { ButtonLink } from "@/components/ui/Button";
 import { isIsoDay } from "@/lib/calendar-dates";
 import { listSpaceMeetings } from "@/lib/meeting-data";
 import { todayInSeoul } from "@/lib/utils";
@@ -14,7 +15,11 @@ export async function MeetingsTab({ spaceId, query }: { spaceId: string; query: 
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-2">멤버가 가능한 날을 칠하면 가장 맞는 날을 추천해 드려요.</p>
-        <MeetingCreate spaceId={spaceId} today={today} defaultOpen={query.new === "1"} defaultStart={start} />
+        <div className="flex flex-wrap items-center gap-2">
+          {/* 멤버가 아닌 사람에게도 링크로 받는 투표. 스페이스와 무관한 개인 투표라 멤버 일정 조사와 따로 만든다. */}
+          <ButtonLink href="/polls/new" variant="ghost" size="sm">링크 투표</ButtonLink>
+          <MeetingCreate spaceId={spaceId} today={today} defaultOpen={query.new === "1"} defaultStart={start} />
+        </div>
       </div>
       <MeetingList meetings={meetings} spaceId={spaceId} today={today} />
     </div>
