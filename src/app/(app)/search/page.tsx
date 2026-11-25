@@ -9,6 +9,8 @@ import { searchNotes } from "@/lib/actions/search";
 import { Badge, NoteStatusBadge } from "@/components/ui/Badge";
 import { relativeTime } from "@/lib/utils";
 import styles from "@/components/screens/Search.module.css";
+import { SearchHighlight } from "@/components/screens/SearchHighlight";
+import { searchHref, searchLimit } from "@/components/screens/search-view";
 
 function one(value: string | string[] | undefined) {
   return typeof value === "string" ? value : "";
@@ -36,8 +38,16 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const status = params.status === "draft" || params.status === "tidied" ? params.status : "";
   const inputClass = styles.input;
   const formKey = [query, selectedSpace, from, to, status].join("|");
+  const limit = searchLimit(one(params.limit));
+  const filters = { q: query, space: selectedSpace, from, to, status };
+  const activeFilters = [
+    ...(selectedSpace ? [{ label: `프로젝트: ${spaces.find(row => row.space.id === selectedSpace)?.space.name}`, href: searchHref(filters, { space: "" }) }] : []),
+    ...(status ? [{ label: `상태: ${status === "draft" ? "작성 중" : "정리됨"}`, href: searchHref(filters, { status: "" }) }] : []),
+    ...(from ? [{ label: `시작: ${from}`, href: searchHref(filters, { from: "" }) }] : []),
+    ...(to ? [{ label: `종료: ${to}`, href: searchHref(filters, { to: "" }) }] : []),
+  ];
   const result = query && !invalidSpace && !invalidDates && spaceIds.length > 0
-    ? await searchNotes(query, { spaceIds: selectedSpace ? [selectedSpace] : spaceIds, from, to, status: status || null, limit: 30 })
+    ? await searchNotes(query, { spaceIds: selectedSpace ? [selectedSpace] : spaceIds, from, to, status: status || null, limit })
     : { total: 0, hits: [] };
 
   return (
@@ -79,10 +89,14 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
         </div>
         </details>
         <div className={styles.meta}>
-          <p>내 프로젝트 {spaceIds.length}개에서 검색 · 한국 시간 기준</p>
+          <p>{selectedSpace ? "선택한 프로젝트 1개" : `내 프로젝트 ${spaceIds.length}개`}에서 검색 · 한국 시간 기준</p>
           {Boolean(query || selectedSpace || from || to || status) && <Link href="/search" className="hover:text-accent">초기화</Link>}
         </div>
       </form>
+      {!invalidSpace && activeFilters.length > 0 && <nav aria-label="적용된 검색 조건" className={styles.activeFilters}>
+        {activeFilters.map(filter => <Link key={filter.label} href={filter.href} aria-label={`${filter.label} 조건 해제`} className={styles.filterChip}>{filter.label}<span aria-hidden="true">×</span></Link>)}
+        <Link href={searchHref(filters, { space: "", status: "", from: "", to: "" })} className={styles.filterChip}>조건 모두 해제</Link>
+      </nav>}
       {invalidSpace || invalidDates ? (
         <p id="search-error" role="alert" className="rounded-xl ring-1 ring-inset ring-line bg-warn-soft p-3 text-sm text-warn">
           {invalidSpace ? "선택한 검색 범위를 사용할 수 없습니다. 검색 조건을 다시 선택해 주세요." : "검색 기간을 확인해 주세요. 시작일은 종료일보다 늦을 수 없습니다."}
@@ -105,16 +119,19 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
               <li key={hit.id}>
                 <Link href={`/s/${hit.spaceId}/n/${hit.id}`} className={`${styles.result} space-y-2`}>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="min-w-0 break-words text-sm font-semibold text-ink">{hit.title}</h2>
+                    <h2 className="min-w-0 break-words text-sm font-semibold text-ink"><SearchHighlight text={hit.title} query={query} /></h2>
                     <NoteStatusBadge status={hit.status} />
                     {hit.section && <Badge tone={hit.section.includes("질문") ? "accent" : "info"} className="whitespace-normal break-words">일치 구획 · {hit.section}</Badge>}
                   </div>
                   <p className="text-xs text-ink-3">{hit.spaceName} · {relativeTime(hit.updatedAt)} 수정</p>
-                  {hit.snippet && <p className="break-words text-sm leading-relaxed text-ink-2">{hit.snippet}</p>}
+                  {hit.snippet && <p className="break-words text-sm leading-relaxed text-ink-2"><SearchHighlight text={hit.snippet} query={query} /></p>}
                 </Link>
               </li>
             ))}
           </ul>
+          {result.total > result.hits.length && (limit < 100
+            ? <Link href={searchHref(filters, {}, Math.min(limit + 30, 100))} scroll={false} className={styles.more}>결과 더 보기 · 최대 {Math.min(limit + 30, 100)}건</Link>
+            : <p className="text-sm text-ink-2">최근 수정된 100건까지 표시합니다. 검색어나 프로젝트·기간 조건을 좁혀 나머지 노트를 찾아보세요.</p>)}
         </section>
       )}
     </div>

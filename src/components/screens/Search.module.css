@@ -19,6 +19,13 @@
 .result:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
 .result h2 { font-size:16px; font-weight:600; overflow-wrap:anywhere; }
 .result p { overflow-wrap:anywhere; }
+.highlight { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+.activeFilters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; }
+.filterChip { display:inline-flex; align-items:center; gap:8px; min-height:44px; max-width:100%; padding:8px 12px; border:1px solid var(--line); border-radius:var(--radius-control); color:var(--ink-2); font-size:13px; overflow-wrap:anywhere; }
+.filterChip:hover { background:var(--surface-2); }
+.more { display:flex; justify-content:center; align-items:center; min-height:44px; padding:10px 16px; border:1px solid var(--line-2); border-radius:var(--radius-control); color:var(--accent); font-size:14px; }
+.more:hover { background:var(--accent-soft); }
+.filterChip:focus-visible,.more:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 @media(max-width:767px) { .page { padding:24px 20px 40px; } .header h1 { font-size:24px; } .result { padding:16px; } }
 @media(max-width:479px) { .filterFields { grid-template-columns:minmax(0,1fr); } }
 @media(max-width:359px) { .page { padding-inline:16px; } }
