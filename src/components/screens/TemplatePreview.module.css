@@ -1,0 +1,9 @@
+.document { padding:16px; border:1px solid var(--line); border-radius:var(--radius-control); background:var(--ground); color:var(--ink-2); font-size:13px; line-height:1.8; overflow-wrap:anywhere; }
+.document h3 { margin-top:20px; margin-bottom:6px; color:var(--ink); font-size:14px; font-weight:600; }
+.document p + p { margin-top:6px; }
+.document blockquote { padding:10px 12px; border-left:3px solid var(--warn); background:var(--warn-soft); color:var(--warn); }
+.checklist { list-style:none; padding:0; }
+.checklist li { display:flex; gap:8px; }
+.checklist li > div { min-width:0; }
+.placeholder { color:var(--ink-3); font-style:italic; }
+.blank { color:var(--ink-2); font-size:13px; line-height:1.8; }

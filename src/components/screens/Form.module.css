@@ -22,5 +22,16 @@
 .cancel { display:inline-flex; align-items:center; min-height:44px; color:var(--ink-2); font-size:14px; }
 .cancel:hover { color:var(--accent); }
 .warning { padding:12px 14px; border-radius:var(--radius-control); background:var(--warn-soft); color:var(--warn); font-size:13px; line-height:1.7; }
+.preview summary { display:list-item; min-height:44px; padding:10px 0; color:var(--accent); font-size:14px; cursor:pointer; }
+.preview summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.preview > div { display:flex; flex-direction:column; gap:12px; }
+.recent { margin-top:32px; }
+.recent h2 { color:var(--ink); font-size:16px; font-weight:600; }
+.recent > p { margin-top:8px; }
+.recent ul { margin-top:12px; border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); overflow:hidden; }
+.recent li + li { border-top:1px solid var(--line); }
+.recent a { display:flex; flex-direction:column; gap:8px; padding:16px; overflow-wrap:anywhere; }
+.recent a:hover { background:var(--surface-2); }
+.recent a:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
 @media(max-width:767px) { .page { padding:24px 20px 40px; } .header { margin-bottom:24px; } .header h1 { font-size:24px; } .form { padding:20px; gap:24px; } }
 @media(max-width:359px) { .page { padding-inline:16px; } .form { padding:16px; } .choice { padding:12px; } }

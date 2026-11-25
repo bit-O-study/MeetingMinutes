@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { createNote } from "@/lib/actions/notes";
 import type { TemplateKind } from "@/lib/db/schema";
 import styles from "./Form.module.css";
 
-type TemplateOption = { kind: TemplateKind; label: string; blurb: string; title: string };
+type TemplateOption = { kind: TemplateKind; label: string; blurb: string; title: string; preview?: ReactNode };
 
 export function TemplatePicker({ spaceId, initialTemplate, templates }: {
   spaceId: string;
@@ -47,6 +47,13 @@ function TemplateFields({ templates, selected, onSelect, title, onTitle }: {
           </label>
         ))}
       </div>
+      {templates.find(template => template.kind === selected)?.preview && <details className={styles.preview}>
+        <summary>선택한 양식 미리보기</summary>
+        <div aria-live="polite">
+          <p className={styles.hint}>생성 후 본문과 구획을 자유롭게 수정할 수 있습니다.{selected === "study" && " 회차 번호는 생성 시 최종 결정됩니다."}</p>
+          {templates.find(template => template.kind === selected)?.preview}
+        </div>
+      </details>}
       {selected === "handover" && (
         <p className={styles.warning}>
           비밀번호·토큰·키 값은 적지 마세요. 보관 위치와 접근 요청처만 남겨 주세요.
