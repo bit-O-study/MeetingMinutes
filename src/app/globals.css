@@ -6,9 +6,11 @@
   --font-ui-serif: var(--font-ui-sans);
   --page-width: 1200px;
   --page-gutter: clamp(20px, 4vw, 48px);
-  --radius-control: 8px;
-  --radius-panel: 12px;
-  --radius-dialog: 16px;
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --radius-dialog: 14px;
+  /* 목록 행 높이. 데스크톱은 촘촘하게 두고 터치 화면에서는 44px로 키운다(workspace.css). */
+  --row-height: 32px;
   --shadow-panel: 0 2px 6px color-mix(in srgb, var(--ink) 2%, transparent);
 }
 

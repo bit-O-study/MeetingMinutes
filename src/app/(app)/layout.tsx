@@ -5,6 +5,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { BottomNav } from "@/components/shell/BottomNav";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
+import { CommandPalette } from "@/components/shell/CommandPalette";
 import { listMySpaces } from "@/lib/access";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -42,6 +43,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">본문으로 이동</a>
+      <CommandPalette projects={spaceRows.map((r) => ({ id: r.space.id, name: r.space.name }))} />
       <TopBar user={user} />
       <div className="app-body">
         <Sidebar user={user} spaces={spaceRows.map((r) => r.space)} openTaskCount={(taskCount?.n ?? 0) + myIssues.length + personal.open} />

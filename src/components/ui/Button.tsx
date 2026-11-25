@@ -9,8 +9,8 @@ const VARIANTS = {
   danger: "bg-danger-soft text-danger hover:brightness-[0.98]",
 } as const;
 const SIZES = {
-  sm: "h-9 rounded-lg px-3 text-[13px]",
-  md: "h-11 rounded-lg px-4 text-sm",
+  sm: "h-8 rounded-lg px-3 text-[13px]",
+  md: "h-10 rounded-lg px-4 text-sm",
 } as const;
 
 export type ButtonVariant = keyof typeof VARIANTS;
@@ -47,4 +47,4 @@ export function ButtonLink({
 
 /** 입력칸 공용 클래스 — 테두리 대신 안쪽 선, 누르면 강조색 테두리. */
 export const fieldClass =
-  "ui-input h-11 w-full min-w-0 rounded-xl bg-surface px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none";
+  "ui-input h-10 w-full min-w-0 rounded-lg bg-surface px-3.5 text-[15px] text-ink ring-1 ring-inset ring-line placeholder:text-ink-3 focus:ring-2 focus:ring-accent focus:outline-none";
