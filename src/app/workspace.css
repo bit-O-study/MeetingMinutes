@@ -84,7 +84,7 @@ button,a,input,textarea,select { -webkit-tap-highlight-color:transparent; }
 .account-dialog { position:fixed; inset:0; width:100%; height:100dvh; max-width:none; max-height:none; margin:0; padding:0; border:0; background:transparent; color:var(--ink); }
 .account-dialog::backdrop { background:color-mix(in srgb,var(--ink) 30%,transparent); backdrop-filter:blur(4px); }
 .note-document { overflow-wrap:anywhere; background:var(--surface); }
-.note-heading { padding-block:24px; }
+.note-heading { padding-block:0; }
 .note-heading input,.note-heading h1,.tiptap h1,.tiptap h2 { font-family:var(--font-ui-sans),sans-serif; }
 .note-progress { appearance:none; border:0; border-radius:8px; overflow:hidden; background:var(--surface-2); color:var(--accent); }
 .note-progress::-webkit-progress-bar { background:var(--surface-2); }

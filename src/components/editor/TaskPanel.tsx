@@ -62,10 +62,9 @@ export function TaskPanel({
   );
 
   return (
-    <aside className="flex w-full flex-none flex-col gap-4 border-t border-line bg-ground px-5 py-6 lg:w-72 lg:border-t-0 lg:border-l">
+    <aside className="flex w-full flex-none flex-col gap-4 border-t border-line bg-surface px-4 py-5 lg:w-80 lg:border-t-0 lg:border-l">
       <h2 className="flex justify-between text-sm font-semibold text-ink">이 노트의 할 일<span className="text-xs text-accent">{done.length} / {tasks.length}</span></h2>
       <progress aria-label="노트 할 일 완료율" value={done.length} max={tasks.length || 1} className="note-progress h-1.5 w-full" />
-      <p className="text-xs leading-6 text-ink-2">본문의 체크박스와 같은 항목이에요. 어디서 눌러도 함께 바뀝니다.</p>
 
       <Group label={`미완료 ${open.length}`}>
         {open.map(row)}
@@ -85,7 +84,7 @@ export function TaskPanel({
       </button>
 
       <p className="text-[11px] leading-relaxed text-ink-3">
-        본문에 적은 체크박스가 여기 모입니다. 항목을 누르면 담당자와 기한을 정할 수 있습니다.
+        본문의 체크박스와 같은 항목입니다. 항목을 누르면 담당자와 기한을 정할 수 있습니다.
       </p>
     </aside>
   );
@@ -94,7 +93,7 @@ export function TaskPanel({
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-1">
-      <h3 className="font-mono text-[10px] uppercase tracking-[0.07em] text-ink-3">{label}</h3>
+      <h3 className="text-xs font-semibold text-ink-3">{label}</h3>
       {children}
     </section>
   );

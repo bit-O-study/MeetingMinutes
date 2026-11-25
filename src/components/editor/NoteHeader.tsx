@@ -67,65 +67,75 @@ export function NoteHeader({
   }
 
   return (
-    <header className="note-heading flex min-w-0 flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-4 py-3 md:px-8">
-      <Link
-        href={`/s/${spaceId}`}
-        className="min-w-0 truncate text-xs font-semibold text-ink-3 transition-colors hover:text-accent"
-      >
-        ‹ {spaceName}
-      </Link>
-      <div data-testid="note-connection" className="ml-auto">{connection}</div>
+    <header className="note-heading flex min-w-0 flex-none flex-col border-b border-line bg-surface">
+      {/* 위 줄: 어디에 있는지(브레드크럼)와 연결 상태·메뉴. 어느 노트에서나 같은 높이다. */}
+      <div className="flex min-h-11 min-w-0 items-center gap-2 px-4 md:px-6">
+        <Link href={`/s/${spaceId}?tab=notes`} className="min-w-0 truncate text-[13px] text-ink-3 transition-colors hover:text-ink">
+          {spaceName}
+        </Link>
+        <span aria-hidden="true" className="text-ink-3">/</span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{title}</span>
+        <div data-testid="note-connection" className="shrink-0">{connection}</div>
 
-      <div className="order-2 flex w-full min-w-0 flex-wrap items-center gap-3 pb-3 pt-5">
-      {editing ? (
-        <input
-          autoFocus
-          defaultValue={title}
-          disabled={pending}
-          aria-label="노트 제목"
-          onBlur={(e) => commitTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-            // Esc는 되돌린다. 실수로 지웠을 때 빠져나갈 길이 있어야 한다.
-            if (e.key === "Escape") {
-              e.currentTarget.value = title;
-              e.currentTarget.blur();
-            }
-          }}
-          className="min-w-0 flex-1 rounded-xl bg-surface px-2 py-1 text-xl font-semibold tracking-tight text-ink ring-2 ring-accent outline-none"
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          title="클릭해서 제목 수정"
-          className="min-w-0 max-w-full break-words rounded-xl px-1 text-left font-sans text-2xl font-bold tracking-tight text-ink transition-colors hover:bg-surface-2 md:text-3xl"
-        >
-          {title}
-        </button>
-      )}
+        {/* details를 쓰면 바깥 클릭으로 닫히는 동작과 키보드 접근을 브라우저가 처리한다. */}
+        <details ref={menuRef} className="relative shrink-0">
+          <summary
+            aria-label="노트 메뉴"
+            className="flex size-8 cursor-pointer list-none items-center justify-center rounded-md text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink [&::-webkit-details-marker]:hidden"
+          >
+            <MoreHorizontal className="size-4" />
+          </summary>
 
-      <button type="button" onClick={toggleStatus} disabled={pending} title="상태 바꾸기" className="shrink-0 whitespace-nowrap">
-        <NoteStatusBadge status={status} />
-      </button>
-
-      <span className="hidden text-xs text-ink-3 sm:inline">{updatedLabel}</span>
+          <div className="absolute right-0 top-full z-10 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-[var(--radius-panel)] border border-line bg-surface p-3 shadow-float">
+            <TrashAction noteId={noteId} taskCount={taskCount} pending={pending} />
+          </div>
+        </details>
       </div>
 
-      {/* details를 쓰면 바깥 클릭으로 닫히는 동작과 키보드 접근을 브라우저가 처리한다. */}
-      <details ref={menuRef} className="relative shrink-0 justify-self-end">
-        <summary
-          aria-label="노트 메뉴"
-          className="flex size-9 cursor-pointer list-none items-center justify-center rounded-xl text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink [&::-webkit-details-marker]:hidden"
-        >
-          <MoreHorizontal className="size-4" />
-        </summary>
+      {/* 제목과 속성은 본문과 같은 폭·같은 왼쪽 선에 맞춘다. */}
+      <div className="mx-auto w-full max-w-[720px] min-w-0 px-4 pb-4 pt-5 md:px-6">
+        {editing ? (
+          <input
+            autoFocus
+            defaultValue={title}
+            disabled={pending}
+            aria-label="노트 제목"
+            onBlur={(e) => commitTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              // Esc는 되돌린다. 실수로 지웠을 때 빠져나갈 길이 있어야 한다.
+              if (e.key === "Escape") {
+                e.currentTarget.value = title;
+                e.currentTarget.blur();
+              }
+            }}
+            className="w-full min-w-0 rounded-md bg-surface px-1 py-0.5 text-2xl font-bold tracking-tight text-ink ring-2 ring-accent outline-none md:text-[28px]"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            title="클릭해서 제목 수정"
+            className="block min-w-0 max-w-full break-words rounded-md px-1 py-0.5 text-left font-sans text-2xl font-bold tracking-tight text-ink transition-colors hover:bg-surface-2 md:text-[28px]"
+          >
+            {title}
+          </button>
+        )}
 
-        <div className="absolute right-0 top-full z-10 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-surface p-3 shadow-float">
-          <TrashAction noteId={noteId} taskCount={taskCount} pending={pending} />
-        </div>
-      </details>
-      {error && <p role="alert" className="w-full text-xs font-semibold text-warn">{error}</p>}
+        <dl className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+          <div className="flex items-center gap-2">
+            <dt className="text-ink-3">상태</dt>
+            <dd>
+              <button type="button" onClick={toggleStatus} disabled={pending} title="상태 바꾸기" className="whitespace-nowrap">
+                <NoteStatusBadge status={status} />
+              </button>
+            </dd>
+          </div>
+          <div className="flex items-center gap-2"><dt className="text-ink-3">수정</dt><dd className="text-ink-2">{updatedLabel.replace(/ 수정$/, "")}</dd></div>
+          <div className="flex items-center gap-2"><dt className="text-ink-3">할 일</dt><dd className="text-ink-2">{taskCount}건</dd></div>
+        </dl>
+        {error && <p role="alert" className="mt-2 text-xs font-semibold text-warn">{error}</p>}
+      </div>
     </header>
   );
 }

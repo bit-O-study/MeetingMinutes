@@ -13,7 +13,7 @@ import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { renderCollaborationCaret } from "./collaboration-caret";
 import { resolveCaretColor } from "@/lib/collab/caret-color";
 import { ySyncPluginKey } from "y-prosemirror";
-import { History, Share2 } from "lucide-react";
+import { History, ListChecks, Share2 } from "lucide-react";
 
 import { createLatestSync } from "@/lib/latest-sync";
 import type { DocTaskInput } from "@/lib/tasks-diff";
@@ -81,6 +81,8 @@ export function NoteWorkspace({
   // 우측 패널은 한 번에 하나만 뜬다. 셋을 동시에 열면 본문이 좁아진다.
   const [panel, setPanel] = useState<"tasks" | "history" | "share">("tasks");
   const closePanel = useCallback(() => setPanel("tasks"), []);
+  // 할 일 패널을 접으면 본문이 넓어진다. 접어도 본문 체크박스는 그대로 동기화된다.
+  const [tasksOpen, setTasksOpen] = useState(true);
   // 휴대폰에서 이력·공유는 화면을 덮는 시트로 열린다. 뒤로가기로 닫혀야 한다.
   useBackClose(panel !== "tasks", closePanel);
 
@@ -374,6 +376,12 @@ export function NoteWorkspace({
           <PhotoUpload editor={syncedAt ? editor : null} noteId={noteId} />
           <div className="flex shrink-0 items-center gap-1">
             <PanelToggle
+              active={panel === "tasks" && tasksOpen}
+              onClick={() => (panel === "tasks" ? setTasksOpen((open) => !open) : setPanel("tasks"))}
+              icon={<ListChecks className="size-3" />}
+              label={`할 일 ${tasks.filter((t) => t.doneAt).length}/${tasks.length}`}
+            />
+            <PanelToggle
               active={panel === "history"}
               onClick={() => setPanel((p) => (p === "history" ? "tasks" : "history"))}
               icon={<History className="size-3" />}
@@ -424,7 +432,7 @@ export function NoteWorkspace({
         </div>
       )}
       {/* 할 일 패널은 휴대폰에서도 본문 아래에 늘 있다. 이력·공유를 연 동안에도 숨기지 않는다(시트가 덮는다). */}
-      <div className={panel === "tasks" ? "contents" : "contents lg:hidden"}>
+      <div className={panel === "tasks" ? (tasksOpen ? "contents" : "hidden") : "contents lg:hidden"}>
         <TaskPanel
           tasks={tasks}
           members={members}
@@ -459,7 +467,7 @@ function PanelToggle({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-xs font-semibold transition-colors ${
+      className={`inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-xs font-medium transition-colors ${
         active ? "bg-accent-soft text-accent" : "text-ink-3 hover:bg-surface-2 hover:text-ink-2"
       }`}
     >
