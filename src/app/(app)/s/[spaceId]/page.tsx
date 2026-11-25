@@ -18,7 +18,7 @@ import { PROJECT_SCOPE_CLASS, projectColor } from "@/components/ui/projectColor"
 import { buttonClass } from "@/components/ui/Button";
 import { Plus } from "lucide-react";
 import styles from "@/components/screens/Project.module.css";
-import { TaskRow } from "@/components/screens/TaskRow";
+import { ProjectTasks } from "@/components/screens/ProjectTasks";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { SpaceOwnerPanel } from "@/components/screens/SpaceOwnerPanel";
 import { listSpaceMembers } from "@/lib/actions/spaces";
@@ -59,10 +59,6 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
     tab === "issues" ? listIssues(spaceId, status, query.issue ? 1 : Number(query.page ?? 1), typeof query.issue === "string" ? query.issue : undefined) : null,
     tab === "chat" ? listProjectMessages(spaceId, Number(query.page ?? 1)) : null,
   ]);
-  const taskGroups = [
-    { title: "미완료", rows: taskRows.filter((row) => !row.task.doneAt) },
-    { title: "완료", rows: taskRows.filter((row) => row.task.doneAt) },
-  ];
   const kindLabels = { study: "스터디", handover: "인수인계", general: "일반" };
   const tabs = [{ value: "chat", label: "대화" }, { value: "notes", label: "노트" }, { value: "tasks", label: "할 일" }, { value: "meetings", label: "일정" }, { value: "issues", label: "이슈" }, { value: "members", label: role === "owner" ? "멤버·설정" : "멤버" }];
   const color = projectColor(spaceId);
@@ -124,23 +120,12 @@ export default async function SpacePage({ params, searchParams }: PageProps<"/s/
       {tab === "notes" && <nav aria-label="노트 페이지" className="flex gap-3">{notePage > 1 && <Link href={`/s/${spaceId}?tab=notes&page=${notePage - 1}`} className={buttonClass("ghost", "sm")}>이전</Link>}{noteRows.length > 30 && <Link href={`/s/${spaceId}?tab=notes&page=${notePage + 1}`} className={buttonClass("ghost", "sm")}>다음</Link>}</nav>}
 
       {tab === "tasks" && (
-        <>
-          {taskGroups.filter((group) => group.rows.length > 0).map((group) => (
-            <section key={group.title} aria-label={group.title} className="flex flex-col gap-2">
-              <h2 className="px-1 text-sm font-extrabold text-ink">{group.title} <span className="font-semibold text-ink-3">{group.rows.length}</span></h2>
-              <Card><ul className="divide-y divide-line">
-                {group.rows.map(({ task, noteTitle, assigneeName }) => (
-                  <TaskRow key={task.id} today={today} task={{
-                    id: task.id, body: task.body, noteId: task.noteId, spaceId, noteTitle,
-                    spaceName: task.assigneeId ? assigneeName ?? "이름 없음" : "공용",
-                    dueDate: task.dueDate, done: Boolean(task.doneAt), overdue: isOverdue(task.dueDate, task.doneAt),
-                  }} />
-                ))}
-              </ul></Card>
-            </section>
-          ))}
-          {taskRows.length === 0 && <Card><EmptyState title="아직 할 일이 없어요" hint="노트에 체크 목록을 쓰면 여기에 모여요." action={{ href: "/s/" + spaceId + "?tab=notes", label: "노트 보기" }} /></Card>}
-        </>
+        <ProjectTasks spaceId={spaceId} userId={userId} today={today} members={members} query={query}
+          rows={taskRows.map(({ task, noteTitle, assigneeName }) => ({
+            id: task.id, body: task.body, noteId: task.noteId, spaceId, noteTitle,
+            assigneeId: task.assigneeId, spaceName: task.assigneeId ? assigneeName ?? "이름 없음" : "공용",
+            dueDate: task.dueDate, done: Boolean(task.doneAt), overdue: isOverdue(task.dueDate, task.doneAt),
+          }))} />
       )}
 
       {tab === "issues" && issueList && <>
