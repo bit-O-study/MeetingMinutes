@@ -11,6 +11,7 @@ import TaskList from "@tiptap/extension-task-list";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { renderCollaborationCaret } from "./collaboration-caret";
+import { createCompositionQueue } from "./composition-queue";
 import { resolveCaretColor } from "@/lib/collab/caret-color";
 import { ySyncPluginKey } from "y-prosemirror";
 import { History, ListChecks, Share2 } from "lucide-react";
@@ -89,6 +90,10 @@ export function NoteWorkspace({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<Editor | null>(null);
+  const [compositionQueue] = useState(() => createCompositionQueue(() => {
+    const current = editorRef.current;
+    return Boolean(current && !current.isDestroyed && current.view.composing);
+  }));
 
   /**
    * 이 클라이언트가 **알고 있는** 체크박스 목록 — 마지막으로 동기화했거나 DB 값으로 맞춘 상태.
@@ -132,7 +137,9 @@ export function NoteWorkspace({
       setTasks(rows);
       setTaskError("");
       // 이 클라이언트가 모르는 사이 DB에서 바뀐 완료 상태를 본문에 반영한다.
-      if (applyDbDone(rows)) syncTasks.reset();
+      compositionQueue.run("db-done", () => {
+        if (applyDbDone(rows)) syncTasks.reset();
+      });
     },
     () => setTaskError("할 일 동기화에 실패했습니다. 연결을 확인하세요."),
   ));
@@ -151,7 +158,6 @@ export function NoteWorkspace({
         Markdown.configure({ markedOptions: { breaks: true } }),
         NoteImage,
         ParagraphIndent,
-        NoteImage,
         PasteMarkdown,
         Placeholder.configure({ placeholder: "여기에 적으세요" }),
         Collaboration.configure({ document: doc }),
@@ -212,16 +218,19 @@ export function NoteWorkspace({
     const follow = () => {
       if (!editor.isFocused || editor.isDestroyed) return;
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => editor.commands.scrollIntoView());
+      frame = requestAnimationFrame(() => compositionQueue.run("scroll", () => {
+        if (!editor.isDestroyed && editor.isFocused) editor.commands.scrollIntoView();
+      }));
     };
     vv.addEventListener("resize", follow);
     editor.on("focus", follow);
     return () => {
       cancelAnimationFrame(frame);
+      compositionQueue.cancel("scroll");
       vv.removeEventListener("resize", follow);
       editor.off("focus", follow);
     };
-  }, [editor]);
+  }, [editor, compositionQueue]);
 
   /**
    * 빈 Yjs 문서에만 템플릿을 심는다. 내용이 있는데 심으면 남이 쓴 것과 겹친다.
@@ -277,7 +286,9 @@ export function NoteWorkspace({
       void listNoteTasks(noteId).then((rows) => {
         if (taskTimer.current) return; // 그 사이 편집이 시작됐으면 그 동기화가 맞춘다.
         setTasks(rows);
-        if (applyDbDone(rows)) syncTasks.reset();
+        compositionQueue.run("db-done", () => {
+          if (applyDbDone(rows)) syncTasks.reset();
+        });
       }, () => {});
     };
     document.addEventListener("visibilitychange", refresh);
@@ -286,14 +297,15 @@ export function NoteWorkspace({
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("focus", refresh);
     };
-  }, [noteId, applyDbDone, syncTasks]);
+  }, [noteId, applyDbDone, syncTasks, compositionQueue]);
 
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       if (taskTimer.current) clearTimeout(taskTimer.current);
+      compositionQueue.cancel();
     };
-  }, []);
+  }, [compositionQueue]);
 
   /** 이력 패널의 "지금 내용"은 편집을 따라가야 한다. 패널이 열려 있을 때만 갱신한다. */
   const [currentDoc, setCurrentDoc] = useState<unknown>(null);
